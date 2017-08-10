@@ -14,6 +14,12 @@
 
     <link rel="stylesheet" href="bootstrap-sortable.css">
 
+    <style>
+    .panel-body {
+      white-space: pre;
+    }
+    </style>
+
       </head>
   <body>
     <div class="container-fluid">
@@ -35,20 +41,32 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-8 collapse" id="metrics">
-          <table class="table table-hover sortable">
-            <thead>
-              <tr>
-                <th>Node ID</th>
-                <th data-defaultsort="desc">Degree</th>
-                <th data-firstsort="desc">Betweenness Centrality</th>
-                <th data-firstsort="desc">Eigenvector Centrality</th>
-                <th data-firstsort="desc">Clustering Coefficient</th>
-              </tr>
-            </thead>
-            <tbody>
-            </tbody>
-          </table>
+        <div class="col-md-3 collapse">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                Global metrics
+              </h4>
+            </div>
+            <div class="panel-body"></div>
+          </div>
+        </div>
+        <div class="col-md-7 collapse" id="metrics">
+          <div class="table-responsive">
+            <table class="table table-hover sortable">
+              <thead>
+                <tr>
+                  <th>Node ID</th>
+                  <th data-defaultsort="desc">Degree</th>
+                  <th data-firstsort="desc">Betweenness Centrality</th>
+                  <th data-firstsort="desc">Eigenvector Centrality</th>
+                  <th data-firstsort="desc">Clustering Coefficient</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

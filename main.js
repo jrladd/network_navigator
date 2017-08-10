@@ -7,6 +7,7 @@ $( function() {
       var data = $('textarea').val();
       var list = data.split("\n");
       var rows = '';
+      var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
         weighted_edges.push(items);
@@ -23,7 +24,10 @@ $( function() {
       var clustering = jsnx.clustering(G)._stringValues;
       var degree = G.degree()._stringValues;
       var eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
-      // console.log(betweenness, clustering, degree);
+      var density = jsnx.density(G);
+      var averageClustering = jsnx.averageClustering(G);
+      var transitivity = jsnx.transitivity(G);
+      var info = jsnx.info(G);
       G.nodes().forEach(function(node){
         var row = '<tr>';
         row = row + '<td>' + node + '</td>'
@@ -38,6 +42,11 @@ $( function() {
       $.bootstrapSortable({ sign: 'reversed' })
       $('.collapse').collapse('show');
       $btn.button('reset');
+      allInfo = allInfo + "<div>"+info+"</div>";
+      allInfo = allInfo + "<div>Density: "+density.toFixed(8)+"</div>";
+      allInfo = allInfo + "<div>Avg Clustering Coefficient: "+averageClustering.toFixed(8)+"</div>";
+      allInfo = allInfo + "<div>Transitivity: "+transitivity.toFixed(8)+"</div>";
+      $('.panel-body').append(allInfo);
     }, 2000);
 
   });
