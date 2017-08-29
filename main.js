@@ -29,7 +29,9 @@ $( function() {
       var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
-        weighted_edges.push(items);
+        if (items.length === 3) {
+          weighted_edges.push(items);
+        }
       });
 
       $('tbody').empty();
