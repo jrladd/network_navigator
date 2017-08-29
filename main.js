@@ -35,6 +35,7 @@ $( function() {
       });
 
       $('tbody').empty();
+      $('.panel-body').empty();
 
       // console.log(weighted_edges);
       var G = new jsnx.Graph();
