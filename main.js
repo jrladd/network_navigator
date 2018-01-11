@@ -71,6 +71,21 @@ $( function() {
       allInfo = allInfo + "<div>Avg Clustering Coefficient: "+averageClustering.toFixed(8)+"</div>";
       allInfo = allInfo + "<div>Transitivity: "+transitivity.toFixed(8)+"</div>";
       $('.panel-body').append(allInfo);
+
+      jsnx.draw(G, {
+          element: '#canvas',
+          withLabels: false,
+          nodeStyle: {
+              fill: 'lightblue',
+              stroke: 'none'
+          },
+          nodeAttr: {
+            r: 5,
+            title: function(d) { return d.label;}
+          },
+          edgeStyle: {fill: '#999'},
+          stickyDrag: true
+      });
     }, 2000);
 
   });

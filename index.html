@@ -41,7 +41,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-md-3 collapse">
+        <div class="col-md-4 collapse">
           <div class="panel panel-default">
             <div class="panel-heading">
               <h4 class="panel-title">
@@ -50,8 +50,16 @@
             </div>
             <div class="panel-body"></div>
           </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                Visualization
+              </h4>
+            </div>
+            <div id="canvas"></div>
+          </div>
         </div>
-        <div class="col-md-7 collapse" id="metrics">
+        <div class="col-md-8 collapse" id="metrics">
           <div class="table-responsive">
             <table class="table table-hover sortable">
               <thead>
@@ -76,6 +84,7 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
+    <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
     <script type='text/javascript' src='jsnetworkx.js'></script>
     <script type='text/javascript' src='bootstrap-sortable.js'></script>
     <script type='text/javascript' src='main.js'></script>
