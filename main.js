@@ -19,6 +19,11 @@ $( function() {
     }
   });
 
+  $('.show-instructions').click(function(e){
+    e.preventDefault(e);
+    $('.collapse.instructions').collapse('toggle');
+  })
+
   $('.btn').click(function(){
     var $btn = $(this).button('loading');
     setTimeout(function() {
@@ -33,9 +38,7 @@ $( function() {
       var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
-        // if (items.length === 3) {
-          edges.push(items);
-        // }
+        edges.push(items);
       });
 
       $('tbody').empty();
@@ -81,7 +84,7 @@ $( function() {
       $('tbody').append(rows);
       $.bootstrapSortable({ applyLast: true });
       $.bootstrapSortable({ sign: 'reversed' })
-      $('.collapse').collapse('show');
+      $('.collapse.metrics').collapse('show');
       $btn.button('reset');
       allInfo = allInfo + "<div>"+info+"</div>";
       allInfo = allInfo + "<div>Density: "+density.toFixed(8)+"</div>";
