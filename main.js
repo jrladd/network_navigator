@@ -38,7 +38,9 @@ $( function() {
       var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
-        edges.push(items);
+        if (items.length > 1) {
+          edges.push(items);
+        }
       });
 
       $('tbody').empty();
