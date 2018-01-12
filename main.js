@@ -26,19 +26,23 @@ $( function() {
 
   $('.btn').click(function(){
     var $btn = $(this).button('loading');
+
     setTimeout(function() {
       var edges = [];
       var data = $('textarea').val();
       var graphType = $("input[name='graphType']:checked").val();
-      var graphMode = $("input[name='graphMode']:checked").val();
+      // var graphMode = $("input[name='graphMode']:checked").val();
       var graphWeight = $("input[name='graphWeight']:checked").val();
-      console.log(graphType, graphMode, graphWeight);
       var list = data.split("\n");
       var rows = '';
       var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
-        if (items.length > 1) {
+        if (items.length > 3) {
+          $('#tooBig').show();
+        } else if (graphWeight === 'weighted' && items.length < 3) {
+          $('#tooSmall').show();
+        } else if (items.length > 1) {
           edges.push(items);
         }
       });
