@@ -112,34 +112,26 @@ Person Three,Person One</code></p>
               </div>
             </div>
             <div class="form-group">
-              <div class="col-md-8">
-                <button class="btn btn-info" type="button" data-loading-text="Calculating..." autocomplete="off">Calculate</button>
-                <div class="alert alert-danger" role="alert" id="tooBig"><strong>Your data has too many items in at least one of its rows.</strong> Currently displaying your results without those rows. For full results, please correct your data, refresh, and try again.</div>
-                <div class="alert alert-danger" role="alert" id="tooSmall"><strong>You have selected a "weighted" network, but your data has too few items in at least one of its rows.</strong> Currently displaying your results without those rows. For full results, please correct your data, refresh, and try again.</div>
+              <div class="col-md-8 alert-container">
+                <button class="btn btn-info" id="calculate" type="button" data-loading-text="Calculating..." autocomplete="off">Calculate</button>
+                <div class="alert alert-danger" role="alert" id="row-error">
+                  <h4 class="alert-heading">Too many/too few values!</h4>
+
+                  <p>One or more of the rows in your data has the wrong number of values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or <code>source,target,weight</code>. For weighted networks, each row must have three values: <code>source,target,weight</code>.</p>
+                  <p class="mb-0">Please refresh, edit your data, and try again.</p>
+                </div>
+                <div class="alert alert-warning" role="alert" id="eigen-error">
+                  <strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector centrality cannot be calculated.
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
               </div>
             </div>
           </form>
         </div>
       </div>
       <div class="row">
-        <div class="col-md-4 collapse metrics">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <h4 class="panel-title">
-                Global metrics
-              </h4>
-            </div>
-            <div class="panel-body"></div>
-          </div>
-          <div class="panel panel-default viz">
-            <div class="panel-heading">
-              <h4 class="panel-title">
-                Visualization (scroll to zoom)
-              </h4>
-            </div>
-            <div id="canvas"></div>
-          </div>
-        </div>
         <div class="col-md-8 collapse metrics" id="metrics">
           <div class="table-responsive">
             <table class="table table-hover sortable">
@@ -155,6 +147,31 @@ Person Three,Person One</code></p>
               <tbody>
               </tbody>
             </table>
+          </div>
+        </div>
+        <div class="col-md-4 collapse metrics">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                Global metrics
+              </h4>
+            </div>
+            <div class="panel-body" id="info-panel"></div>
+          </div>
+          <div class="alert alert-info" role="alert" id="viz-warning">
+            <strong>Visualization too large</strong>: To protect browser speed, the visualization was not loaded.
+            <button class="btn btn-info" type="button" id="load-viz">Click to load</button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="panel panel-default viz">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                Visualization (scroll to zoom)
+              </h4>
+            </div>
+            <div id="canvas"></div>
           </div>
         </div>
       </div>

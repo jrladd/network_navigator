@@ -24,7 +24,7 @@ $( function() {
     $('.collapse.instructions').collapse('toggle');
   })
 
-  $('.btn').click(function(){
+  $('#calculate').click(function(){
     var $btn = $(this).button('loading');
 
     setTimeout(function() {
@@ -38,11 +38,8 @@ $( function() {
       var allInfo = '';
       list.forEach(function(l){
         var items = l.split(",");
-        if (items.length > 3) {
-          $('#tooBig').show();
-        } else if (graphWeight === 'weighted' && items.length < 3) {
-          $('#tooSmall').show();
-        } else if (items.length > 1) {
+        if (items.length === 1 && items[0] === "") {
+        } else {
           edges.push(items);
         }
       });
@@ -50,38 +47,60 @@ $( function() {
       $('tbody').empty();
       $('.panel-body').empty();
 
-      // console.log(weighted_edges);
       if (graphType === 'undirected') {
         var G = new jsnx.Graph();
       } else if (graphType === 'directed') {
         var G = new jsnx.DiGraph();
       }
-      if (graphWeight === 'unweighted') {
-        G.addEdgesFrom(edges);
-      } else if (graphWeight === 'weighted') {
-        G.addWeightedEdgesFrom(edges);
+
+      try {
+        if (graphWeight === 'unweighted') {
+          G.addEdgesFrom(edges);
+        } else if (graphWeight === 'weighted') {
+          G.addWeightedEdgesFrom(edges);
+        }
+        var betweenness = jsnx.betweennessCentrality(G)._stringValues;
+        var degree = G.degree()._stringValues;
+
+        var density = jsnx.density(G);
+        if (graphType === 'undirected') {
+          var averageClustering = jsnx.averageClustering(G);
+          var clustering = jsnx.clustering(G)._stringValues;
+          var clusteringSorted = reverse_sort(clustering);
+        }
+        var transitivity = jsnx.transitivity(G);
+        var info = jsnx.info(G);
+
+      } catch(err) {
+        console.error(err);
+        $("#row-error").show();
       }
-      var betweenness = jsnx.betweennessCentrality(G)._stringValues;
-      var degree = G.degree()._stringValues;
-      var eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
-      var density = jsnx.density(G);
-      if (graphType === 'undirected') {
-        var averageClustering = jsnx.averageClustering(G);
-        var clustering = jsnx.clustering(G)._stringValues;
-        var clusteringSorted = reverse_sort(clustering);
+
+      try {
+        var eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
+      } catch(err) {
+        console.error(err);
+        if (err.message !== 'Empty graph.') {
+          $('#eigen-error').show();
+        }
       }
-      var transitivity = jsnx.transitivity(G);
-      var info = jsnx.info(G);
+
       var degreeSorted = reverse_sort(degree);
       var betweennessSorted = reverse_sort(betweenness);
-      var eigenvectorSorted = reverse_sort(eigenvector);
+      if (eigenvector) {
+        var eigenvectorSorted = reverse_sort(eigenvector);
+      }
 
       G.nodes().forEach(function(node){
         var row = '<tr>';
         row = row + '<td>' + node + '</td>'
         row = row + '<td>' + degree[node] + /*' (rank: ' + degreeSorted.indexOf(node).toString() + ')*/'</td>';
         row = row + '<td>' + betweenness[node].toFixed(10) + ' (' + betweennessSorted.indexOf(node).toString() + ')</td>';
-        row = row + '<td>' + eigenvector[node].toFixed(10) + ' (' + eigenvectorSorted.indexOf(node).toString() + ')</td>';
+        if (eigenvector) {
+          row = row + '<td>' + eigenvector[node].toFixed(10) + ' (' + eigenvectorSorted.indexOf(node).toString() + ')</td>';
+        } else {
+          row = row + '<td>N/A</td>'
+        }
         if (graphType === 'undirected') {
           row = row + '<td>' + clustering[node].toFixed(10) + ' (' + clusteringSorted.indexOf(node).toString() + ')</td>';
         }
@@ -98,30 +117,47 @@ $( function() {
         allInfo = allInfo + "<div>Avg Clustering Coefficient: "+averageClustering.toFixed(8)+"</div>";
       }
       allInfo = allInfo + "<div>Transitivity: "+transitivity.toFixed(8)+"</div>";
-      $('.panel-body').append(allInfo);
+      $('#info-panel').append(allInfo);
 
-      jsnx.draw(G, {
-          element: '#canvas',
-          withLabels: false,
-          weighted: true,
-          nodeStyle: {
-              fill: 'lightblue',
-              stroke: 'none'
-          },
-          nodeAttr: {
-            r: 5,
-            title: function(d) { return d.label;}
-          },
-          edgeStyle: {fill: '#999'},
-          stickyDrag: true
+      if (G.nodes().length <= 500) {
+        drawNetwork(G);
+      } else {
+        $('#viz-warning').show();
+        $('.viz').hide();
+      }
+
+      $('#load-viz').click(function() {
+        $('#viz-warning').hide();
+        $('.viz').show();
+        drawNetwork(G);
       });
     }, 2000);
 
   });
 
 
+
+
 });
 
 function reverse_sort(dict) {
   return Object.keys(dict).sort(function(a,b) {return dict[b]-dict[a]});
+}
+
+function drawNetwork(G) {
+  jsnx.draw(G, {
+      element: '#canvas',
+      withLabels: false,
+      weighted: true,
+      nodeStyle: {
+          fill: 'lightblue',
+          stroke: 'none'
+      },
+      nodeAttr: {
+        r: 5,
+        title: function(d) { return d.label;}
+      },
+      edgeStyle: {fill: '#999'},
+      stickyDrag: true
+  });
 }
