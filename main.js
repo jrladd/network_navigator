@@ -26,6 +26,8 @@ $( function() {
 
   $('#calculate').click(function(){
     var $btn = $(this).button('loading');
+    $('#row-error').hide();
+    $('#eigen-error').hide();
 
     setTimeout(function() {
       var edges = [];
@@ -74,6 +76,7 @@ $( function() {
       } catch(err) {
         console.error(err);
         $("#row-error").show();
+        $btn.button('reset');
       }
 
       try {
