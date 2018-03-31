@@ -30,21 +30,15 @@ $( function() {
     $('#eigen-error').hide();
 
     setTimeout(function() {
-      var edges = [];
+      // var edges = [];
       var data = $('textarea').val();
       var graphType = $("input[name='graphType']:checked").val();
       // var graphMode = $("input[name='graphMode']:checked").val();
       var graphWeight = $("input[name='graphWeight']:checked").val();
-      var list = data.split("\n");
       var rows = '';
       var allInfo = '';
-      list.forEach(function(l){
-        var items = l.split(",");
-        if (items.length === 1 && items[0] === "") {
-        } else {
-          edges.push(items);
-        }
-      });
+      var edges = $.csv.toArrays(data);
+
 
       $('tbody').empty();
       $('.panel-body').empty();
