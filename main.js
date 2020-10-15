@@ -19,13 +19,9 @@ $( function() {
     }
   });
 
-  $('.show-instructions').click(function(e){
-    e.preventDefault(e);
-    $('.collapse.instructions').collapse('toggle');
-  })
 
   $('#calculate').click(function(){
-    var $btn = $(this).button('loading');
+	  //var $btn = $(this).button('loading');
     $('#row-error').hide();
     $('#eigen-error').hide();
 
@@ -70,7 +66,7 @@ $( function() {
       } catch(err) {
         console.error(err);
         $("#row-error").show();
-        $btn.button('reset');
+        //$btn.button('reset');
       }
 
       try {
@@ -104,10 +100,11 @@ $( function() {
         rows = rows + row
       });
       $('tbody').append(rows);
-      $.bootstrapSortable({ applyLast: true });
-      $.bootstrapSortable({ sign: 'reversed' })
-      $('.collapse.metrics').collapse('show');
-      $btn.button('reset');
+      let metrics = document.getElementById("metrics");
+      let viz = document.getElementById("viz");
+      metrics.style.display = "block";
+      viz.style.display = "block";
+      //$btn.button('reset');
       allInfo = allInfo + "<div>"+info+"</div>";
       allInfo = allInfo + "<div>Density: "+density.toFixed(8)+"</div>";
       if (graphType === 'undirected') {
@@ -157,4 +154,13 @@ function drawNetwork(G) {
       edgeStyle: {fill: '#999'},
       stickyDrag: true
   });
+}
+
+function collapse() {
+	let instructions = document.getElementById("instructions");
+	if (instructions.style.display === "none") {
+ 	   instructions.style.display = "block";
+ 	 } else {
+ 	   instructions.style.display = "none";
+ 	 }
 }
