@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Network Navigator</title>
     <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
+
 
     <style>
     html {
@@ -54,7 +56,7 @@
 	  </nav>
 	</header>
     <div class="fl w-100 pa2">
-          <div class="link dim dark-blue pointer" onclick="collapse()">Show/Hide Instructions</div>
+          <div class="link dim dark-blue pointer" id="show-instructions">Show/Hide Instructions</div>
           <div id="instructions" class="w-80">
 
             <p>This tool is meant to provide a metrics-focused look into your network data. We hope it will be a quick and easy way to get the most popular network measurements. While we provide a small visualization for comparison purposes, visualization is not the focus. Instead, we hope the sortable tables will allow you to assess and navigate your network in new ways.</p>
@@ -118,21 +120,19 @@ Person Three,Person One</code></p>
               </h4>
             <div class="pre" id="info-panel"></div>
           </div>
-          <div class="table-responsive">
-            <table class="table table-hover sortable">
+            <table id="metrics-table">
               <thead>
                 <tr>
                   <th>Node ID</th>
-                  <th data-defaultsort="desc">Degree</th>
-                  <th data-firstsort="desc">Betweenness Centrality</th>
-                  <th data-firstsort="desc">Eigenvector Centrality</th>
-                  <th data-firstsort="desc">Clustering Coefficient</th>
+                  <th>Degree</th>
+                  <th>Betweenness Centrality</th>
+                  <th>Eigenvector Centrality</th>
+                  <th>Clustering Coefficient</th>
                 </tr>
               </thead>
               <tbody>
               </tbody>
             </table>
-          </div>
         </div>
         <div class="fl w-100 w-50-ns pa2" id="viz">
 <!--          <div class="alert alert-info" role="alert" id="viz-warning">
@@ -159,6 +159,7 @@ Person Three,Person One</code></p>
     <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
     <script type='text/javascript' src='jsnetworkx.js'></script>
     <script type="text/javascript" src="jquery.csv.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js"></script>
     <script type='text/javascript' src='main.js'></script>
 
   </body>

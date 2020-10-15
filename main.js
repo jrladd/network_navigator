@@ -19,7 +19,13 @@ $( function() {
     }
   });
 
+  $('#show-instructions').click(function(e){
+    e.preventDefault(e);
+    $('#instructions').slideToggle();
+  })
 
+
+  var table = $('#metrics-table').DataTable();
   $('#calculate').click(function(){
 	  //var $btn = $(this).button('loading');
     $('#row-error').hide();
@@ -35,9 +41,7 @@ $( function() {
       var allInfo = '';
       var edges = $.csv.toArrays(data);
 
-
-      $('tbody').empty();
-      $('.panel-body').empty();
+      $('#info-panel').empty();
 
       if (graphType === 'undirected') {
         var G = new jsnx.Graph();
@@ -83,23 +87,22 @@ $( function() {
       if (eigenvector) {
         var eigenvectorSorted = reverse_sort(eigenvector);
       }
-
+      
+      var tableData = [];
       G.nodes().forEach(function(node){
-        var row = '<tr>';
-        row = row + '<td>' + node + '</td>'
-        row = row + '<td>' + degree[node] + /*' (rank: ' + degreeSorted.indexOf(node).toString() + ')*/'</td>';
-        row = row + '<td>' + betweenness[node].toFixed(10) + ' (' + betweennessSorted.indexOf(node).toString() + ')</td>';
-        if (eigenvector) {
-          row = row + '<td>' + eigenvector[node].toFixed(10) + ' (' + eigenvectorSorted.indexOf(node).toString() + ')</td>';
-        } else {
-          row = row + '<td>N/A</td>'
-        }
-        if (graphType === 'undirected') {
-          row = row + '<td>' + clustering[node].toFixed(10) + ' (' + clusteringSorted.indexOf(node).toString() + ')</td>';
-        }
-        rows = rows + row
+	let betweennessString = `${betweenness[node].toFixed(10)} (${betweennessSorted.indexOf(node).toString()})`;
+	let eigenvectorString = "N/A";
+	let clusteringString = "N/A";
+	if (eigenvector) {
+		eigenvectorString = `${eigenvector[node].toFixed(10)} (${eigenvectorSorted.indexOf(node).toString()})`;
+	}
+	if (graphType === 'undirected') {
+		clusteringString = `${clustering[node].toFixed(10)} (${clusteringSorted.indexOf(node).toString()})`;
+	}
+        var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
+	tableData.push(row);
       });
-      $('tbody').append(rows);
+      table.clear().rows.add(tableData).draw();
       let metrics = document.getElementById("metrics");
       let viz = document.getElementById("viz");
       metrics.style.display = "block";
@@ -154,13 +157,4 @@ function drawNetwork(G) {
       edgeStyle: {fill: '#999'},
       stickyDrag: true
   });
-}
-
-function collapse() {
-	let instructions = document.getElementById("instructions");
-	if (instructions.style.display === "none") {
- 	   instructions.style.display = "block";
- 	 } else {
- 	   instructions.style.display = "none";
- 	 }
 }
