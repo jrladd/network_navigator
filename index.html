@@ -49,14 +49,14 @@
     </style>
 
       </head>
-  <body>
-	<header class="bg-dark-blue w-100 pa3">
-	  <nav class="f4 fw6 tracked i white">
-		  Network Navigator <span class="f7 fs-normal">2.0</span>
+  <body class="helvetica bg-near-white">
+	<header class="w-100 pa3">
+	  <nav class="f4 fw6 tracked i dark-blue garamond">
+		  Network Navigator <span class="f7 fs-normal">v2.0</span>
 	  </nav>
 	</header>
     <div class="fl w-100 pa2">
-          <div class="link dim dark-blue pointer" id="show-instructions">Show/Hide Instructions</div>
+          <div class="link dim blue pointer" id="show-instructions">Show/Hide Instructions</div>
           <div id="instructions" class="w-80">
 
             <p>This tool is meant to provide a metrics-focused look into your network data. We hope it will be a quick and easy way to get the most popular network measurements. While we provide a small visualization for comparison purposes, visualization is not the focus. Instead, we hope the sortable tables will allow you to assess and navigate your network in new ways.</p>
@@ -94,25 +94,20 @@ Person Three,Person One</code></p>
 				<input type="radio" value="unweighted" name="graphWeight" id="unweighted" checked>
 				<label for="unweighted">Unweighted</label>
 				<input type="radio" value="weighted" name="graphWeight" id="weighted">
-				<label for="weighted">Unweighted</label>
+				<label for="weighted">Weighted</label>
 			 </div>
 		 </div>
 		 <div class="fl w-100">
 			<button class="f6 link dim br3 ph3 pv2 mb2 dib white bg-dark-blue" id="calculate" type="button" data-loading-text="Calculating..." autocomplete="off">Calculate</button>
 		 </div>
-                <!--<div class="alert alert-danger" role="alert" id="row-error">
-                  <h4 class="alert-heading">Too many/too few values!</h4>
-
-                  <p>One or more of the rows in your data has the wrong number of values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or <code>source,target,weight</code>. For weighted networks, each row must have three values: <code>source,target,weight</code>.</p>
-                  <p class="mb-0">Please edit your data and try again.</p>
-                </div>
-                <div class="alert alert-warning" role="alert" id="eigen-error">
-                  <strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector centrality cannot be calculated.
-                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-		  </button> -->
           </form>
 	</div>
+	 <div class="alert fl w-100 pa2 br4 ba b--dark-red bg-light-red dark-red" role="alert" id="row-error">
+	   <p><strong>Too many/too few values!</strong> One or more of the rows in your data has the wrong number of values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or <code>source,target,weight</code>. For weighted networks, each row must have three values: <code>source,target,weight</code>. Please edit your data and try again.</p>
+	 </div>
+	 <div class="alert fl w-100 pa2 br4 ba b--gold bg-light-yellow gold" role="alert" id="eigen-error">
+	   <strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector centrality cannot be calculated.
+	 </div>
       <div class="fl w-100 w-50-ns pa2" id="metrics">
           <div class="shadow-4 pa2 mb2">
               <h4 class="bb b--gray dark-gray">
@@ -135,13 +130,10 @@ Person Three,Person One</code></p>
             </table>
         </div>
         <div class="fl w-100 w-50-ns pa2" id="viz">
-<!--          <div class="alert alert-info" role="alert" id="viz-warning">
+        <div class="alert pa2 br4 ba b--dark-blue bg-light-blue dark-blue" role="alert" id="viz-warning">
             <strong>Visualization too large</strong>: To protect browser speed, the visualization was not loaded.
             <button class="btn btn-info" type="button" id="load-viz">Click to load</button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-</div> -->
+	</div>
           <div class="shadow-4 pa2">
               <h4 class="bb b--gray dark-gray">
                 Visualization (scroll to zoom)
