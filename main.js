@@ -1,6 +1,6 @@
 $( function() {
   // import {drawMatrix} from './matrix.js';
-  let nodeList, edgeList, G, selectedGraph;
+  let nodeList, edgeList, G, selectedGraph, matrixDrawn, networkDrawn;
   $('textarea').on('dragover', function(e) {
     e.preventDefault(e);
     e.stopPropagation(e);
@@ -28,7 +28,7 @@ $( function() {
   $('#selected-graph').on('click', function(e){
       if (selectedGraph !== e.target.text) {
         selectedGraph = e.target.text;
-        if (selectedGraph.includes('Force')){
+        if ((selectedGraph.includes('Force'))){
           $('#matrix-canvas').css('visibility', 'hidden');
           $('#matrix-canvas').css('padding', '0');
           $('#matrix-canvas').css('height', '0');
@@ -37,7 +37,7 @@ $( function() {
           $('#canvas').css('height', '100%');
           $('#canvas').css('visibility', 'visible');
           
-          drawNetwork(G);
+          if (!networkDrawn) drawNetwork(G);
         } else {
           $('#canvas').css('visibility', 'hidden');
           $('#canvas').css('padding', '0');
@@ -46,7 +46,8 @@ $( function() {
           $('#matrix-canvas').css('padding', '.5rem');
           $('#matrix-canvas').css('height', '100%');
           $('#matrix-canvas').css('visibility', 'visible');
-          drawMatrix(edgeList, nodeList);
+          if (!matrixDrawn) drawMatrix(edgeList, nodeList);
+          if (networkDrawn) matrixDrawn = true;
         }
       }
 
@@ -77,8 +78,17 @@ $( function() {
           item['source'] = edge[0];
           item['target'] = edge[1];
           item['weight'] = typeof(edge[2]) === 'undefined' ? 0: edge[2];
-          edgeList.push(item);
+          item['val'] = 1;
+          // Check if multiple edges between same nodes
+          let match = edgeList.find(r => ((r.source === edge[0]) &&(r.target === edge[1])));
+          if (match) {
+            item.val = item.val + match.val;
+            Object.assign(match, item);
+          } else {
+            edgeList.push(item);
+          }
       });
+      window.edgeList = edgeList;
 
       $('#info-panel').empty();
 
@@ -161,6 +171,7 @@ $( function() {
       $('#info-panel').append(allInfo);
 
       if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {
+        networkDrawn = true;
         drawNetwork(G);
       } else {
         $('#viz-warning').show();
@@ -204,7 +215,6 @@ function drawNetwork(G) {
 }
 
 function drawMatrix(edgeList, nodeList){
-  console.log(edgeList, nodeList);
   var margin = {
   top: 75,
   right: 200,
@@ -214,14 +224,22 @@ function drawMatrix(edgeList, nodeList){
 
   var width = $('#matrix-canvas').parent().width();
   var height = $('#matrix-canvas').parent().height();
-  var color = d3.scaleOrdinal(["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#bcbd22", "#17becf"]);
+
+  // Get values for coloring matrix, would change this to community if wanting to color by different value
+  const values = [...new Set(edgeList.map(edge => edge.val))]
+  values.push(0);
+  values.sort((a, b) => a - b);
+  var color = d3.scaleLinear()
+    .domain(values)
+    .range(["rgb(46, 73, 123)", "rgb(71, 187, 94)"]);
+
   var opacity = d3.scaleLinear()
     .range([0.5, 1])
     .clamp(true);
 
   var x = d3.scaleBand()
-    .rangeRound([0, height-100])
-    .paddingInner(0.2)
+    .rangeRound([0, height-200])
+    .paddingInner(0.1)
     .align(0);
 
   var svg = d3.select('#matrix-canvas').append('svg')
@@ -235,10 +253,12 @@ function drawMatrix(edgeList, nodeList){
   // var context = canvas.getContext('2d');
   var idToNode = {};
 
+  // Add indexes to nodes
   nodeList.forEach(function (n) {
-    // n.degree = 0;
     idToNode[n.id] = n;
   }); 
+
+  // Embed nodes as source and target
   edgeList.forEach(function (e) {
     e.source = idToNode[e.source];
     e.target = idToNode[e.target];
@@ -253,26 +273,29 @@ function drawMatrix(edgeList, nodeList){
   x.domain(d3.range(nodeList.length));
 
   opacity.domain([0, d3.max(edgeList, function (d) { return d.betweenness * 20; })]);
-  console.log(nodeList);
+
+  // Build initial matrix
   var matrix = nodeList.map(function (outer, i) {
     outer.index = i;
     return nodeList.map(function (inner, j) {
-      return {i: i, j: j, val: i === j ? inner.degree : 0};
+      // if we want to use community add a check and change final zero to inner.community
+      return {i: i, j: j, val: i === j ? 0 : 0};
     });
   });
   window.matrix = matrix;
-  // edgeList.forEach(function (l) {
-  //   console.log(matrix[l.source.index][l.target.index], l, l.degree);
-  //   matrix[l.source.index][l.target.index].val = l.degree;
-  //   matrix[l.target.index][l.source.index].val = l.degree;
-  // });
+  // window.edgeList = edgeList;
+  // Update matrix values depending on edges
+  edgeList.forEach(function (l) {
+    matrix[l.source.index][l.target.index].val = l.val;
+    matrix[l.target.index][l.source.index].val = l.val;
+  });
   // context.clearRect(0, 0, width, height);
 
   var row = svg.selectAll('g.row')
     .data(matrix)
     .enter().append('g')
     .attr('class', 'row')
-    .attr('transform', function (d, i) { return 'translate(0,' + x(i) + ')'; })
+    .attr('transform', function (d, i) { console.log('d',d,'i',i);return 'translate(0,' + x(i) + ')'; })
     .each(makeRow);
 
   row.append('text')
@@ -294,6 +317,18 @@ function drawMatrix(edgeList, nodeList){
     .attr('dy', '0.32em')
     .text(function (d, i) { return nodeList[i].id; });
 
+  svg.append("g")
+  .attr("class", "legendLinear")
+  .attr("transform", `translate(${height-190},0)`);
+
+  var legendLinear = d3.legendColor()
+    .shapeWidth(30)
+    .cells(values)
+    .scale(color)
+    .labelOffset(20);
+
+  svg.select(".legendLinear")
+    .call(legendLinear);
 
   function makeRow(rowData) {
     var cell = d3.select(this).selectAll('rect.cell')
@@ -305,20 +340,15 @@ function drawMatrix(edgeList, nodeList){
       .attr('height', x.bandwidth())
       .style('fill-opacity', function (d) { return d.val > 0 ? opacity(d.val) : 1; })
       .style('fill', function (d) {
-        console.log(d.val);
-        if (d.val > 0)
-          return color(nodeList[d.i].degree);
-        // else if (d.val > 0)
-        //   return '#555';
-        return null;
+          return color(d.val);
       })
       .on('mouseover', function (d) {
         row.filter(function (_, i) { return d.i === i; })
           .selectAll('text')
-          .style('fill', '#d62333')
+          .style('fill', '#000000')
           .style('font-weight', 'bold');
         column.filter(function (_, j) { return d.j === j; })
-          .style('fill', '#d62333')
+          .style('fill', '#000000')
           .style('font-weight', 'bold');
       })
       .on('mouseout', function () {
