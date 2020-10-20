@@ -14,6 +14,9 @@
       position: relative;
       min-height: 100%;
     }
+    .gradient {
+       background-image: linear-gradient(to bottom right, #19A974, #00449E);
+    }
     #logo {
       max-height: 15px;
     }
@@ -40,8 +43,8 @@
 
       </head>
   <body class="helvetica bg-near-white">
-	<header class="w-100 pa3">
-	  <nav class="f4 fw6 tracked i dark-blue garamond">
+	<header class="w-100 pa3 gradient">
+	  <nav class="f4 fw6 tracked i white garamond">
 		  Network Navigator <span class="f7 fs-normal">v2.0</span>
 	  </nav>
 	</header>
@@ -88,7 +91,7 @@ Person Three,Person One</code></p>
 			 </div>
 		 </div>
 		 <div class="fl w-100">
-			<button class="f6 link dim br3 ph3 pv2 mb2 dib white bg-dark-blue" id="calculate" type="button" data-loading-text="Calculating..." autocomplete="off">Calculate</button>
+			<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button" data-loading-text="Calculating..." autocomplete="off">Calculate</button>
 		 </div>
           </form>
 	</div>
