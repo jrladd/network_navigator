@@ -68,8 +68,6 @@ $( function() {
       var graphType = $("input[name='graphType']:checked").val();
       // var graphMode = $("input[name='graphMode']:checked").val();
       var graphWeight = $("input[name='graphWeight']:checked").val();
-      var rows = '';
-      var allInfo = '';
       var edges = $.csv.toArrays(data);
       // For D3 visualizations
       edgeList = [];
@@ -104,13 +102,16 @@ $( function() {
         var degree = G.degree()._stringValues;
 
         var density = jsnx.density(G);
+	var averageClustering = "N/A";
         if (graphType === 'undirected') {
-          var averageClustering = jsnx.averageClustering(G);
+          averageClustering = jsnx.averageClustering(G).toFixed(4);
           var clustering = jsnx.clustering(G)._stringValues;
           var clusteringSorted = reverse_sort(clustering);
         }
         var transitivity = jsnx.transitivity(G);
-        var info = jsnx.info(G);
+	var numberOfNodes = G.nodes().length;
+	var numberOfEdges = G.edges().length;
+	var averageDegree = Object.values(degree).reduce((a,b) => { return a + b; }) / numberOfNodes;
 
       } catch(err) {
         console.error(err);
@@ -140,17 +141,17 @@ $( function() {
         let item = {};
         item['id'] = node;
         item['degree'] = degree[node];
-        item['betweenness'] = betweenness[node].toFixed(10);
-        let betweennessString = `${betweenness[node].toFixed(10)} (${betweennessSorted.indexOf(node).toString()})`;
+        item['betweenness'] = betweenness[node].toFixed(4);
+        let betweennessString = `${betweenness[node].toFixed(4)} (${betweennessSorted.indexOf(node).toString()})`;
         let eigenvectorString = "N/A";
         let clusteringString = "N/A";
         if (eigenvector) {
-          eigenvectorString = `${eigenvector[node].toFixed(10)} (${eigenvectorSorted.indexOf(node).toString()})`;
-          item['eigenvector'] = eigenvector[node].toFixed(10);
+          eigenvectorString = `${eigenvector[node].toFixed(4)} (${eigenvectorSorted.indexOf(node).toString()})`;
+          item['eigenvector'] = eigenvector[node].toFixed(4);
         }
         if (graphType === 'undirected') {
-          clusteringString = `${clustering[node].toFixed(10)} (${clusteringSorted.indexOf(node).toString()})`;
-          item['clustering'] = clustering[node].toFixed(10);
+          clusteringString = `${clustering[node].toFixed(4)} (${clusteringSorted.indexOf(node).toString()})`;
+          item['clustering'] = clustering[node].toFixed(4);
         }
         var row = [node, degree[node], betweennessString, eigenvectorString,clusteringString];
         tableData.push(row);
@@ -162,12 +163,18 @@ $( function() {
       metrics.style.display = "block";
       viz.style.display = "block";
       //$btn.button('reset');
-      allInfo = allInfo + "<div>"+info+"</div>";
-      allInfo = allInfo + "<div>Density: "+density.toFixed(8)+"</div>";
-      if (graphType === 'undirected') {
-        allInfo = allInfo + "<div>Avg Clustering Coefficient: "+averageClustering.toFixed(8)+"</div>";
-      }
-      allInfo = allInfo + "<div>Transitivity: "+transitivity.toFixed(8)+"</div>";
+      var allInfo = `
+      	<div class="fl w-50 mv2">
+	Total Nodes: ${numberOfNodes}<br/>
+	Total Edges: ${numberOfEdges}<br/>
+	Average Degree: ${averageDegree}<br/>
+	</div>
+	<div class="fl w-50 mv2">
+	Density: ${density.toFixed(4)}<br/>
+	Avg. Clustering Coefficient: ${averageClustering}<br/>
+	Transitivity: ${transitivity.toFixed(4)}<br/>
+	</div>
+	`
       $('#info-panel').append(allInfo);
 
       if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {

@@ -16,6 +16,10 @@
 			min-height: 100%;
 		}
 
+		.gradient {
+			background-image: linear-gradient(to bottom right, #19A974, #00449E);
+		}
+
 		#logo {
 			max-height: 15px;
 		}
@@ -67,14 +71,13 @@
 		rect:hover {
 			stroke-width: 1px;
 		}
-		
 	</style>
 
 </head>
 
 <body class="helvetica bg-near-white">
-	<header class="w-100 pa3">
-		<nav class="f4 fw6 tracked i dark-blue garamond">
+	<header class="w-100 pa3 gradient">
+		<nav class="f4 fw6 tracked i white garamond">
 			Network Navigator <span class="f7 fs-normal">v2.0</span>
 		</nav>
 	</header>
@@ -92,9 +95,8 @@
 
 			<p>
 				<code>Person One,Person Two
-Person Two,Person Three
-Person Three,Person One</code>
-			</p>
+					Person Two,Person Three
+					Person Three,Person One</code></p>
 
 			<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is
 				weighted, you'll need to add a third column to every line with the weight value:</p>
@@ -139,7 +141,7 @@ Person Three,Person One</code>
 				</div>
 			</div>
 			<div class="fl w-100">
-				<button class="f6 link dim br3 ph3 pv2 mb2 dib white bg-dark-blue" id="calculate" type="button"
+				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
 					data-loading-text="Calculating..." autocomplete="off">Calculate</button>
 			</div>
 		</form>
@@ -154,14 +156,9 @@ Person Three,Person One</code>
 			<strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector
 			centrality cannot be calculated.
 		</div>
-		<div class="fl w-100 pa-2">
+		<div class="fl w-100 pa2">
 			<div class="fl w-100 w-50-ns pa2" id="metrics">
-				<div class="shadow-4 pa2 mb2">
-					<h4 class="bb b--gray dark-gray">
-						Global metrics
-					</h4>
-					<div class="pre" id="info-panel"></div>
-				</div>
+				<div class="pa2 mv2" id="info-panel"></div>
 				<table id="metrics-table">
 					<thead>
 						<tr>
@@ -208,13 +205,11 @@ Person Three,Person One</code>
 	<!-- Latest jQuery API -->
 	<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
 
-	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js" ></script>
+	<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 	<script type='text/javascript' src='jsnetworkx.js'></script>
 	<script type="text/javascript" src="jquery.csv.min.js"></script>
 	<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js">
 	</script>
-	<!-- <script type='module' src='matrix.js'></script> -->
 	<script type='text/javascript' src='main.js'></script>
 
 </body>
