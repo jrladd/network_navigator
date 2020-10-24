@@ -57,7 +57,13 @@ $('#selected-graph').on('click', function (e) {
 });
 
 
-var table = $('#metrics-table').DataTable();
+var table = $('#metrics-table').DataTable({
+	paging: false,
+	scrollY: 400,
+	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
+	dom: 'Bfti',
+	order: [[1, 'desc']]
+});
 $('#calculate').click(function () {
 //var $btn = $(this).button('loading');
 $('#row-error').hide();
