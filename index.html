@@ -8,71 +8,7 @@
 	<title>Network Navigator</title>
 	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.22/css/jquery.dataTables.css">
-
-
-	<style>
-		html {
-			position: relative;
-			min-height: 100%;
-		}
-
-		.gradient {
-			background-image: linear-gradient(to bottom right, #19A974, #00449E);
-		}
-
-		#logo {
-			max-height: 15px;
-		}
-
-		.panel.viz {
-			height: 500px;
-		}
-
-		#canvas {
-			height: 460px;
-		}
-
-		#instructions {
-			display: none;
-			background-color: #E6EAF0;
-			border: 1px solid #AEB1B5;
-			border-radius: 4px;
-		}
-
-		#metrics,
-		#viz {
-			display: none;
-		}
-
-		code {
-			white-space: pre;
-		}
-
-		.alert {
-			display: none;
-		}
-
-		.label {
-			fill: #999;
-			font-size: 8px;
-			text-anchor: end;
-		}
-
-		.column .label {
-			text-anchor: start;
-		}
-
-		rect {
-			fill: #eee;
-			stroke: #000000;
-			stroke-width: 0;
-		}
-
-		rect:hover {
-			stroke-width: 1px;
-		}
-	</style>
-
+	<link rel="stylesheet" type="text/css" href="main.css">
 </head>
 
 <body class="helvetica bg-near-white">
@@ -207,12 +143,12 @@
 
 	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
-	<script type='text/javascript' src='jsnetworkx.js'></script>
-	<script type="text/javascript" src="jquery.csv.min.js"></script>
+	<script type='text/javascript' src='js/jsnetworkx.js'></script>
+	<script type="text/javascript" src="js/jquery.csv.min.js"></script>
 	<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.js">
 	</script>
-	<script type='module' src='matrix.js'></script>
-	<script type='module' src='main.js'></script>
+	<script type='module' src='js/matrix.js'></script>
+	<script type='module' src='js/main.js'></script>
 
 </body>
 

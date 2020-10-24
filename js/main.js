@@ -12,7 +12,7 @@ $('textarea').on('dragover', function (e) {
 $('textarea').on('drop', function (e) {
   e.preventDefault(e);
   e.stopPropagation(e);
-  $textarea = this;
+  let $textarea = this;
   var files = e.originalEvent.dataTransfer.files;
   var reader = new FileReader();
   reader.onload = function (e) {

@@ -1,0 +1,60 @@
+html {
+	position: relative;
+	min-height: 100%;
+}
+
+.gradient {
+	background-image: linear-gradient(to bottom right, #19A974, #00449E);
+}
+
+#logo {
+	max-height: 15px;
+}
+
+.panel.viz {
+	height: 500px;
+}
+
+#canvas {
+	height: 460px;
+}
+
+#instructions {
+	display: none;
+	background-color: #E6EAF0;
+	border: 1px solid #AEB1B5;
+	border-radius: 4px;
+}
+
+#metrics,
+#viz {
+	display: none;
+}
+
+code {
+	white-space: pre;
+}
+
+.alert {
+	display: none;
+}
+
+.label {
+	fill: #999;
+	font-size: 8px;
+	text-anchor: end;
+}
+
+.column .label {
+	text-anchor: start;
+}
+
+rect {
+	fill: #eee;
+	stroke: #000000;
+	stroke-width: 0;
+}
+
+rect:hover {
+	stroke-width: 1px;
+}
