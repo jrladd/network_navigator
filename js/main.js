@@ -28,6 +28,11 @@ $('#show-instructions').click(function (e) {
   $('#instructions').slideToggle();
 })
 
+$('#show-hist').click(function (e) {
+  e.preventDefault(e);
+  $('#hist').slideToggle();
+})
+
 // Check if graph selected
 $('#selected-graph').on('click', function (e) {
   if (selectedGraph !== e.target.text) {
