@@ -1,4 +1,5 @@
 import { drawMatrix } from './matrix.js';
+import { drawHist } from './hist.js';
 
 // Define global variables
 let nodeList, edgeList, G, selectedGraph, matrixDrawn, networkDrawn;
@@ -30,7 +31,7 @@ $('#show-instructions').click(function (e) {
 
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
-  $('#hist').slideToggle();
+  $('#hist-container').slideToggle();
 })
 
 // Check if graph selected
@@ -191,6 +192,7 @@ setTimeout(function () {
 	</div>
 	`
   $('#info-panel').append(allInfo);
+  drawHist(degree);
 
   if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {
     networkDrawn = true;

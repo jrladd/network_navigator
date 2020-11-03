@@ -49,6 +49,8 @@ code {
 	text-anchor: start;
 }
 
+rect.bar { fill: steelblue; }
+
 rect {
 	fill: #eee;
 	stroke: #000000;
@@ -58,3 +60,4 @@ rect {
 rect:hover {
 	stroke-width: 1px;
 }
+
