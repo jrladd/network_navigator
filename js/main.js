@@ -2,7 +2,7 @@ import { drawMatrix } from './matrix.js';
 import { drawHist } from './hist.js';
 
 // Define global variables
-let nodeList, edgeList, G, selectedGraph, matrixDrawn, networkDrawn;
+let nodeList, edgeList, G, selectedGraph, matrixDrawn, networkDrawn, degree, betweenness, eigenvector, clustering;
 
 
 $('textarea').on('dragover', function (e) {
@@ -112,14 +112,14 @@ setTimeout(function () {
     } else if (graphWeight === 'weighted') {
       G.addWeightedEdgesFrom(edges);
     }
-    var betweenness = jsnx.betweennessCentrality(G)._stringValues;
-    var degree = G.degree()._stringValues;
+    betweenness = jsnx.betweennessCentrality(G)._stringValues;
+    degree = G.degree()._stringValues;
 
     var density = jsnx.density(G);
     var averageClustering = "N/A";
     if (graphType === 'undirected') {
       averageClustering = jsnx.averageClustering(G).toFixed(4);
-      var clustering = jsnx.clustering(G)._stringValues;
+      clustering = jsnx.clustering(G)._stringValues;
       var clusteringSorted = reverse_sort(clustering);
     }
     var transitivity = jsnx.transitivity(G);
@@ -136,7 +136,7 @@ setTimeout(function () {
   }
 
   try {
-    var eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
+    eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
   } catch (err) {
     console.error(err);
     if (err.message !== 'Empty graph.') {
@@ -192,7 +192,10 @@ setTimeout(function () {
 	</div>
 	`
   $('#info-panel').append(allInfo);
-  drawHist(degree);
+  selectHist();
+  $('#histType').change(function() {
+    selectHist();
+  });
 
   if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {
     networkDrawn = true;
@@ -238,6 +241,28 @@ function drawNetwork(G) {
     stickyDrag: true
   });
 }
+
+function selectHist() {
+	  let radios = document.getElementsByName('histType');
+	  radios.forEach(r => {
+		  if (r.checked) { 
+			  switch (r.value) {
+				  case 'degree':
+					  drawHist(degree);
+					  break;
+				  case 'betweenness':
+					  drawHist(betweenness);
+					  break;
+				  case 'eigenvector':
+					  drawHist(eigenvector);
+					  break;
+				  case 'clustering':
+					  drawHist(clustering);
+			  };
+		  };
+	  });
+}
+
 
 // function drawMatrix(edgeList, nodeList){
 //   var margin = {

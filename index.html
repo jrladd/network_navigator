@@ -97,6 +97,16 @@
 				<div class="pa2 mv2" id="info-panel"></div>
 				<div class="link dim blue pointer bb b--gray mb2" id="show-hist">Show/Hide Metric Distributions</div>
 				<div class="dn pa2 ba b--gray br3 mv2" id="hist-container">
+				<form id="histType" class="pa2">
+					<input type="radio" value="degree" name="histType" id="degree" checked>
+					<label for="degree">Degree</label>
+					<input type="radio" value="betweenness" name="histType" id="betweenness">
+					<label for="betweenness">Betweenness Centrality</label>
+					<input type="radio" value="eigenvector" name="histType" id="eigenvector">
+					<label for="eigenvector">Eigenvector Centrality</label>
+					<input type="radio" value="clustering" name="histType" id="clustering">
+					<label for="clustering">Clustering</label>
+				</form>
 					<svg id="hist"></svg>
 					<!-- <div class="fl w-50 h-50" id="degree-hist"></div>
 					<div class="fl w-50 h-50" id="betweenness-hist"></div>
