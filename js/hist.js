@@ -3,12 +3,12 @@ export function drawHist(data) {
 	
 	var svg = d3.select("svg#hist")
          .attr("preserveAspectRatio", "xMinYMin meet")
-         .attr("viewBox", "0 0 1400 1000")
+         .attr("viewBox", "0 0 1400 500")
          .classed("svg-content-responsive", true);
      
         var margin = {top: 10, right: 30, bottom: 30, left: 40},
 	  width = +svg.attr('width')+1400 - margin.left - margin.right,
-          height = +svg.attr('height')+1000 - margin.top - margin.bottom;
+          height = +svg.attr('height')+500 - margin.top - margin.bottom;
 
 	svg.selectAll('*').remove();
 
