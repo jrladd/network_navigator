@@ -12,7 +12,7 @@ export function drawHist(data) {
 
 	svg.selectAll('*').remove();
 
-	svg.append("g")
+	var container = svg.append("g")
           .attr("transform", 
                 "translate(" + margin.left + "," + margin.top + ")");
 
@@ -33,7 +33,7 @@ export function drawHist(data) {
 	y.domain([0, d3.max(bins, function(d) { return d.length; })]);
 	
 	// append the bar rectangles to the svg element
-	svg.selectAll("rect")
+	container.selectAll("rect")
 	    .data(bins)
 	  .enter().append("rect")
 	    .attr("class", "bar")
@@ -44,11 +44,11 @@ export function drawHist(data) {
 	    .attr("height", function(d) { return height - y(d.length); });
 	
 	// add the x Axis
-	svg.append("g")
+	container.append("g")
 	    .attr("transform", "translate(0," + height + ")")
 	    .call(d3.axisBottom(x));
 	
 	// add the y Axis
-	svg.append("g")
+	container.append("g")
 	    .call(d3.axisLeft(y));
 }
