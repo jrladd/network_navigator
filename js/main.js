@@ -1,4 +1,5 @@
 import { drawMatrix } from './matrix.js';
+import { drawForceAtlas } from './forceAtlas.js';
 import { drawHist } from './hist.js';
 
 // Define global variables
@@ -43,18 +44,21 @@ $('#selected-graph').on('click', function (e) {
       $('#matrix-canvas').css('padding', '0');
       $('#matrix-canvas').css('height', '0');
       $('#matrix-canvas').css('border', '0');
+      $('#matrix-canvas').css('width', '0');
       $('#canvas').css('padding', '.5rem');
       $('#canvas').css('height', '100%');
+      $('#canvas').css('width', '100%');
       $('#canvas').css('visibility', 'visible');
-
       if (!networkDrawn) drawNetwork(G);
     } else {
       $('#canvas').css('visibility', 'hidden');
       $('#canvas').css('padding', '0');
       $('#canvas').css('height', '0');
       $('#canvas').css('border', '0');
+      $('#canvas').css('width', '0');
       $('#matrix-canvas').css('padding', '.5rem');
       $('#matrix-canvas').css('height', '100%');
+      $('#matrix-canvas').css('width', '100%');
       $('#matrix-canvas').css('visibility', 'visible');
       if (!matrixDrawn) drawMatrix(edgeList, nodeList);
       if (networkDrawn) matrixDrawn = true;

@@ -1,13 +1,26 @@
 export function drawMatrix(edgeList, nodeList){
-  var margin = {
+  const margin = {
   top: 75,
   right: 200,
   bottom: 200,
   left: 75
   };
 
-  var width = $('#matrix-canvas').parent().width();
-  var height = $('#matrix-canvas').parent().height();
+  let svg = d3.select('#matrix-canvas')
+    .append("div")
+    // Container class to make it responsive.
+    .classed("svg-container", true)
+    .append('svg')
+    .attr("preserveAspectRatio", "xMinYMin meet")
+    .attr("viewBox", "0 0 1400 1000")
+    .classed("svg-content-responsive", true)
+    // .node();
+    .append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  const width = +svg.attr('width') + 1400 - margin.left - margin.right;
+  const height = +svg.attr('height') + 1000 - margin.top - margin.bottom;
+  console.log('height', height, width);
 
   // Get values for coloring matrix, would change this to community if wanting to color by different value
   const values = [...new Set(edgeList.map(edge => edge.val))]
@@ -26,12 +39,7 @@ export function drawMatrix(edgeList, nodeList){
     .paddingInner(0.1)
     .align(0);
 
-  var svg = d3.select('#matrix-canvas').append('svg')
-    .attr('width', width)
-    .attr('height', height - 100)
-    // .node();
-    .append('g')
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  
 
   // console.log(canvas);
   // var context = canvas.getContext('2d');
