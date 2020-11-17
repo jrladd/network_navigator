@@ -79,7 +79,7 @@ export function drawMatrix(edgeList, nodeList){
     .data(matrix)
     .enter().append('g')
     .attr('class', 'row')
-    .attr('transform', function (d, i) { console.log('d',d,'i',i);return 'translate(0,' + x(i) + ')'; })
+    .attr('transform', function (d, i) { /*console.log('d',d,'i',i);*/return 'translate(0,' + x(i) + ')'; })
     .each(makeRow);
 
   row.append('text')

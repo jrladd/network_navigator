@@ -4,7 +4,7 @@ html {
 }
 
 .gradient {
-	background-image: linear-gradient(to bottom right, #7FE631, #3541E6);
+	background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
 }
 
 #logo {
@@ -49,6 +49,8 @@ code {
 	text-anchor: start;
 }
 
+rect.bar { fill: #08B3E5; }
+
 rect {
 	fill: #eee;
 	stroke: #000000;
@@ -58,3 +60,4 @@ rect {
 rect:hover {
 	stroke-width: 1px;
 }
+
