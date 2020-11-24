@@ -1,4 +1,5 @@
-export function drawForceAtlas(edgeList, nodeList) {
+export function drawForceAtlas(edgeList, nodeList, colorValues) {
+    console.log(edgeList, nodeList);
     const margin = {
         top: 75,
         right: 200,
@@ -6,7 +7,7 @@ export function drawForceAtlas(edgeList, nodeList) {
         left: 75
     };
 
-    var svg = d3.selec('#canvas')
+    var svg = d3.select('#force-atlas-viz')
         .append("div")
         // Container class to make it responsive.
         .classed("svg-container", true)
@@ -14,9 +15,11 @@ export function drawForceAtlas(edgeList, nodeList) {
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", "0 0 1400 1000")
         .classed("svg-content-responsive", true)
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     
-    const width = +svg.attr('width') + 1400 - margin.left - margin.right;
-    const height = +svg.attr('height') + 1000 - margin.top - margin.bottom;
+    const width = +svg.attr('width') + 1400 - margin.left;
+    const height = +svg.attr('height') + 1000 - margin.top;
     console.log('height', height, width);
 
     var color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -26,8 +29,9 @@ export function drawForceAtlas(edgeList, nodeList) {
             return d.id;
         }))
         .force('charge',
-            d3.forceManyBody().strength(-200)
+            d3.forceManyBody().strength(-1000)
         )
+        .force('collide', d3.forceCollide(18).iterations(16))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
@@ -39,7 +43,7 @@ export function drawForceAtlas(edgeList, nodeList) {
         .data(edgeList)
         .enter().append("line")
         .attr("stroke-width", function (d) {
-            return d.weight / 2
+            return (d.weight == 0 ? d.val : d.weight)
         });
 
     var node = svg.append("g")
@@ -50,17 +54,18 @@ export function drawForceAtlas(edgeList, nodeList) {
 
     var circles = node.append("circle")
         .attr("r", function (d) {
-            return d.value
+            return d.degree + 20;
         })
         .attr("fill", function (d) {
-            return color(d.community);
+            return '#000000';
+            // color(d.community);
         })
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-    var lables = node.append("text")
+    var labels = node.append("text")
         .text(function (d) {
             return d.id;
         })

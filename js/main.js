@@ -1,9 +1,11 @@
 import { drawMatrix } from './matrix.js';
 import { drawForceAtlas } from './forceAtlas.js';
+import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
 
+
 // Define global variables
-let nodeList, edgeList, G, selectedGraph, matrixDrawn, networkDrawn, degree, betweenness, eigenvector, clustering;
+let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, matrix, colorValues;
 
 
 $('textarea').on('dragover', function (e) {
@@ -39,30 +41,30 @@ $('#show-hist').click(function (e) {
 $('#selected-graph').on('click', function (e) {
   if (selectedGraph !== e.target.text) {
     selectedGraph = e.target.text;
-    if ((selectedGraph.includes('Force'))) {
-      $('#matrix-canvas').css('visibility', 'hidden');
-      $('#matrix-canvas').css('padding', '0');
-      $('#matrix-canvas').css('height', '0');
-      $('#matrix-canvas').css('border', '0');
-      $('#matrix-canvas').css('width', '0');
-      $('#canvas').css('padding', '.5rem');
-      $('#canvas').css('height', '100%');
-      $('#canvas').css('width', '100%');
-      $('#canvas').css('visibility', 'visible');
-      if (!networkDrawn) drawNetwork(G);
-    } else {
-      $('#canvas').css('visibility', 'hidden');
-      $('#canvas').css('padding', '0');
-      $('#canvas').css('height', '0');
-      $('#canvas').css('border', '0');
-      $('#canvas').css('width', '0');
-      $('#matrix-canvas').css('padding', '.5rem');
-      $('#matrix-canvas').css('height', '100%');
-      $('#matrix-canvas').css('width', '100%');
-      $('#matrix-canvas').css('visibility', 'visible');
-      if (!matrixDrawn) drawMatrix(edgeList, nodeList);
-      if (networkDrawn) matrixDrawn = true;
-    }
+    let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
+    divs.map(div => {
+      let splitDiv = div.split('-').map(d => d.replace('#',''));
+      let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
+      if (filteredDiv.length > 0 ){
+        $(div).css('padding', '.5rem');
+        $(div).css('height', '100%');
+        $(div).css('width', '100%');
+        $(div).css('visibility', 'visible');
+        // Check if svg has been drawn
+        if ( $(div).find('svg').length == 0) {
+          if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, matrix, colorValues);
+          if (filteredDiv.includes('force')) drawForceAtlas(edgeList, nodeList, colorValues);
+          if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues);
+        }
+      } else {
+        $(div).css('visibility', 'hidden');
+        $(div).css('padding', '0');
+        $(div).css('height', '0');
+        $(div).css('border', '0');
+        $(div).css('width', '0');
+      }
+    });
+    
   }
 });
 
@@ -104,7 +106,10 @@ setTimeout(function () {
       edgeList.push(item);
     }
   });
-  window.edgeList = edgeList;
+
+  colorValues = [...new Set(edgeList.map(edge => edge.val))]
+  colorValues.push(0);
+  colorValues.sort((a, b) => a - b);
 
   $('#info-panel').empty();
 
@@ -177,6 +182,44 @@ setTimeout(function () {
     tableData.push(row);
     nodeList.push(item);
   });
+
+  var idToNode = {};
+
+  // Add indexes to nodes
+  nodeList.forEach(function (n) {
+    idToNode[n.id] = n;
+  });
+
+  // Embed nodes as source and target
+  edgeList.forEach(function (e) {
+    e.source = idToNode[e.source];
+    e.target = idToNode[e.target];
+  });
+
+  nodeList.sort(function (a, b) {
+    if (b.community != a.community)
+      return b.community - a.community;
+    else
+      return b.degree - a.degree;
+  });
+
+  // Build initial matrix
+  matrix = nodeList.map(function (outer, i) {
+    console.log('matrix', i);
+    outer.index = i;
+    return nodeList.map(function (inner, j) {
+      // if we want to use community add a check and change final zero to inner.community
+      return {i: i,j: j, val: i === j ? 0 : 0};
+    });
+  });
+
+  // Update matrix values depending on edges
+  edgeList.forEach(function (l) {
+    matrix[l.source.index][l.target.index].val = l.val;
+    matrix[l.target.index][l.source.index].val = l.val;
+  });
+  window.matrix = matrix;
+
   table.clear().rows.add(tableData).draw();
   let metrics = document.getElementById("metrics");
   let viz = document.getElementById("viz");
@@ -202,8 +245,8 @@ setTimeout(function () {
   });
 
   if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {
-    networkDrawn = true;
-    drawNetwork(G);
+    drawForceAtlas(edgeList, nodeList, matrix, colorValues);
+    // drawNetwork(G);
   } else {
     $('#viz-warning').show();
     $('.viz').hide();

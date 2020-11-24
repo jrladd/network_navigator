@@ -15,8 +15,11 @@ html {
 	height: 500px;
 }
 
-#canvas {
-	height: 460px;
+#force-atlas-viz {
+	padding: 0.5rem;
+	height: 100%;
+	border: 0px;
+	width: 100%;
 }
 
 #instructions {
@@ -41,7 +44,7 @@ code {
 
 .label {
 	fill: #999;
-	font-size: 8px;
+	font-size: 1rem;
 	text-anchor: end;
 }
 
@@ -77,3 +80,28 @@ rect:hover {
 	top: 10px;
 	left: 0;
 }
+
+.nodes circle {
+	fill: #DDD;
+	stroke: #777;
+	stroke-width: 2px;
+}
+
+.nodes text {
+	font-family: sans-serif;
+	text-anchor: middle;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.links line {
+	stroke: #88A;
+	/* stroke-width: 4px; */
+}
+
+
+/* text {
+	font: 18px sans-serif;
+	pointer-events: none;
+} */
