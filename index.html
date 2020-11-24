@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Network Navigator</title>
 	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
 </head>
@@ -78,7 +79,7 @@
 			</div>
 			<div class="fl w-100">
 				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
-					data-loading-text="Calculating..." autocomplete="off">Calculate</button>
+					data-loading-text="Calculating..." autocomplete="off">Calculate <i class="em em-tada" aria-role="presentation" aria-label="PARTY POPPER"></i></button>
 			</div>
 		</form>
 		</div>
@@ -93,6 +94,17 @@
 			centrality cannot be calculated.
 		</div>
 		<div class="fl w-100 pa2">
+			<div id="buttons" class="w-100 h2">
+				<span class="pointer fl" id="metrics-collapse">
+					<i class="em em-arrow_left" id="metric-on" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
+					<i class="em em-arrow_right" id="metric-off" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
+					<em class="f6">collapse</em> <strong>Metrics</strong>
+				</span>
+				<span class="pointer fr" id="viz-collapse">
+					<strong>Visualizations</strong> <em class="f6">collapse</em>
+					<i class="em em-arrow_right" id="viz-on" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
+					<i class="em em-arrow_left" id="viz-off" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
+			</div>
 			<div class="fl w-100 w-50-ns pa2" id="metrics">
 				<div class="pa2 mv2" id="info-panel"></div>
 				<div class="link dim blue pointer bb b--gray mb2" id="show-hist">Show/Hide Metric Distributions</div>
@@ -133,9 +145,9 @@
 					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column">
-					<h4 class="bb b--gray dark-gray">
+					<!-- <h4 class="bb b--gray dark-gray">
 						Visualization (scroll to zoom)
-					</h4>
+					</h4>-->
 					<div class="fl w-100 flex" id="selected-graph">
 						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Directed Layout</a>
 						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Arc Diagram</a>

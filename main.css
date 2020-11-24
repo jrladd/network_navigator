@@ -30,8 +30,10 @@ html {
 }
 
 #metrics,
-#viz {
+#viz,
+#buttons {
 	display: none;
+	transition: visibility .1s, width .5s, height .5s;
 }
 
 code {
@@ -100,8 +102,9 @@ rect:hover {
 	/* stroke-width: 4px; */
 }
 
-
-/* text {
-	font: 18px sans-serif;
-	pointer-events: none;
-} */
+.width-collapse {
+	width: 0;
+	height: 0;
+	visibility: hidden;
+	transition: visibility .6s, width .5s, height .5s;
+}
