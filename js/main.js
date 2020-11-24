@@ -34,6 +34,56 @@ $('#show-hist').click(function (e) {
   $('#hist-container').slideToggle();
 })
 
+$('#metrics-collapse').click(function (e) {
+	let metrics = document.querySelector('#metrics');
+	let viz = document.querySelector('#viz');
+	if (!metrics.classList.contains('w-50-ns')) {
+		metrics.classList.add('w-50-ns');
+		viz.classList.remove('width-collapse');
+		$('#viz-off').hide();
+		$('#viz-on').show();
+		$('#metrics-collapse em').text('collapse');
+	}
+	else if (metrics.classList.contains('width-collapse')) {
+		metrics.classList.remove('width-collapse');
+		viz.classList.add('w-50-ns');
+		$('#metric-off').hide();
+		$('#metric-on').show();
+		$('#metrics-collapse em').text('collapse');
+	} else { 
+		metrics.classList.add('width-collapse');
+		viz.classList.remove('w-50-ns');
+		$('#metric-on').hide();
+		$('#metric-off').show();
+		$('#metrics-collapse em').text('expand');
+	}
+});
+
+$('#viz-collapse').click(function (e) {
+	let viz = document.querySelector('#viz');
+	let metrics = document.querySelector('#metrics');
+	if (!viz.classList.contains('w-50-ns')) {
+		viz.classList.add('w-50-ns');
+		metrics.classList.remove('width-collapse');
+		$('#metric-off').hide();
+		$('#metric-on').show();
+		$('#viz-collapse em').text('collapse');
+	}
+	else if (viz.classList.contains('width-collapse')) {
+		viz.classList.remove('width-collapse');
+		metrics.classList.add('w-50-ns');
+		$('#viz-off').hide();
+		$('#viz-on').show();
+		$('#viz-collapse em').text('collapse');
+	} else { 
+		viz.classList.add('width-collapse');
+		metrics.classList.remove('w-50-ns');
+		$('#viz-on').hide();
+		$('#viz-off').show();
+		$('#viz-collapse em').text('expand');
+	}
+});
+
 // Check if graph selected
 $('#selected-graph').on('click', function (e) {
   if (selectedGraph !== e.target.text) {
@@ -176,8 +226,12 @@ setTimeout(function () {
   table.clear().rows.add(tableData).draw();
   let metrics = document.getElementById("metrics");
   let viz = document.getElementById("viz");
+  let buttons = document.getElementById("buttons");
   metrics.style.display = "block";
   viz.style.display = "block";
+  buttons.style.display = "block";
+  $('#metric-off').hide();
+  $('#viz-off').hide();
   //$btn.button('reset');
   var allInfo = `
       	<div class="fl w-50 mv2">
