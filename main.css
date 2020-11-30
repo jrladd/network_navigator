@@ -83,13 +83,13 @@ rect:hover {
 	left: 0;
 }
 
-.nodes circle {
+.circles circle {
 	fill: #DDD;
 	stroke: #777;
 	stroke-width: 2px;
 }
 
-.nodes text {
+.circles text {
 	font-family: sans-serif;
 	text-anchor: middle;
 	pointer-events: none;

@@ -1,4 +1,22 @@
-export function drawMatrix(edgeList, nodeList, matrix, colorValues){
+export function drawMatrix(edgeList, nodeList, colorValues){
+  console.log(edgeList, nodeList);
+   // Build initial matrix
+  const matrix = nodeList.map(function (outer, i) {
+    outer.index = i;
+    return nodeList.map(function (inner, j) {
+      // if we want to use community add a check and change final zero to inner.community
+      return {i: i, j: j, weight: i === j ? 0 : 0};
+    });
+   });
+  console.log('first matrix', matrix);
+
+   // Update matrix values depending on edges
+  edgeList.forEach(function (l) {
+     matrix[l.source.index][l.target.index].weight = l.weight;
+     matrix[l.target.index][l.source.index].weight = l.weight;
+  });
+  console.log('second matrix', matrix);
+
   const margin = {
   top: 200,
   right: 200,
@@ -8,7 +26,6 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
 
   let svg = d3.select('#matrix-viz')
     .append("div")
-    // Container class to make it responsive.
     .classed("svg-container", true)
     .append('svg')
     .attr("preserveAspectRatio", "xMinYMin meet")
@@ -20,10 +37,9 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
   const width = +svg.attr('width') + 1000 - margin.left;
   const height = +svg.attr('height') + 1000 - margin.top;
 
-  // Get colorValues for coloring matrix, would change this to community if wanting to color by different value
   var color = d3.scaleLinear()
     .domain(colorValues)
-    .range(["rgb(46, 73, 123)", "rgb(71, 187, 94)"]);
+    .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
   var opacity = d3.scaleLinear()
     .range([0.5, 1])
@@ -42,7 +58,7 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
     .data(matrix)
     .enter().append('g')
     .attr('class', 'row')
-    .attr('transform', (d, i) => 'translate(0,' + x(i) + ')')
+    .attr('transform', (_, i) => 'translate(0,' + x(i) + ')')
     .each(makeRow);
 
   row.append('text')
@@ -50,19 +66,19 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
     .attr('x', -14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
-    .text((d, i) => nodeList[i].id);
+    .text((_, i) => nodeList[i].id);
 
   var column = svg.selectAll('g.column')
     .data(matrix)
     .enter().append('g')
     .attr('class', 'column')
-    .attr('transform', function(d, i) { return 'translate(' + x(i) + ', 0)rotate(-90)'; })
+    .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
     .append('text')
     .attr('class', 'label')
     .attr('x', 14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
-    .text(function (d, i) { return nodeList[i].id; });
+    .text( (_, i) => nodeList[i].id);
 
   svg.append("g")
   .attr("class", "legendLinear")
@@ -82,19 +98,17 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
       .data(rowData)
       .enter().append('rect')
       .attr('class', 'cell')
-      .attr('x', function (d, i) { console.log('makeRow', d, i); return x(i); })
+      .attr('x', (_, i) => x(i))
       .attr('width', x.bandwidth())
       .attr('height', x.bandwidth())
-      .style('fill-opacity', function (d) { return d.val > 0 ? opacity(d.val) : 1; })
-      .style('fill', function (d) {
-          return color(d.val);
-      })
+      .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
+      .style('fill', (d) => color(d.weight))
       .on('mouseover', function (d) {
-        row.filter(function (_, i) { return d.i === i; })
+        row.filter((_, i) => d.i === i)
           .selectAll('text')
           .style('fill', '#000000')
           .style('font-weight', 'bold');
-        column.filter(function (_, j) { return d.j === j; })
+        column.filter((_, j) => d.j === j)
           .style('fill', '#000000')
           .style('font-weight', 'bold');
       })
@@ -106,10 +120,9 @@ export function drawMatrix(edgeList, nodeList, matrix, colorValues){
           .style('fill', null)
           .style('font-weight', null);
       });
-
     cell.append('title')
       .text(function (d) {
-        return nodeList[d.i].id + ' - ' + nodeList[d.j].id + ', degree: ' + d.val;
+        return nodeList[d.i].id + ' - ' + nodeList[d.j].id + ', degree: ' + d.weight;
       });
   }
 };
