@@ -87,6 +87,16 @@ $('#viz-collapse').click(function (e) {
 	}
 });
 
+$('#customize').click(function () {
+	if (!this.classList.contains('customize-expand')) {
+		this.classList.add('customize-expand');
+		$('#customize-form').show();
+	} else {
+		this.classList.remove('customize-expand');
+		$('#customize-form').hide();
+	}
+});
+
 function drawGraphs(selectedGraph) {
   let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
   divs.map(div => {
@@ -137,6 +147,7 @@ $('#calculate').click(function () {
   });
   $('#row-error').hide();
   $('#eigen-error').hide();
+  $('#customize-form').hide();
   selectedGraph = "Force Directed Layout";
   setTimeout(function () {
     // var edges = [];

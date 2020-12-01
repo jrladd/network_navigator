@@ -11,7 +11,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues) {
         .classed("svg-container", true)
         .append('svg')
         .attr("preserveAspectRatio", "xMinYMin meet")
-        .attr("viewBox", "0 0 1600 1600")
+        .attr("viewBox", "-50 500 1600 1600")
         .classed("svg-content-responsive", true)
         .append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');

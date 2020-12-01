@@ -108,3 +108,13 @@ rect:hover {
 	visibility: hidden;
 	transition: visibility .6s, width .5s, height .5s;
 }
+
+#customize {
+	transition: width .5s, height.5s;
+}
+
+.customize-expand {
+	width: 25vw;
+	height: 25vh;
+	transition: width .5s, height.5s;
+}
