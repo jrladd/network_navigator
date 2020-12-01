@@ -1,0 +1,120 @@
+html {
+	position: relative;
+	min-height: 100%;
+}
+
+.gradient {
+	background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+}
+
+#logo {
+	max-height: 15px;
+}
+
+.panel.viz {
+	height: 500px;
+}
+
+#force-atlas-viz {
+	padding: 0.5rem;
+	height: 100%;
+	border: 0px;
+	width: 100%;
+}
+
+#instructions {
+	display: none;
+	background-color: #E6EAF0;
+	border: 1px solid #AEB1B5;
+	border-radius: 4px;
+}
+
+#metrics,
+#viz,
+#buttons {
+	display: none;
+	transition: visibility .1s, width .5s, height .5s;
+}
+
+code {
+	white-space: pre;
+}
+
+.alert {
+	display: none;
+}
+
+.label {
+	fill: #999;
+	font-size: 1rem;
+	text-anchor: end;
+}
+
+.column .label {
+	text-anchor: start;
+}
+
+rect.bar { fill: #08B3E5; }
+
+rect {
+	fill: #eee;
+	stroke: #000000;
+	stroke-width: 0;
+}
+
+rect:hover {
+	stroke-width: 1px;
+}
+
+.svg-container {
+	display: inline-block;
+	position: relative;
+	width: 100%;
+	padding-bottom: 100%;
+	/* aspect ratio */
+	vertical-align: top;
+	overflow: hidden;
+}
+
+.svg-content-responsive {
+	display: inline-block;
+	position: absolute;
+	top: 10px;
+	left: 0;
+}
+
+.circles circle {
+	fill: #DDD;
+	stroke: #777;
+	stroke-width: 2px;
+}
+
+.circles text {
+	font-family: sans-serif;
+	text-anchor: middle;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.links line {
+	stroke: #88A;
+	/* stroke-width: 4px; */
+}
+
+.width-collapse {
+	width: 0;
+	height: 0;
+	visibility: hidden;
+	transition: visibility .6s, width .5s, height .5s;
+}
+
+#customize {
+	transition: width .5s, height.5s;
+}
+
+.customize-expand {
+	width: 25vw;
+	height: 25vh;
+	transition: width .5s, height.5s;
+}
