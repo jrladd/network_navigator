@@ -15,8 +15,11 @@ html {
 	height: 500px;
 }
 
-#canvas {
-	height: 460px;
+#force-atlas-viz {
+	padding: 0.5rem;
+	height: 100%;
+	border: 0px;
+	width: 100%;
 }
 
 #instructions {
@@ -43,7 +46,7 @@ code {
 
 .label {
 	fill: #999;
-	font-size: 8px;
+	font-size: 1rem;
 	text-anchor: end;
 }
 
@@ -63,9 +66,55 @@ rect:hover {
 	stroke-width: 1px;
 }
 
+.svg-container {
+	display: inline-block;
+	position: relative;
+	width: 100%;
+	padding-bottom: 100%;
+	/* aspect ratio */
+	vertical-align: top;
+	overflow: hidden;
+}
+
+.svg-content-responsive {
+	display: inline-block;
+	position: absolute;
+	top: 10px;
+	left: 0;
+}
+
+.circles circle {
+	fill: #DDD;
+	stroke: #777;
+	stroke-width: 2px;
+}
+
+.circles text {
+	font-family: sans-serif;
+	text-anchor: middle;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.links line {
+	stroke: #88A;
+	/* stroke-width: 4px; */
+}
+
 .width-collapse {
 	width: 0;
 	height: 0;
 	visibility: hidden;
 	transition: visibility .6s, width .5s, height .5s;
+}
+
+#customize {
+	transition: width .5s, height.5s;
+}
+
+.customize-expand {
+	width: 25vw;
+	height: 25vh;
+	transition: width .5s, height.5s;
 }
