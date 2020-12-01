@@ -87,7 +87,7 @@ $('#viz-collapse').click(function (e) {
 	}
 });
 
-function drawGraphs(selectedGraph, calculateGraph) {
+function drawGraphs(selectedGraph) {
   let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
@@ -138,7 +138,6 @@ $('#calculate').click(function () {
   $('#row-error').hide();
   $('#eigen-error').hide();
   selectedGraph = "Force Directed Layout";
-  calculateGraph = true;
   setTimeout(function () {
     // var edges = [];
     var data = $('textarea').val();
