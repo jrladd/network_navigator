@@ -28,6 +28,10 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
     	.domain([d3.min(nodeList, function(d) { return d.degree; }), d3.max(nodeList, function(d) { return d.degree; })])
 	.range([15,50]);
 
+    var edgeWidth = d3.scaleLinear()
+    	.domain([d3.min(edgeList, function(d) { return d.weight; }), d3.max(edgeList, function(d) { return d.weight; })])
+	.range([1,20]);
+
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-1000))
@@ -42,7 +46,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .selectAll("line")
         .data(edgeList)
         .enter().append("line")
-        .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight));
+        .attr("stroke-width", d => edgeWidth(d.weight));//(d.weight == 0 ? 1 : d.weight));
 
     var node = svg.append("g")
         .attr("class", "nodes")
@@ -111,6 +115,12 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
 			// Recalculate collision detection based on selected centrality.
 //			simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
 //			simulation.alphaTarget(0.1).restart();
+		});
+	var edgeWeightCheckbox = d3.select('#edge-weight')
+		.on('change', function() {
+			if (this.checked) {
+				link.attr("stroke-width", d => edgeWidth(d.weight));
+			} else { link.attr("stroke-width", 1); }
 		});
 
 };

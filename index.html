@@ -148,12 +148,17 @@
 				        <div class="absolute top-1 right-1 w2 h2 b--gray br2 ba bg-near-white pa2 z-999" id="customize">
 						<i class="em em-art absolute top-0 right-0" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-button"></i>
 						<div id="customize-form">
+							<div id="force-atlas">
 							 <label for="centrality">Size by centrality:</label>
 							 <select name="centrality" id="centrality">
 							   <option value="degree">Degree</option>
 							   <option value="betweenness">Betweenness</option>
 							   <option value="eigenvector">Eigenvector</option>
-							 </select>
+							 </select><br/>
+							 <label for="edge-weight">Include edge weights?</label>
+							 <input name="edge-weight" id="edge-weight" type="checkbox" checked />
+
+							</div>
 						</div>
 					</div>
 					<div class="fl w-100 flex" id="selected-graph">
