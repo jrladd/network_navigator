@@ -48,7 +48,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
 
     node.append("circle")
         .attr("r", d => d.degree + 20)
-        .attr("fill", d => color(d.weight)
+        .attr("fill", d => { console.log(d.weight); return color(d.weight)}
         )
         .call(d3.drag()
             .on("start", dragstarted)
