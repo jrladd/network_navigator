@@ -38,7 +38,8 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .selectAll("line")
         .data(edgeList)
         .enter().append("line")
-        .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight));
+        .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight))
+        .attr("stroke", "#88A");
 
     var node = svg.append("g")
         .attr("class", "nodes")
@@ -48,8 +49,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
 
     node.append("circle")
         .attr("r", d => d.degree + 20)
-        .attr("fill", d => { console.log(d.weight); return color(d.weight)}
-        )
+        .attr("fill", d => color(d.community))
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)

@@ -190,6 +190,7 @@ function downloadSvg(svg, fileName) {
         .replace("image/png", "image/octet-stream");
       triggerDownload(imgURI, fileName);
     }
+    console.log(document.querySelector('canvas'));
     // document.removeChild(canvas);
   };
   img.src = url;
@@ -260,8 +261,8 @@ $('#download-graph').on('click', function (e) {
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
     if (filteredDiv.length > 0) {
       // console.log($(div).find('svg'));
-      downloadSvg($(div).find('svg')[0], 'test.png')
-      // updateDownloadURL(d3.selectAll(`${div} svg`).node(), document.getElementById('download-graph'));
+      // downloadSvg($(div).find('svg')[0], 'test.png')
+      updateDownloadURL(d3.selectAll(`${div} svg`).node(), document.getElementById('download-graph'));
     } 
   });
 });

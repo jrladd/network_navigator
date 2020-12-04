@@ -83,11 +83,11 @@ rect:hover {
 	left: 0;
 }
 
-.circles circle {
+/* .circles circle {
 	fill: #DDD;
 	stroke: #777;
 	stroke-width: 2px;
-}
+} */
 
 .circles text {
 	font-family: sans-serif;
@@ -95,11 +95,6 @@ rect:hover {
 	pointer-events: none;
 	user-select: none;
 	-webkit-user-select: none;
-}
-
-.links line {
-	stroke: #88A;
-	/* stroke-width: 4px; */
 }
 
 .width-collapse {
