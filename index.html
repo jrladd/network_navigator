@@ -146,8 +146,20 @@
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
 				        <div class="absolute top-1 right-1 w2 h2 b--gray br2 ba bg-near-white pa2 z-999" id="customize">
-						<i class="em em-art absolute top-0 right-0" aria-role="presentation" aria-label="ARTIST PALETTE"></i>
-						<div id="customize-form">Hello</div>
+						<i class="em em-art absolute top-0 right-0" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-button"></i>
+						<div id="customize-form">
+							<div id="force-atlas">
+							 <label for="centrality">Size by centrality:</label>
+							 <select name="centrality" id="centrality">
+							   <option value="degree">Degree</option>
+							   <option value="betweenness">Betweenness</option>
+							   <option value="eigenvector">Eigenvector</option>
+							 </select><br/>
+							 <label for="edge-weight">Include edge weights?</label>
+							 <input name="edge-weight" id="edge-weight" type="checkbox" checked />
+
+							</div>
+						</div>
 					</div>
 					<div class="fl w-100 flex" id="selected-graph">
 						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Directed Layout</a>

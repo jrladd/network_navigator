@@ -24,6 +24,14 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .domain(colorValues)
         .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
+    var centralitySize = d3.scaleLinear()
+    	.domain([d3.min(nodeList, function(d) { return d.degree; }), d3.max(nodeList, function(d) { return d.degree; })])
+	.range([15,50]);
+
+    var edgeWidth = d3.scaleLinear()
+    	.domain([d3.min(edgeList, function(d) { return d.weight; }), d3.max(edgeList, function(d) { return d.weight; })])
+	.range([1,20]);
+
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-1000))
@@ -38,7 +46,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .selectAll("line")
         .data(edgeList)
         .enter().append("line")
-        .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight));
+        .attr("stroke-width", d => edgeWidth(d.weight));//(d.weight == 0 ? 1 : d.weight));
 
     var node = svg.append("g")
         .attr("class", "nodes")
@@ -47,7 +55,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .enter().append("g");
 
     node.append("circle")
-        .attr("r", d => d.degree + 20)
+        .attr("r", d => centralitySize(d.degree))
         .attr("fill", d => color(d.weight)
         )
         .call(d3.drag()
@@ -95,5 +103,24 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         d.fx = null;
         d.fy = null;
     }
+        // A dropdown menu with three different centrality measures, calculated in NetworkX.
+	// Accounts for node collision.
+	var centralityDropdown = d3.select('#centrality')
+		.on('change', function() { 
+			var centrality = this.value;
+		        var centralitySize = d3.scaleLinear()
+		        	.domain([d3.min(nodeList, function(d) { return d[centrality]; }), d3.max(nodeList, function(d) { return d[centrality]; })])
+   			    	.range([15,50]);
+			node.select('circle').attr('r', function(d) { return centralitySize(d[centrality]); } );  
+			// Recalculate collision detection based on selected centrality.
+//			simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
+//			simulation.alphaTarget(0.1).restart();
+		});
+	var edgeWeightCheckbox = d3.select('#edge-weight')
+		.on('change', function() {
+			if (this.checked) {
+				link.attr("stroke-width", d => edgeWidth(d.weight));
+			} else { link.attr("stroke-width", 1); }
+		});
 
 };

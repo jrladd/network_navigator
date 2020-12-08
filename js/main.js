@@ -87,12 +87,13 @@ $('#viz-collapse').click(function (e) {
 	}
 });
 
-$('#customize').click(function () {
-	if (!this.classList.contains('customize-expand')) {
-		this.classList.add('customize-expand');
+$('#customize-button').click(function () {
+	let customize = document.getElementById('customize');
+	if (!customize.classList.contains('customize-expand')) {
+		customize.classList.add('customize-expand');
 		$('#customize-form').show();
 	} else {
-		this.classList.remove('customize-expand');
+		customize.classList.remove('customize-expand');
 		$('#customize-form').hide();
 	}
 });
