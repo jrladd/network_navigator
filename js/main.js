@@ -131,112 +131,43 @@ $('#selected-graph').on('click', function (e) {
   }
 });
 
-function copyStylesInline(destinationNode, sourceNode) {
-  var containerElements = ["svg", "g"];
-  for (var cd = 0; cd < destinationNode.childNodes.length; cd++) {
-    var child = destinationNode.childNodes[cd];
-    if (containerElements.indexOf(child.tagName) != -1) {
-      copyStylesInline(child, sourceNode.childNodes[cd]);
-      continue;
-    }
-    var style = sourceNode.childNodes[cd].currentStyle || window.getComputedStyle(sourceNode.childNodes[cd]);
-    if (style == "undefined" || style == null) continue;
-    for (var st = 0; st < style.length; st++) {
-      child.style.setProperty(style[st], style.getPropertyValue(style[st]));
-    }
-  }
-}
-
-function triggerDownload(imgURI, fileName) {
-  var evt = new MouseEvent("click", {
-    view: window,
-    bubbles: false,
-    cancelable: true
-  });
-  var a = document.createElement("a");
-  a.setAttribute("download", fileName);
-  a.setAttribute("href", imgURI);
-  a.setAttribute("target", '_blank');
-  a.dispatchEvent(evt);
-}
-
-function downloadSvg(svg, fileName) {
-  var copy = svg.cloneNode(true);
-  copyStylesInline(copy, svg);
-  var canvas = document.createElement("canvas");
-  var bbox = svg.getBBox();
-  // canvas.width = bbox.width;
-  // canvas.height = bbox.height;
-  canvas.width = 2000;
-  canvas.height = 2400;
-  var ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, 2000, 2400);
-  var data = (new XMLSerializer()).serializeToString(copy);
-  var DOMURL = window.URL || window.webkitURL || window;
-  var img = new Image();
-  var svgBlob = new Blob([data], {
-    type: "image/svg+xml;charset=utf-8"
-  });
-  var url = DOMURL.createObjectURL(svgBlob);
-  img.onload = function () {
-    ctx.drawImage(img, 0, 0);
-    DOMURL.revokeObjectURL(url);
-    if (typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
-      var blob = canvas.msToBlob();
-      navigator.msSaveOrOpenBlob(blob, fileName);
-    } else {
-      var imgURI = canvas
-        .toDataURL("image/png")
-        .replace("image/png", "image/octet-stream");
-      triggerDownload(imgURI, fileName);
-    }
-    console.log(document.querySelector('canvas'));
-    // document.removeChild(canvas);
-  };
-  img.src = url;
-}
-
 // Download solution
-function getDownloadURL(svg, callback) {
-  var canvas;
-  var doctype = '<?xml version="1.0" standalone="no"?>' +
-    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+function getDownloadURL(svg, filename, callback) {
+  let canvas;
+  let doctype = '<?xml version="1.0" standalone="no"?>' + '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
 
   // serialize our SVG XML to a string.
-  var source = (new XMLSerializer()).serializeToString(svg);
-  console.log(source, svg);
+  let source = (new XMLSerializer()).serializeToString(svg);
   // create a file blob of our SVG.
-  var blob = new Blob([doctype + source], {
+  const blob = new Blob([doctype + source], {
     type: 'image/svg+xml;charset=utf-8'
   });
 
-  var url = window.URL.createObjectURL(blob);
-  // var source = svg.parentNode.innerHTML;
+  const url = window.URL.createObjectURL(blob);
   let width = 2400;
   let height = 2000;
-  var image = d3.select('body').append('img')
+  let image = d3.select('body').append('img')
     .style('display', 'none')
     .attr('width', width)
     .attr('height', height)
     .node();
-  // console.log(image);
+
   image.src = url;
   image.onerror = function () {
     callback(new Error('An error occurred while attempting to load SVG'));
   };
   image.onload = function () {
-    console.log('check')
     canvas = d3.select('body').append('canvas')
       .style('display', 'none')
       .attr('width', width)
       .attr('height', height)
       .node();
 
-    var ctx = canvas.getContext('2d');
+    let ctx = canvas.getContext('2d');
     ctx.drawImage(image, 0, 0);
-    var canvasURL = canvas.toDataURL('image/png');
-    var a = document.createElement('a');
-    a.download = "image.png";
+    let canvasURL = canvas.toDataURL('image/png');
+    let a = document.createElement('a');
+    a.download = `${filename}_visualization.png`;
     a.href = canvasURL
     document.body.appendChild(a);
     a.click();
@@ -244,8 +175,8 @@ function getDownloadURL(svg, callback) {
   };
 }
 
-function updateDownloadURL(svg, link) {
-  getDownloadURL(svg, function (error, url) {
+function updateDownloadURL(svg, filename, link) {
+  getDownloadURL(svg, filename, function (error, url) {
     if (error) {
       console.error(error);
     } else {
@@ -260,9 +191,7 @@ $('#download-graph').on('click', function (e) {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
     if (filteredDiv.length > 0) {
-      // console.log($(div).find('svg'));
-      // downloadSvg($(div).find('svg')[0], 'test.png')
-      updateDownloadURL(d3.selectAll(`${div} svg`).node(), document.getElementById('download-graph'));
+      updateDownloadURL(d3.selectAll(`${div} svg`).node(), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
     } 
   });
 });

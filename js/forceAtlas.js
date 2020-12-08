@@ -18,28 +18,50 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
     
     const width = +svg.attr('width') + 1400 - margin.left;
     const height = +svg.attr('height') + 1000 - margin.top;
-
+    
+    var radius = d3.scaleSqrt()
+        .range([0, 6]);
     // var color = d3.scaleOrdinal(d3.schemeCategory20);
     var color = d3.scaleOrdinal()
         .domain(colorValues)
         .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
     var simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(d => d.id))
+        .force("link", d3.forceLink().id(d => d.id).distance(100).strength(1))
         .force('charge', d3.forceManyBody().strength(-1000))
         .force('collide', d3.forceCollide(18).iterations(16))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
 
+    svg.append("svg:defs").selectAll("marker")
+        .data([{
+            id: 'end-arrow',
+            opacity: 1
+        }, {
+            id: 'end-arrow-fade',
+            opacity: 0.1
+        }]) // Different link/path types can be defined here
+        .enter().append("svg:marker") // This section adds in the arrows
+        .attr("id", String)
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 15)
+        .attr("refY", -1.5)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("svg:path")
+        .attr("d", "M0,-5L10,0L0,5");
 
     var link = svg.append("g")
         .attr("class", "links")
         .selectAll("line")
         .data(edgeList)
         .enter().append("line")
-        .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight))
-        .attr("stroke", "#88A");
+        // .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight))
+        .attr("stroke-width", 2)
+        .attr("stroke", "#88A")
+        .attr("marker-end", "url(#end)");
 
     var node = svg.append("g")
         .attr("class", "nodes")

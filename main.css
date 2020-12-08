@@ -44,20 +44,19 @@ code {
 	display: none;
 }
 
-.label {
+/* .label {
 	fill: #999;
 	font-size: 1rem;
 	text-anchor: end;
-}
+} */
 
-.column .label {
+/* .column .label {
 	text-anchor: start;
-}
+} */
 
 rect.bar { fill: #08B3E5; }
 
 rect {
-	fill: #eee;
 	stroke: #000000;
 	stroke-width: 0;
 }

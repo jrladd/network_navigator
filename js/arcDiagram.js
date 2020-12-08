@@ -1,4 +1,5 @@
 export function drawArcDiagram(edgeList, nodeList, colorValues) {
+    nodeList = nodeList.map(node => ({...node, nodeClicked: false}));
     const margin = {
         top: -200,
         right: 75,
@@ -46,12 +47,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues) {
         .data(nodeList)
         .enter()
         .append("circle")
+            .attr('nodeClicked', d => d.nodeClicked)
             .attr("cx", d => x(d.id))
             .attr("cy", height - 30)
             .attr("r", d => (size(d.degree)))
             .style("fill", d => color(d.weight));
-        // .attr("r", 8)
-        // .style("fill", "#69b3a2");
 
     var labels = svg
         .selectAll("labels")
@@ -59,14 +59,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues) {
         .enter()
         .append("text")
             .attr("x", 0)
-            .attr("y", 0)
-            // .attr("x", d => x(d.id))
-            // .attr("y", height - 30)
+            .attr("y", 10)
             .text(d => d.id)
             .style("text-anchor", "end")
             .attr("transform", d => "translate(" + (x(d.id)) + "," + (height - 15) + ")rotate(-45)")
-            .style("font-size", 6)
-            // .style("text-anchor", "middle");
+            .style("font-size", 12);
         
     var links = svg
         .selectAll("links")
@@ -80,42 +77,92 @@ export function drawArcDiagram(edgeList, nodeList, colorValues) {
         .style("fill", "none")
         .attr("stroke", "black");
 
-    circles.on('mouseover', function (d) {
-            // Highlight the nodes: every node is green except of him
-            circles
-                .style('opacity', .2)
-            d3.select(this)
-                .style('opacity', 1)
-            // Highlight the connections
-            links
-                .style('stroke', function (link_d) {
-                    return link_d.source.id === d.id || link_d.target.id === d.id ? color(d.weight) : '#b8b8b8';
-                })
-                .style('stroke-opacity', function (link_d) {
-                    return link_d.source.id === d.id || link_d.target.id === d.id ? 1 : .2;
-                })
-                .style('stroke-width', function (link_d) {
-                    return link_d.source.id === d.id || link_d.target.id === d.id ? 4 : 1;
-                })
-            labels
-                .style("font-size", function (label_d) {
-                    console.log(label_d.id === d.id);
-                    return label_d.id === d.id ? 16 : 2
-                })
-                .attr("y", function (label_d) {
-                    return label_d.id === d.id ? 10 : 0
-                })
+    links.on('mouseover', d => linkEvent(d))
+        .on('click', d => {
+            console.log(d);
+            linkEvent(d)})
+        .on('mouseout', mouseOut);
 
+    circles.on('mouseover', d => {if (!d.nodeClicked){nodeEvent(d)}})
+        .on('click', d => {
+            if (!d.nodeClicked) {
+                d.nodeClicked = true;
+                d3.select(this).select('circle').enter().attr('nodeClicked', true);
+                nodeEvent(d);
+            }
         })
-        .on('mouseout', function (d) {
-            circles.style('opacity', 1)
-            links
-                .style('stroke', 'grey')
-                .style('stroke-opacity', .8)
-                .style('stroke-width', '1')
-            labels
-                .style("font-size", 6)
+        .on('mouseout', d => {if (!d.nodeClicked){mouseOut()}});
 
+    labels.on('mouseover', d => {if (!d.nodeClicked) {nodeEvent(d)}})
+        .on('click', d => {
+            if (!d.nodeClicked) {
+                d.nodeClicked = true;
+                d3.select(this).select('circle').enter().attr('nodeClicked', true);
+                nodeEvent(d);
+            }
         })
+        .on('mouseout', d => {if (!d.nodeClicked) {mouseOut()}});
 
+
+    d3.select('#arc-viz').on('click', () => {
+        if (d3.event.target.classList.contains('svg-content-responsive')){
+            circles.enter().attr('nodeClicked', d => d.nodeClicked = false)
+            console.log(circles);
+            mouseOut();
+        }
+    });
+
+    function linkEvent(d){
+        links.style('stroke', '#b8b8b8')
+            .style('stroke-opacity', .2)
+            .style('stroke-width', 1);
+        d3.select(this).style('stroke', color(d.community))
+            .style('stroke-opacity', 1)
+            .style('stroke-width', 4);
+
+        circles.style('opacity', function (node_d) {
+            return node_d.id === d.source.id || node_d.id === d.target.id ? 1 : 0.2;
+        });
+        labels.style("font-size", function (node_d) {
+            return node_d.id === d.source.id || node_d.id === d.target.id ? 20 : 12;
+        });
+    }
+
+    function nodeEvent(d){
+        // Highlight the nodes: every node is green except of him
+        circles
+            .style('opacity', .2)
+        // Highlight the connections
+        var nodesToHighlight = edgeList.map(function (e) {
+            return e.source.id === d.id ? e.target : e.target.id === d.id ? e.source : 0
+        }).filter(function (d) {
+            return d
+        });
+        nodesToHighlight.push(d);
+
+        circles.filter(circle => nodesToHighlight.some(node => circle.id === node.id))
+            .style('opacity', 1)
+        links
+            .style('stroke', function (link_d) {
+                return link_d.source.id === d.id || link_d.target.id === d.id ? color(d.community) : '#b8b8b8';
+            })
+            .style('stroke-opacity', function (link_d) {
+                return link_d.source.id === d.id || link_d.target.id === d.id ? 1 : .2;
+            })
+            .style('stroke-width', function (link_d) {
+                return link_d.source.id === d.id || link_d.target.id === d.id ? 4 : 1;
+            })
+        labels.filter(label => nodesToHighlight.some(node => label.id === node.id))
+            .style("font-size", 20)
+
+    }
+    function mouseOut(){
+        circles.style('opacity', 1)
+        links
+            .style('stroke', 'grey')
+            .style('stroke-opacity', .8)
+            .style('stroke-width', '1')
+        labels
+            .style("font-size", 12)
+    }
 };

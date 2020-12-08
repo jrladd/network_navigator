@@ -66,6 +66,9 @@ export function drawMatrix(edgeList, nodeList, colorValues){
     .attr('x', -14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
+    .style('fill', '#999')
+    .style('font-size', '1rem')
+    .style('text-anchor', 'end')
     .text((_, i) => nodeList[i].id);
 
   var column = svg.selectAll('g.column')
@@ -78,6 +81,7 @@ export function drawMatrix(edgeList, nodeList, colorValues){
     .attr('x', 14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
+    .style('text-anchor', 'start')
     .text( (_, i) => nodeList[i].id);
 
   svg.append("g")
