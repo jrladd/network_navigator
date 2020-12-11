@@ -145,9 +145,31 @@
 					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
-				        <div class="absolute top-1 right-1 w2 h2 b--gray br2 ba bg-near-white pa2 z-999" id="customize">
-						<i class="em em-art absolute top-0 right-0" aria-role="presentation" aria-label="ARTIST PALETTE"></i>
-						<div id="customize-form">Hello</div>
+				        <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize">
+						<i class="em em-art absolute top-0 right-0 ma1" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-button"></i>
+						<div id="customize-form">
+							<div id="force-atlas" class="flex flex-column">
+								<h1 class="f6 lh-copy">Customize Force Atlas Graph</h1>
+								<div class="fl w-100 f6 mid-gray h2">
+									<label for="centrality">Size by centrality:</label>
+									<select name="centrality" id="centrality">
+										<option value="degree">Degree</option>
+										<option value="betweenness">Betweenness</option>
+										<option value="eigenvector">Eigenvector</option>
+									</select>
+								</div>
+								<div class="fl w-100 f6 mid-gray h2">
+							 	<label for="edge-weight">Include edge weights?</label>
+								<input name="edge-weight" id="edge-weight" type="checkbox" checked />
+								</div>
+								<div class="fl w-100 f6 mid-gray h2">
+							 	<input type="radio" value="straight" name="lineType" id="straight" checked>
+							 	<label for="straight">Straight Lines</label>
+							 	<input type="radio" value="curved" name="lineType" id="curved">
+								<label for="curved">Curved Lines</label>
+								</div>
+							</div>
+						</div>
 					</div>
 					<div class="fl w-100 flex" id="selected-graph">
 						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Directed Layout</a>

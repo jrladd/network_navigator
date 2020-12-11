@@ -5,7 +5,7 @@ import { drawHist } from './hist.js';
 
 
 // Define global variables
-let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues;
+let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
 
 
 $('textarea').on('dragover', function (e) {
@@ -87,12 +87,13 @@ $('#viz-collapse').click(function (e) {
 	}
 });
 
-$('#customize').click(function () {
-	if (!this.classList.contains('customize-expand')) {
-		this.classList.add('customize-expand');
+$('#customize-button').click(function () {
+	let customize = document.getElementById('customize');
+	if (!customize.classList.contains('customize-expand')) {
+		customize.classList.add('customize-expand');
 		$('#customize-form').show();
 	} else {
-		this.classList.remove('customize-expand');
+		customize.classList.remove('customize-expand');
 		$('#customize-form').hide();
 	}
 });
@@ -109,9 +110,9 @@ function drawGraphs(selectedGraph) {
       $(div).css('visibility', 'visible');
       // Check if svg has been drawn
       if ($(div).find('svg').length == 0) {
-        if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, colorValues);
-        if (filteredDiv.includes('force')) drawForceAtlas(edgeList, nodeList, colorValues);
-        if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues);
+        if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
+        if (filteredDiv.includes('force')) drawForceAtlas(edgeList, nodeList, colorValues, graphType, graphWeight);
+        if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
       }
     } else {
       $(div).css('visibility', 'hidden');
@@ -204,6 +205,13 @@ var table = $('#metrics-table').DataTable({
 	dom: 'Bfti',
 	order: [[1, 'desc']]
 });
+
+$('textarea').on('keypress', function(e) {
+  if (e.which == 13) {
+    $('#calculate').click();
+    return false;
+  }
+});
 $('#calculate').click(function () {
   //var $btn = $(this).button('loading');
   let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
@@ -215,11 +223,10 @@ $('#calculate').click(function () {
   $('#customize-form').hide();
   selectedGraph = "Force Directed Layout";
   setTimeout(function () {
-    // var edges = [];
     var data = $('textarea').val();
-    var graphType = $("input[name='graphType']:checked").val();
+    graphType = $("input[name='graphType']:checked").val();
     // var graphMode = $("input[name='graphMode']:checked").val();
-    var graphWeight = $("input[name='graphWeight']:checked").val();
+    graphWeight = $("input[name='graphWeight']:checked").val();
     var edges = $.csv.toArrays(data);
     // For D3 visualizations
     edgeList = [];
@@ -323,11 +330,7 @@ $('#calculate').click(function () {
       idToNode[n.id] = n;
     });
 
-    // Embed nodes as source and target
-    edgeList.forEach(function (e) {
-      e.source = idToNode[e.source];
-      e.target = idToNode[e.target];
-    });
+    
 
     nodeList.sort(function (a, b) {
       if (b.community != a.community)
@@ -336,7 +339,47 @@ $('#calculate').click(function () {
         return b.degree - a.degree;
     });
 
-  
+
+    const sizes = ['degree', 'eigenvector', 'betweenness']
+    sizes.map(size => {
+      if (nodeList.some(node => node.hasOwnProperty(size))){
+        var centralitySize = d3.scaleLinear()
+          .domain([d3.min(nodeList, function (d) {
+            return d[size];
+          }), d3.max(nodeList, function (d) {
+            return d[size];
+          })])
+          .range([15, 50]);
+        
+        var fontSize = d3.scaleLinear()
+          .domain([d3.min(nodeList, function (d) {
+            return d[size];
+          }), d3.max(nodeList, function (d) {
+            return d[size];
+          })])
+          .range([20, 30]);
+        nodeList = nodeList.map(node => {
+          node[`radius_${size}`] = centralitySize(node[size])
+          node[`fontSize_${size}`] = fontSize(node[size])
+          return node
+        })
+      }
+    });
+    
+    
+    var edgeWidth = d3.scaleLinear()
+      .domain([d3.min(edgeList, function (d) {
+        return d.weight;
+      }), d3.max(edgeList, function (d) {
+        return d.weight;
+      })])
+      .range([5, 10]);
+    // Embed nodes as source and target
+    edgeList.map(function (e) {
+      e.source = idToNode[e.source];
+      e.target = idToNode[e.target];
+      e.scaled_weight = edgeWidth(e.weight);
+    });
 
     table.clear().rows.add(tableData).draw();
     let metrics = document.getElementById("metrics");
@@ -376,7 +419,7 @@ $('#calculate').click(function () {
     $('#load-viz').click(function () {
       $('#viz-warning').hide();
       $('.viz').show();
-      drawNetwork(G);
+      drawGraphs(selectedGraph);
     });
   }, 2000);
 
@@ -385,28 +428,6 @@ $('#calculate').click(function () {
 function reverse_sort(dict) {
   return Object.keys(dict).sort(function (a, b) {
     return dict[b] - dict[a]
-  });
-}
-
-function drawNetwork(G) {
-  jsnx.draw(G, {
-    element: '#canvas',
-    withLabels: false,
-    weighted: true,
-    nodeStyle: {
-      fill: 'lightblue',
-      stroke: 'none'
-    },
-    nodeAttr: {
-      r: 5,
-      title: function (d) {
-        return d.label;
-      }
-    },
-    edgeStyle: {
-      fill: '#999'
-    },
-    stickyDrag: true
   });
 }
 

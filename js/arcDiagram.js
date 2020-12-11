@@ -1,4 +1,4 @@
-export function drawArcDiagram(edgeList, nodeList, colorValues) {
+export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
     nodeList = nodeList.map(node => ({...node, nodeClicked: false}));
     const margin = {
         top: -200,

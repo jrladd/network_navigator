@@ -1,4 +1,6 @@
-export function drawForceAtlas(edgeList, nodeList, colorValues) {
+export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graphWeight) {
+    let lineType = $("input[name='lineType']:checked").val();
+    let centrality = 'degree';
     const margin = {
         top: 75,
         right: 200,
@@ -19,9 +21,6 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
     const width = +svg.attr('width') + 1400 - margin.left;
     const height = +svg.attr('height') + 1000 - margin.top;
     
-    var radius = d3.scaleSqrt()
-        .range([0, 6]);
-    // var color = d3.scaleOrdinal(d3.schemeCategory20);
     var color = d3.scaleOrdinal()
         .domain(colorValues)
         .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
@@ -34,56 +33,53 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
 
-    svg.append("svg:defs").selectAll("marker")
-        .data([{
-            id: 'end-arrow',
-            opacity: 1
-        }, {
-            id: 'end-arrow-fade',
-            opacity: 0.1
-        }]) // Different link/path types can be defined here
-        .enter().append("svg:marker") // This section adds in the arrows
-        .attr("id", String)
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -1.5)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
-        .attr("orient", "auto")
-        .append("svg:path")
-        .attr("d", "M0,-5L10,0L0,5");
+    svg.append("defs").selectAll("marker")
+        .data([{id: 'end-arrow', opacity: 1}, {id: 'end-arrow-fade',opacity: 0.1}]) // Different link/path types can be defined here
+        .enter().append("marker") // This section adds in the arrows
+            .attr("id", d => d.id)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", -0.5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+        .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .style("fill", "#555");
 
     var link = svg.append("g")
         .attr("class", "links")
-        .selectAll("line")
+        .attr("fill", "none")
+        .selectAll("path")
         .data(edgeList)
-        .enter().append("line")
-        // .attr("stroke-width", d => (d.weight == 0 ? 1 : d.weight))
-        .attr("stroke-width", 2)
+        .enter().append("path")
+        .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
         .attr("stroke", "#88A")
-        .attr("marker-end", "url(#end)");
+        .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
     var node = svg.append("g")
         .attr("class", "nodes")
-        .selectAll("g")
+        .selectAll("circle")
         .data(nodeList)
-        .enter().append("g");
-
-    node.append("circle")
-        .attr("r", d => d.degree + 20)
-        .attr("fill", d => color(d.community))
+        .enter().append("circle")
+        .attr("r", d => d[`radius_${centrality}`])
+        .attr("fill", d => color(d.community)
+        )
+        .on("dblclick", releasenode)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-    node.append("text")
+    var nodeLabel = svg.append("g")
+        .attr("class", "nodeLabels")
+        .selectAll("text")
+        .data(nodeList)
+        .enter().append("text")
         .text(d => d.id)
-        .attr('x', 6)
-        .attr('y', 3);
-
-    node.append("title")
-        .text(d => d.id);
+        .attr('dx', d => d[`radius_${centrality}`] + 5)
+        .attr('dy', 3)
+        .style('font-size', d => d[`fontSize_${centrality}`]);
 
     simulation
         .nodes(nodeList)
@@ -93,14 +89,25 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
         .links(edgeList);
 
     function ticked() {
-        link.attr("x1", d =>  d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
+        link.attr("d", function (d) {
+            var dx = d.target.x - d.source.x,
+                dy = d.target.y - d.source.y,
+                dr = lineType === 'curved' ? Math.sqrt(dx * dx + dy * dy) : 0;
+            return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+        });
 
-        node.attr("transform", d => "translate(" + d.x + "," + d.y + ")");
+        // node.attr("transform", d => "translate(" + d.x + "," + d.y + ")");
+        node.attr("cx", function (d) {
+                return d.x;
+            })
+            .attr("cy", function (d) {
+                return d.y;
+            });
+
+        nodeLabel
+            .attr('x', d => d.x)
+            .attr('y', d => d.y);
     }
-
     function dragstarted(d) {
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -114,8 +121,41 @@ export function drawForceAtlas(edgeList, nodeList, colorValues) {
 
     function dragended(d) {
         if (!d3.event.active) simulation.alphaTarget(0);
+        // d.fx = null;
+        // d.fy = null;
+    }
+
+    function releasenode(d) {
         d.fx = null;
         d.fy = null;
     }
+
+        // A dropdown menu with three different centrality measures, calculated in NetworkX.
+	// Accounts for node collision.
+	d3.select('#centrality').on('change', function() { 
+            centrality = this.value;
+            node.attr('r', d => d[`radius_${centrality}`]);
+            nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
+			// Recalculate collision detection based on selected centrality.
+//			simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
+//			simulation.alphaTarget(0.1).restart();
+	});
+	d3.select('#edge-weight').on('change', function() {
+        link.attr("stroke-width", d => this.checked ? d.scaled_weight / 2: 3)
+            .attr("stroke", "#88A")
+            .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
+    });
+    
+    d3.selectAll("input[name='lineType']").on("change", function () {
+        lineType = $("input[name='lineType']:checked").val();
+        simulation
+            .nodes(nodeList)
+            .on("tick", ticked);
+
+        simulation.force("link")
+            .links(edgeList);
+        
+        simulation.alpha(1).restart();
+    });
 
 };

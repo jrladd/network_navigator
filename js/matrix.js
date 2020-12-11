@@ -1,5 +1,4 @@
-export function drawMatrix(edgeList, nodeList, colorValues){
-  console.log(edgeList, nodeList);
+export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
    // Build initial matrix
   const matrix = nodeList.map(function (outer, i) {
     outer.index = i;
@@ -8,14 +7,12 @@ export function drawMatrix(edgeList, nodeList, colorValues){
       return {i: i, j: j, weight: i === j ? 0 : 0};
     });
    });
-  console.log('first matrix', matrix);
 
    // Update matrix values depending on edges
   edgeList.forEach(function (l) {
      matrix[l.source.index][l.target.index].weight = l.weight;
      matrix[l.target.index][l.source.index].weight = l.weight;
   });
-  console.log('second matrix', matrix);
 
   const margin = {
   top: 200,
