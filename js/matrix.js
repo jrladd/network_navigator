@@ -130,4 +130,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         return nodeList[d.i].id + ' - ' + nodeList[d.j].id + ', degree: ' + d.weight;
       });
   }
+  d3.select('#order-matrix-cells').on('change', function () {
+    let orderValue = this.value;
+    console.log(orderValue);
+  });
 };

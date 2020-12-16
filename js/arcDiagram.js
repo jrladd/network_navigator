@@ -1,8 +1,8 @@
 export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
     // Add properties to control showing and hiding elements
-    nodeList = nodeList.map(node => ({...node, nodeClicked: false})).sort();
+    nodeList = nodeList.map(node => ({...node, nodeClicked: false}));
     edgeList = edgeList.map(edge => ({...edge, edgeClicked: false}));
-    // let label, overlay, path, node;
+    let originalList = [...nodeList];
     let graphDirection = 'vertical';
     const margin = {
         top: -200,
@@ -72,9 +72,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var node = nodesDiv.selectAll("circle")
         .data(nodeList)
         .enter().append("circle")
-        .attr("r", d => size(d.degree))
-        .attr("fill", d => color(d.community))
-        .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
+            .attr("r", d => size(d.degree))
+            .attr("fill", d => color(d.community))
+            .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
     var arcsDiv = svg.insert("g", "*")
         .attr("fill", "none")
@@ -85,8 +85,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var path = arcsDiv.selectAll("path")
         .data(edgeList)
         .enter().append("path")
-        .style("stroke", d => d.source.id === d.target.id ? color(d.source.community) : "#aaa")
-        .attr("d", d => arc(d));
+            .style("stroke", d => d.source.id === d.target.id ? color(d.source.community) : "#aaa")
+            .attr("d", d => arc(d));
 
 
     var overlaysDiv = svg.append("g")
@@ -98,30 +98,36 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var overlay = overlaysDiv.selectAll("rect")
         .data(nodeList)
         .enter().append("rect")
-        .attr("height", step)
-        .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
-        .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
-        .on("dblclick", releaseNode)
-        .on("click", d => {
-            if (!d.nodeClicked) {
-                d.nodeClicked = true;
-                d3.select(this).attr('nodeClicked', true);
-                nodeEvent(d);
-            }
-        })
-        .on("mouseover", d => {
-            if (!d.nodeClicked) {
-                nodeEvent(d)
-            }
-        })
-        .on("mouseout", d => {
-            if (!d.nodeClicked) {
-                mouseOut()
-            }
-        });
+            .attr("height", step)
+            .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
+            .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
+            .on("dblclick", releaseNode)
+            .on("click", d => {
+                if (!d.nodeClicked) {
+                    d.nodeClicked = true;
+                    label.filter(label => label.id === d.id).attr('nodeClicked', true);
+                    path.filter(path => path.source.id === d.id || path.target.id === d.id)
+                        .attr('edgeClicked', path => {
+                            path.edgeClicked = true
+                            return true
+                        });
+                    nodeEvent(d);
+                }
+            })
+            .on("mouseover", d => {
+                if (!d.nodeClicked) {
+                    nodeEvent(d)
+                }
+            })
+            .on("mouseout", d => {
+                if (!d.nodeClicked) {
+                    mouseOut()
+                }
+            });
 
     function releaseNode(){
-        d3.select(this).attr('nodeClicked', d => d.nodeClicked = false)
+        label.attr('nodeClicked', d => d.nodeClicked = false);
+        path.attr('edgeClicked', d => d.edgeClicked = false);
         mouseOut();
     }
 
@@ -133,23 +139,36 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         });
         nodesToHighlight.push(d);
 
+        nodeList.map(d => {if (d.nodeClicked){nodesToHighlight.push(d)}});
+
+        nodesToHighlight = nodesToHighlight.reduce((unique, o) => {
+            if (!unique.some(obj => obj.id === o.id)) {
+                unique.push(o);
+            }
+            return unique;
+        }, []);
+
         label.attr('fill', '#ccc');
         label.filter(label => label.id === d.id)
             .attr('fill', 'black')
             .style('font-weight', 'bold');
         label.filter(label => nodesToHighlight.some(node => label.id === node.id))
+            .attr('nodeClicked', label => {
+                label.nodeClicked = true;
+                return true
+            })
             .attr('fill', '#333');
-        path.filter(l =>  l.source.id === d.id || l.target === d.id)
+        path.filter(path => path.source.id === d.id ||path.target.id === d.id)
             .style('stroke', '#333')
             .style('stroke-opacity', 1);
     }
     function mouseOut(){
-        label
+        label.filter(label => !label.nodeClicked)
             .attr("fill", d => color(d.community))
-            .style('font-weight', 'normal');;
-        path
-            .style("stroke", d => d.source.id === d.target.id ? color(d.source.community) : "#aaa")
-            .style("stroke-opacity", 0.6)
+            .style('font-weight', 'normal');
+        path.filter(path => !path.edgeClicked)
+            .style("stroke", d =>  d.source.id === d.target.id ? color(d.source.community) : "#aaa")
+            .style("stroke-opacity", 0.6);
     }
 
     function arc(d) {
@@ -163,18 +182,22 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             const x2 = x(d.target.id)
             const r = Math.abs(x2 - x1) / 2;
             return `M${x1} ${height - margin.left} A ${r},${r} 0 0,${x1 < x2 ? 1 : 0} ${x2},${height - margin.left}`;
-
         }
         
     }
 
     function updateArc(orderValue, orderDirection) {
-        orderValue = orderValue === 'name' ? 'id' : orderValue;
-        let sortOrder = nodeList.map( node => node[orderValue]).sort();
-        sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
-        let updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
+        let sortOrder, updatedNodeList;
+        if (orderValue === 'original') {
+            updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
+        } else {
+            orderValue = orderValue === 'name' ? 'id' : orderValue;
+            sortOrder = nodeList.map(node => node[orderValue]).sort();
+            sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
+            updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
+        }
         
-        // buildDiagram(graphDirection, updatedNodeList);
+        
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 
@@ -198,9 +221,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         overlay.transition(t)
             .delay((d, i) => i * 20)
             .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
-            .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
-            // .attr("y", d => graphDirection === 'vertical' ? y(d.id) - step / 2 : null);
-            // .attr("x", d => graphDirection === 'horizontal' ? x(d.id) - step / 2 : null)
+            .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`);
 
     }
 
