@@ -88,12 +88,16 @@ $('#viz-collapse').click(function (e) {
 });
 
 $('#customize-button').click(function () {
-	let customize = document.getElementById('customize');
+  let customize = document.getElementById('customize');
+  let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
 	if (!customize.classList.contains('customize-expand')) {
-		customize.classList.add('customize-expand');
+    customize.classList.add('customize-expand');
+    
+    $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
-		customize.classList.remove('customize-expand');
+    customize.classList.remove('customize-expand');
+    $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}
 });
@@ -221,7 +225,7 @@ $('#calculate').click(function () {
   $('#row-error').hide();
   $('#eigen-error').hide();
   $('#customize-form').hide();
-  selectedGraph = "Force Directed Layout";
+  selectedGraph = "Force Atlas Layout";
   setTimeout(function () {
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
@@ -235,7 +239,6 @@ $('#calculate').click(function () {
       item['source'] = edge[0];
       item['target'] = edge[1];
       item['weight'] = typeof (edge[2]) === 'undefined' ? 1 : parseInt(edge[2]);
-      item['community'] = typeof (edge[3]) === 'undefined' ? 1 : parseInt(edge[3]);
       // item['val'] = 1;
       // Check if multiple edges between same nodes
       let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
@@ -318,27 +321,11 @@ $('#calculate').click(function () {
         clusteringString = `${clustering[node].toFixed(4)} (${clusteringSorted.indexOf(node).toString()})`;
         item['clustering'] = clustering[node].toFixed(4);
       }
+      item ['community'] = 1;
       var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
       tableData.push(row);
       nodeList.push(item);
     });
-
-    var idToNode = {};
-
-    // Add indexes to nodes
-    nodeList.forEach(function (n) {
-      idToNode[n.id] = n;
-    });
-
-    
-
-    nodeList.sort(function (a, b) {
-      if (b.community != a.community)
-        return b.community - a.community;
-      else
-        return b.degree - a.degree;
-    });
-
 
     const sizes = ['degree', 'eigenvector', 'betweenness']
     sizes.map(size => {
@@ -366,7 +353,13 @@ $('#calculate').click(function () {
       }
     });
     
-    
+    var idToNode = {};
+
+    // Add indexes to nodes
+    nodeList.forEach(function (n) {
+      idToNode[n.id] = n;
+    });
+
     var edgeWidth = d3.scaleLinear()
       .domain([d3.min(edgeList, function (d) {
         return d.weight;
@@ -409,7 +402,7 @@ $('#calculate').click(function () {
       selectHist();
     });
 
-    if ((G.nodes().length <= 500) && (selectedGraph == 'Force Directed Layout')) {
+    if ((G.nodes().length <= 500) && (selectedGraph == 'Force Atlas Layout')) {
       drawGraphs(selectedGraph);
     } else {
       $('#viz-warning').show();

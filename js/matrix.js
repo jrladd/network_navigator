@@ -102,9 +102,12 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('x', (_, i) => x(i))
       .attr('width', x.bandwidth())
       .attr('height', x.bandwidth())
+      .style('stroke', '#000000')
+      .style('stroke-width', 0)
       .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
       .style('fill', (d) => color(d.weight))
       .on('mouseover', function (d) {
+        d3.select(this).style('stroke-width', 1);
         row.filter((_, i) => d.i === i)
           .selectAll('text')
           .style('fill', '#000000')
@@ -114,6 +117,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
           .style('font-weight', 'bold');
       })
       .on('mouseout', function () {
+        d3.select(this).style('stroke-width', 0)
         row.selectAll('text')
           .style('fill', null)
           .style('font-weight', null);

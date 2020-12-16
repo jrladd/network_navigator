@@ -44,27 +44,6 @@ code {
 	display: none;
 }
 
-/* .label {
-	fill: #999;
-	font-size: 1rem;
-	text-anchor: end;
-} */
-
-/* .column .label {
-	text-anchor: start;
-} */
-
-rect.bar { fill: #08B3E5; }
-
-rect {
-	stroke: #000000;
-	stroke-width: 0;
-}
-
-rect:hover {
-	stroke-width: 1px;
-}
-
 .svg-container {
 	display: inline-block;
 	position: relative;

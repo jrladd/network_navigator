@@ -1,4 +1,5 @@
 export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graphWeight) {
+    
     let lineType = $("input[name='lineType']:checked").val();
     let centrality = 'degree';
     const margin = {
@@ -23,7 +24,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graph
     
     var color = d3.scaleOrdinal()
         .domain(colorValues)
-        .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
+        .range([ "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(1))
@@ -53,9 +54,9 @@ export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graph
         .selectAll("path")
         .data(edgeList)
         .enter().append("path")
-        .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
-        .attr("stroke", "#88A")
-        .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
+            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
+            .attr("stroke", "#88A")
+            .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
     var node = svg.append("g")
         .attr("class", "nodes")
