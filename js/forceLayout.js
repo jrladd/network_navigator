@@ -1,4 +1,4 @@
-export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graphWeight) {
+export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight) {
     
     let lineType = $("input[name='lineType']:checked").val();
     let centrality = 'degree';
@@ -9,7 +9,7 @@ export function drawForceAtlas(edgeList, nodeList, colorValues, graphType, graph
         left: 75
     };
 
-    var svg = d3.select('#force-atlas-viz')
+    var svg = d3.select('#force-layout-viz')
         .append("div")
         .classed("svg-container", true)
         .append('svg')

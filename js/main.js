@@ -1,5 +1,5 @@
 import { drawMatrix } from './matrix.js';
-import { drawForceAtlas } from './forceAtlas.js';
+import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
 
@@ -7,7 +7,7 @@ import { drawHist } from './hist.js';
 // Define global variables
 let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
 
-
+const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
 $('textarea').on('dragover', function (e) {
   e.preventDefault(e);
   e.stopPropagation(e);
@@ -103,7 +103,6 @@ $('#customize-button').click(function () {
 });
 
 function drawGraphs(selectedGraph) {
-  let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
@@ -115,7 +114,7 @@ function drawGraphs(selectedGraph) {
       // Check if svg has been drawn
       if ($(div).find('svg').length == 0) {
         if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
-        if (filteredDiv.includes('force')) drawForceAtlas(edgeList, nodeList, colorValues, graphType, graphWeight);
+        if (filteredDiv.includes('force')) drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
         if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
       }
     } else {
@@ -143,6 +142,7 @@ function getDownloadURL(svg, filename, callback) {
 
   // serialize our SVG XML to a string.
   let source = (new XMLSerializer()).serializeToString(svg);
+  source = source.replace('<svg', '<svg height="2000" width="2400"');
   // create a file blob of our SVG.
   const blob = new Blob([doctype + source], {
     type: 'image/svg+xml;charset=utf-8'
@@ -158,6 +158,7 @@ function getDownloadURL(svg, filename, callback) {
     .node();
 
   image.src = url;
+  
   image.onerror = function () {
     callback(new Error('An error occurred while attempting to load SVG'));
   };
@@ -167,15 +168,18 @@ function getDownloadURL(svg, filename, callback) {
       .attr('width', width)
       .attr('height', height)
       .node();
-
     let ctx = canvas.getContext('2d');
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, width, height);
     ctx.drawImage(image, 0, 0);
-    let canvasURL = canvas.toDataURL('image/png');
+
     let a = document.createElement('a');
     a.download = `${filename}_visualization.png`;
-    a.href = canvasURL
+    a.href = canvas.toDataURL('image/png');
     document.body.appendChild(a);
+    // window.open(a.href, "_blank");
     a.click();
+    document.body.removeChild(a);
     d3.selectAll([canvas, image]).remove();
   };
 }
@@ -191,7 +195,6 @@ function updateDownloadURL(svg, filename, link) {
 }
 
 $('#download-graph').on('click', function (e) {
-  let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
@@ -218,14 +221,13 @@ $('textarea').on('keypress', function(e) {
 });
 $('#calculate').click(function () {
   //var $btn = $(this).button('loading');
-  let divs = ['#matrix-viz', '#force-atlas-viz', '#arc-viz'];
   divs.map((div) => {
     $(div).html('');
   });
   $('#row-error').hide();
   $('#eigen-error').hide();
   $('#customize-form').hide();
-  selectedGraph = "Force Atlas Layout";
+  selectedGraph = "Force Layout";
   setTimeout(function () {
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
@@ -402,7 +404,7 @@ $('#calculate').click(function () {
       selectHist();
     });
 
-    if ((G.nodes().length <= 500) && (selectedGraph == 'Force Atlas Layout')) {
+    if ((G.nodes().length <= 500) && (selectedGraph == 'Force Layout')) {
       drawGraphs(selectedGraph);
     } else {
       $('#viz-warning').show();

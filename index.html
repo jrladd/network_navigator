@@ -148,8 +148,8 @@
 				        <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize">
 						<i class="em em-art absolute top-0 right-0 ma1" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-button"></i>
 						<div id="customize-form">
-							<div id="force-atlas-layout" class="flex flex-column" style="display: none;">
-								<h1 class="f6 lh-copy">Customize Force Atlas Graph</h1>
+							<div id="force-layout" class="flex flex-column" style="display: none;">
+								<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
 								<div class="fl w-100 f6 mid-gray h2">
 									<label for="centrality">Size by centrality:</label>
 									<select name="centrality" id="centrality">
@@ -210,14 +210,14 @@
 					</div>
 					<div class="fl w-100 flex">
 						<div class="fl flex" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Atlas Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Layout</a>
 							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Arc Diagram</a>
 							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Adjacency Matrix</a>
 						</div>
 					</div>
 					<div class="fl w-100 flex">
-						<div id="force-atlas-viz"></div>
-						<div id="arc-viz" style="visibility: hidden;" ></div>
+						<div id="force-layout-viz"></div>
+						<div id="arc-diagram-viz" style="visibility: hidden;" ></div>
 						<div id="matrix-viz" style="visibility: hidden;"></div>
 					</div>
 					<div class="fl w-100 flex" id="download-graph">

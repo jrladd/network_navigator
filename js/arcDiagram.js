@@ -11,7 +11,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         left: 100
     };
 
-    var svg = d3.select('#arc-viz')
+    var svg = d3.select('#arc-diagram-viz')
         .append("div")
         .classed("svg-container", true)
         .append('svg')
