@@ -192,7 +192,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
         } else {
             orderValue = orderValue === 'name' ? 'id' : orderValue;
-            sortOrder = nodeList.map(node => node[orderValue]).sort();
+            sortOrder = (orderValue === 'id' || orderValue === 'original') ? nodeList.map(node => node[orderValue]).sort() : nodeList.map(node => node[orderValue]).sort((a, b) => a - b);
             sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
             updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
         }
