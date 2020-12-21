@@ -1,5 +1,4 @@
-export function drawMatrix(edgeList, nodeList, colorValues){
-  console.log(edgeList, nodeList);
+export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
    // Build initial matrix
   const matrix = nodeList.map(function (outer, i) {
     outer.index = i;
@@ -8,14 +7,12 @@ export function drawMatrix(edgeList, nodeList, colorValues){
       return {i: i, j: j, weight: i === j ? 0 : 0};
     });
    });
-  console.log('first matrix', matrix);
 
    // Update matrix values depending on edges
   edgeList.forEach(function (l) {
      matrix[l.source.index][l.target.index].weight = l.weight;
      matrix[l.target.index][l.source.index].weight = l.weight;
   });
-  console.log('second matrix', matrix);
 
   const margin = {
   top: 200,
@@ -66,6 +63,9 @@ export function drawMatrix(edgeList, nodeList, colorValues){
     .attr('x', -14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
+    .style('fill', '#999')
+    .style('font-size', '1rem')
+    .style('text-anchor', 'end')
     .text((_, i) => nodeList[i].id);
 
   var column = svg.selectAll('g.column')
@@ -78,6 +78,7 @@ export function drawMatrix(edgeList, nodeList, colorValues){
     .attr('x', 14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
+    .style('text-anchor', 'start')
     .text( (_, i) => nodeList[i].id);
 
   svg.append("g")
@@ -101,9 +102,12 @@ export function drawMatrix(edgeList, nodeList, colorValues){
       .attr('x', (_, i) => x(i))
       .attr('width', x.bandwidth())
       .attr('height', x.bandwidth())
+      .style('stroke', '#000000')
+      .style('stroke-width', 0)
       .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
       .style('fill', (d) => color(d.weight))
       .on('mouseover', function (d) {
+        d3.select(this).style('stroke-width', 1);
         row.filter((_, i) => d.i === i)
           .selectAll('text')
           .style('fill', '#000000')
@@ -113,6 +117,7 @@ export function drawMatrix(edgeList, nodeList, colorValues){
           .style('font-weight', 'bold');
       })
       .on('mouseout', function () {
+        d3.select(this).style('stroke-width', 0)
         row.selectAll('text')
           .style('fill', null)
           .style('font-weight', null);
@@ -125,4 +130,8 @@ export function drawMatrix(edgeList, nodeList, colorValues){
         return nodeList[d.i].id + ' - ' + nodeList[d.j].id + ', degree: ' + d.weight;
       });
   }
+  d3.select('#order-matrix-cells').on('change', function () {
+    let orderValue = this.value;
+    console.log(orderValue);
+  });
 };
