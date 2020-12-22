@@ -29,7 +29,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(1))
         .force('charge', d3.forceManyBody().strength(-1000))
-        .force('collide', d3.forceCollide(18).iterations(16))
+        .force('collide', d3.forceCollide().radius(d => d[`radius_${centrality}`]))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
@@ -138,8 +138,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
             node.attr('r', d => d[`radius_${centrality}`]);
             nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
 			// Recalculate collision detection based on selected centrality.
-//			simulation.force("collide", d3.forceCollide().radius( function (d) { return centralitySize(d[centrality]); }));
-//			simulation.alphaTarget(0.1).restart();
+			simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
+			simulation.alpha(1).restart();
 	});
 	d3.select('#edge-weight').on('change', function() {
         link.attr("stroke-width", d => this.checked ? d.scaled_weight / 2: 3)
