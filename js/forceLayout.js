@@ -9,14 +9,36 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         left: 75
     };
 
+    // Make object of all neighboring nodes.
+    var linkedByIndex = {};
+    edgeList.forEach(function(d) {
+  	  linkedByIndex[d.source.id + ',' + d.target.id] = 1;
+  	  linkedByIndex[d.target.id + ',' + d.source.id] = 1;
+    });
+  
+    // A function to test if two nodes are neighboring.
+    function neighboring(a, b) {
+  	  return linkedByIndex[a.id + ',' + b.id];
+    }
+
     var svg = d3.select('#force-layout-viz')
         .append("div")
         .classed("svg-container", true)
         .append('svg')
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", "0 0 1400 1000")
-        .classed("svg-content-responsive", true)
-        .append('g')
+        .classed("svg-content-responsive", true);
+
+    svg.append('rect')
+	.attr('width', '100%')
+	.attr('height', '100%')
+	.attr('fill', 'transparent')
+	.on('click', function() {
+                    // Restore nodes and links to normal opacity.
+                    d3.selectAll('.edge').style('opacity', '1');
+                    d3.selectAll('.node').style('opacity', '1');
+	});
+    var container = svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     
     const width = +svg.attr('width') + 1400 - margin.left;
@@ -34,7 +56,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
 
-    svg.append("defs").selectAll("marker")
+    container.append("defs").selectAll("marker")
         .data([{id: 'end-arrow', opacity: 1}, {id: 'end-arrow-fade',opacity: 0.1}]) // Different link/path types can be defined here
         .enter().append("marker") // This section adds in the arrows
             .attr("id", d => d.id)
@@ -48,31 +70,42 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
             .attr("d", "M0,-5L10,0L0,5")
             .style("fill", "#555");
 
-    var link = svg.append("g")
+    var link = container.append("g")
         .attr("class", "links")
         .attr("fill", "none")
         .selectAll("path")
         .data(edgeList)
         .enter().append("path")
+	    .classed("edge", true)
             .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
-    var node = svg.append("g")
+    var node = container.append("g")
         .attr("class", "nodes")
         .selectAll("circle")
         .data(nodeList)
         .enter().append("circle")
+	.classed("node", true)
         .attr("r", d => d[`radius_${centrality}`])
-        .attr("fill", d => color(d.community)
-        )
+        .attr("fill", d => color(d.community))
+        .on('click', function(d, i) {
+                    // Ternary operator restyles links and nodes if they are adjacent.
+                    d3.selectAll('.edge').style('opacity', function (l) {
+              	      return l.target == d || l.source == d ? 1 : 0.1;
+                    });
+                    d3.selectAll('.node').style('opacity', function (n) {
+              	      return neighboring(d, n) ? 1 : 0.1;
+                    });
+                    d3.select(this).style('opacity', 1);
+        })
         .on("dblclick", releasenode)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-    var nodeLabel = svg.append("g")
+    var nodeLabel = container.append("g")
         .attr("class", "nodeLabels")
         .selectAll("text")
         .data(nodeList)
