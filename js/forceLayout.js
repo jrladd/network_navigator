@@ -29,6 +29,9 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .attr("viewBox", "0 0 1400 1000")
         .classed("svg-content-responsive", true);
 
+    // Call zoom for svg container.
+    svg.call(d3.zoom().on('zoom', zoomed));
+
     svg.append('rect')
 	.attr('width', '100%')
 	.attr('height', '100%')
@@ -38,6 +41,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     d3.selectAll('.edge').style('opacity', '1');
                     d3.selectAll('.node').style('opacity', '1');
 	});
+
     var container = svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     
@@ -162,6 +166,11 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     function releasenode(d) {
         d.fx = null;
         d.fy = null;
+    }
+
+    // Zooming function translates the size of the svg container.
+    function zoomed() {
+    	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
 
         // A dropdown menu with three different centrality measures, calculated in NetworkX.
