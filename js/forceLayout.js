@@ -92,7 +92,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .enter().append("circle")
 	.classed("node", true)
         .attr("r", d => d[`radius_${centrality}`])
-        .attr("fill", d => color(d.community))
+        .attr("fill", $('#color-picker').val())
         .on('click', function(d, i) {
                     // Ternary operator restyles links and nodes if they are adjacent.
                     d3.selectAll('.edge').style('opacity', function (l) {
