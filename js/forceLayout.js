@@ -40,6 +40,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     // Restore nodes and links to normal opacity.
                     d3.selectAll('.edge').style('opacity', '1');
                     d3.selectAll('.node').style('opacity', '1');
+                    d3.selectAll('.nodeLabel').style('opacity', '1');
 	});
 
     var container = svg.append('g')
@@ -93,6 +94,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 	.classed("node", true)
         .attr("r", d => d[`radius_${centrality}`])
         .attr("fill", $('#color-picker').val())
+	.attr("stroke", "white")
+	.attr("stroke-width", 2)
         .on('click', function(d, i) {
                     // Ternary operator restyles links and nodes if they are adjacent.
                     d3.selectAll('.edge').style('opacity', function (l) {
@@ -101,7 +104,11 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     d3.selectAll('.node').style('opacity', function (n) {
               	      return neighboring(d, n) ? 1 : 0.1;
                     });
+                    d3.selectAll('.nodeLabel').style('opacity', function (n) {
+              	      return neighboring(d, n) ? 1 : 0.1;
+                    });
                     d3.select(this).style('opacity', 1);
+		    d3.select(`#node${nodeList.indexOf(d)}`).style('opacity', 1);
         })
         .on("dblclick", releasenode)
         .call(d3.drag()
@@ -115,6 +122,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data(nodeList)
         .enter().append("text")
         .text(d => d.id)
+	.classed("nodeLabel", true)
+	.attr("id", d => `node${nodeList.indexOf(d)}`)
         .attr('dx', d => d[`radius_${centrality}`] + 5)
         .attr('dy', 3)
         .style('font-size', d => d[`fontSize_${centrality}`]);
