@@ -79,7 +79,7 @@
 			</div>
 			<div class="fl w-100">
 				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
-					data-loading-text="Calculating..." autocomplete="off">Calculate <i class="em em-tada" aria-role="presentation" aria-label="PARTY POPPER"></i></button>
+					data-loading-text="Calculating..." autocomplete="off">Navigate <i class="em em-telescope" aria-role="presentation" aria-label="TELESCOPE"></i></button>
 			</div>
 		</form>
 		</div>
@@ -150,7 +150,7 @@
 						<div id="customize-form">
 							<div id="force-layout" class="flex flex-column" style="display: none;">
 								<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
-								<div class="fl w-100 f6 mid-gray h2">
+								<div class="fl w-100 f6 mid-gray pv2">
 									<label for="centrality">Size by centrality:</label>
 									<select name="centrality" id="centrality">
 										<option value="degree">Degree</option>
@@ -158,11 +158,15 @@
 										<option value="eigenvector">Eigenvector</option>
 									</select>
 								</div>
-								<div class="fl w-100 f6 mid-gray h2">
+								<div class="fl w-100 f6 mid-gray pv2">
+									<label for="color-picker">Choose a node color:</label>
+									<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this)'}" value='08B3E5' />
+								</div>
+								<div class="fl w-100 f6 mid-gray pv2">
 							 		<label for="edge-weight">Include edge weights?</label>
 									<input name="edge-weight" id="edge-weight" type="checkbox" checked />
 								</div>
-								<div class="fl w-100 f6 mid-gray h2">
+								<div class="fl w-100 f6 mid-gray pv2">
 							 		<input type="radio" value="straight" name="lineType" id="straight" checked>
 							 		<label for="straight">Straight Lines</label>
 							 		<input type="radio" value="curved" name="lineType" id="curved">
@@ -249,6 +253,15 @@
 	<script type="text/javascript" src="js/jquery.csv.min.js"></script>
 	<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.js"></script>
 	</script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
+	<script>
+	    function updateColor(picker) {
+	        d3.selectAll('.node').attr('fill', picker.toString());
+            }
+
+            jscolor.trigger('input');
+	</script>
+
 	<script type='module' src='js/main.js'></script>
 
 </body>
