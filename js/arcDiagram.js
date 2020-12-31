@@ -72,8 +72,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var node = nodesDiv.selectAll("circle")
         .data(nodeList)
         .enter().append("circle")
+	    .classed("node-arc", true)
             .attr("r", d => size(d.degree))
-            .attr("fill", d => color(d.community))
+            .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
     var arcsDiv = svg.insert("g", "*")
@@ -252,4 +253,5 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         let orderValue = $('#order-arc-nodes').val();
         updateArc(orderValue, orderDirection);
     });
+
 };
