@@ -23,6 +23,13 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const step = 16;
     const width = +svg.attr('width') + 1200 - margin.left;
     const height = +svg.attr('height') + 1200 - margin.left;
+    const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
+
+    // Call zoom for svg container.
+    svg.call(d3.zoom().on('zoom', zoomed));
+
+    var container = svg.append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
     var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -48,7 +55,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .domain(nodeList.map(d => d.id))
         .range([0, height]);
 
-    var labelsDiv = svg.append("g")
+    var labelsDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
         .attr("text-anchor", "end")
@@ -63,7 +70,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})rotate(0)` : `translate(${d.x = x(d.id)}, ${height - margin.left})rotate(-45)`)
             .attr("y", graphDirection === 'vertical' ? "0.35em" : 10);
 
-    var nodesDiv = svg.append("g")
+    var nodesDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
         .attr("text-anchor", "end")
@@ -77,7 +84,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
-    var arcsDiv = svg.insert("g", "*")
+    var arcsDiv = container.insert("g", "*")
         .attr("fill", "none")
         .style("stroke-opacity", 0.6)
         .style("stroke-width", 1.5)
@@ -90,7 +97,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("d", d => arc(d));
 
 
-    var overlaysDiv = svg.append("g")
+    var overlaysDiv = container.append("g")
         .attr("class", "overlays")
         .attr("fill", "none")
         .attr("pointer-events", "all")
@@ -202,7 +209,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 
-        const t = svg.transition()
+        const t = container.transition()
             .duration(750);
 
         label.transition(t)
@@ -253,5 +260,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         let orderValue = $('#order-arc-nodes').val();
         updateArc(orderValue, orderDirection);
     });
+
+    // Zooming function translates the size of the svg container.
+    function zoomed() {
+    	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+    }
+
 
 };
