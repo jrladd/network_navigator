@@ -222,8 +222,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
         path.transition(t)
-            .delay((d, i) => i * 40)
-            // .duration(750 + updatedNodeList.length * 20)
+            .delay((d, i) => i*10)
+            //.duration(750 + nodeList.length * 20)
             .attrTween("d", d => () => arc(d));
 
         overlay.transition(t)
