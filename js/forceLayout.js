@@ -82,7 +82,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data(edgeList)
         .enter().append("path")
 	    .classed("edge", true)
-            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
+            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight : 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
@@ -193,7 +193,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 			simulation.alpha(1).restart();
 	});
 	d3.select('#edge-weight').on('change', function() {
-        link.attr("stroke-width", d => this.checked ? d.scaled_weight / 2: 3)
+        link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
     });

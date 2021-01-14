@@ -368,7 +368,7 @@ $('#calculate').click(function () {
       }), d3.max(edgeList, function (d) {
         return d.weight;
       })])
-      .range([5, 10]);
+      .range([3, 20]);
     // Embed nodes as source and target
     edgeList.map(function (e) {
       e.source = idToNode[e.source];
