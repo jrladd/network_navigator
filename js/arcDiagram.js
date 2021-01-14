@@ -82,6 +82,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 	    .classed("node-arc", true)
             .attr("r", d => size(d.degree))
             .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
+	    .attr("stroke", "white")
+	    .attr("stroke-width", 2)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
     var arcsDiv = container.insert("g", "*")
