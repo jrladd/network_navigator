@@ -26,7 +26,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
     // Call zoom for svg container.
-    svg.call(d3.zoom().on('zoom', zoomed));
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
 
     var container = svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');

@@ -30,7 +30,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .classed("svg-content-responsive", true);
 
     // Call zoom for svg container.
-    svg.call(d3.zoom().on('zoom', zoomed));
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
 
     svg.append('rect')
 	.attr('width', '100%')
