@@ -160,7 +160,7 @@
 								</div>
 								<div class="fl w-100 f6 mid-gray pv2">
 									<label for="color-picker">Choose a node color:</label>
-									<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this)'}" value='08B3E5' />
+									<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
 								</div>
 								<div class="fl w-100 f6 mid-gray pv2">
 							 		<label for="edge-weight">Include edge weights?</label>
@@ -175,6 +175,14 @@
 							</div>
 							<div id="arc-diagram" class="flex flex-column" style="display: none;">
 								<h1 class="f6 lh-copy">Customize Arc Diagram</h1>
+								<div class="fl w-100 f6 mid-gray pv2">
+									<label for="centrality-arc">Size by centrality:</label>
+									<select name="centrality-arc" id="centrality-arc">
+										<option value="degree">Degree</option>
+										<option value="betweenness">Betweenness</option>
+										<option value="eigenvector">Eigenvector</option>
+									</select>
+								</div>
 								<div class="fl w-100 f6 mid-gray h2">
 									<label for="order-arc-nodes">Order nodes:</label>
 									<select name="order-arc-nodes" id="order-arc-nodes">
@@ -186,13 +194,13 @@
 										<option value="community">Community</option>
 									</select>
 								</div>
+								<div class="fl w-100 f6 mid-gray pv2">
+									<label for="color-picker-arc">Choose a node color:</label>
+									<input name="color-picker-arc" id="color-picker-arc" data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
+								</div>
 								<div class="fl w-100 f6 mid-gray h2">
 									<label for="reverse-arc-order">Reverse order?</label>
 									<input name="reverse-arc-order" id="reverse-arc-order" type="checkbox" />
-								</div>
-								<div class="fl w-100 f6 mid-gray h2">
-									<label for="edge-weight">Include edge weights?</label>
-									<input name="edge-weight" id="edge-weight" type="checkbox" checked />
 								</div>
 								<div class="fl w-100 f6 mid-gray h2">
 									<input type="radio" value="horizontal" name="graphDirection" id="horizontal">
@@ -255,8 +263,12 @@
 	</script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
 	<script>
-	    function updateColor(picker) {
-	        d3.selectAll('.node').attr('fill', picker.toString());
+	    function updateColor(picker, type) {
+		if (type === 'force') {
+	            d3.selectAll('.node').attr('fill', picker.toString());
+		} else if (type === 'arc') {
+	            d3.selectAll('.node-arc').attr('fill', picker.toString());
+		}
             }
 
             jscolor.trigger('input');

@@ -30,17 +30,17 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .classed("svg-content-responsive", true);
 
     // Call zoom for svg container.
-    svg.call(d3.zoom().on('zoom', zoomed));
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
 
     svg.append('rect')
 	.attr('width', '100%')
 	.attr('height', '100%')
 	.attr('fill', 'transparent')
 	.on('click', function() {
-                    // Restore nodes and links to normal opacity.
-                    d3.selectAll('.edge').style('opacity', '1');
-                    d3.selectAll('.node').style('opacity', '1');
-                    d3.selectAll('.nodeLabel').style('opacity', '1');
+        // Restore nodes and links to normal opacity.
+        d3.selectAll('.edge').style('opacity', '1');
+        d3.selectAll('.node').style('opacity', '1');
+        d3.selectAll('.nodeLabel').style('opacity', '1');
 	});
 
     var container = svg.append('g')
@@ -82,7 +82,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data(edgeList)
         .enter().append("path")
 	    .classed("edge", true)
-            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
+            .attr("stroke-width", d => d.scaled_weight)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
@@ -110,7 +110,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     d3.select(this).style('opacity', 1);
 		    d3.select(`#node${nodeList.indexOf(d)}`).style('opacity', 1);
         })
-        .on("dblclick", releasenode)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -171,12 +170,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         // d.fx = null;
         // d.fy = null;
     }
-
-    function releasenode(d) {
-        d.fx = null;
-        d.fy = null;
-    }
-
     // Zooming function translates the size of the svg container.
     function zoomed() {
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
@@ -193,7 +186,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 			simulation.alpha(1).restart();
 	});
 	d3.select('#edge-weight').on('change', function() {
-        link.attr("stroke-width", d => this.checked ? d.scaled_weight / 2: 3)
+        link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
     });

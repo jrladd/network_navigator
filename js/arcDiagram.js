@@ -4,6 +4,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     edgeList = edgeList.map(edge => ({...edge, edgeClicked: false}));
     let originalList = [...nodeList];
     let graphDirection = 'vertical';
+    let selectedNodes = [];
     const margin = {
         top: -200,
         right: 75,
@@ -23,6 +24,22 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const step = 16;
     const width = +svg.attr('width') + 1200 - margin.left;
     const height = +svg.attr('height') + 1200 - margin.left;
+    const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
+
+    // Call zoom for svg container.
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
+
+    svg.append('rect')
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('fill', 'transparent')
+        .on('click', function () {
+            // Restore nodes and links to normal opacity.
+            releaseNode();
+        });
+
+    var container = svg.append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
     var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -48,7 +65,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .domain(nodeList.map(d => d.id))
         .range([0, height]);
 
-    var labelsDiv = svg.append("g")
+    var labelsDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
         .attr("text-anchor", "end")
@@ -63,7 +80,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})rotate(0)` : `translate(${d.x = x(d.id)}, ${height - margin.left})rotate(-45)`)
             .attr("y", graphDirection === 'vertical' ? "0.35em" : 10);
 
-    var nodesDiv = svg.append("g")
+    var nodesDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
         .attr("text-anchor", "end")
@@ -72,11 +89,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var node = nodesDiv.selectAll("circle")
         .data(nodeList)
         .enter().append("circle")
+	    .classed("node-arc", true)
             .attr("r", d => size(d.degree))
-            .attr("fill", d => color(d.community))
+            .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
+	    .attr("stroke", "white")
+	    .attr("stroke-width", 2)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
-    var arcsDiv = svg.insert("g", "*")
+    var arcsDiv = container.insert("g", "*")
         .attr("fill", "none")
         .style("stroke-opacity", 0.6)
         .style("stroke-width", 1.5)
@@ -89,7 +109,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("d", d => arc(d));
 
 
-    var overlaysDiv = svg.append("g")
+    var overlaysDiv = container.append("g")
         .attr("class", "overlays")
         .attr("fill", "none")
         .attr("pointer-events", "all")
@@ -101,69 +121,65 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("height", step)
             .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
-            .on("dblclick", releaseNode)
             .on("click", d => {
                 if (!d.nodeClicked) {
-                    d.nodeClicked = true;
-                    label.filter(label => label.id === d.id).attr('nodeClicked', true);
+                    d.nodeClicked = true;                    
                     path.filter(path => path.source.id === d.id || path.target.id === d.id)
                         .attr('edgeClicked', path => {
                             path.edgeClicked = true
                             return true
                         });
-                    nodeEvent(d);
+                    nodeEvent(d, 'click');
                 }
             })
             .on("mouseover", d => {
                 if (!d.nodeClicked) {
-                    nodeEvent(d)
+                    nodeEvent(d, 'mouseover');
                 }
             })
-            .on("mouseout", d => {
-                if (!d.nodeClicked) {
-                    mouseOut()
-                }
-            });
+            .on("mouseout", mouseOut);
 
     function releaseNode(){
+        selectedNodes = [];
         label.attr('nodeClicked', d => d.nodeClicked = false);
         path.attr('edgeClicked', d => d.edgeClicked = false);
         mouseOut();
     }
 
-    function nodeEvent(d){
+    function nodeEvent(d, typeOfEvent){
+        
         var nodesToHighlight = edgeList.map(function (edge) {
             return edge.source.id === d.id ? edge.target : edge.target.id === d.id ? edge.source : 0
         }).filter(function (d) {
             return d
         });
+       
         nodesToHighlight.push(d);
-
-        nodeList.map(d => {if (d.nodeClicked){nodesToHighlight.push(d)}});
-
+        nodesToHighlight = [...nodesToHighlight, ...selectedNodes];
+        if (typeOfEvent === 'click') {
+            selectedNodes = nodesToHighlight; 
+        }
+        
         nodesToHighlight = nodesToHighlight.reduce((unique, o) => {
             if (!unique.some(obj => obj.id === o.id)) {
                 unique.push(o);
             }
             return unique;
         }, []);
-
         label.attr('fill', '#ccc');
-        label.filter(label => label.id === d.id)
+        label.filter(label => label.id === d.id).attr('nodeClicked', true);
+        label.filter(label => label.nodeClicked)
             .attr('fill', 'black')
             .style('font-weight', 'bold');
         label.filter(label => nodesToHighlight.some(node => label.id === node.id))
-            .attr('nodeClicked', label => {
-                label.nodeClicked = true;
-                return true
-            })
             .attr('fill', '#333');
         path.filter(path => path.source.id === d.id ||path.target.id === d.id)
             .style('stroke', '#333')
             .style('stroke-opacity', 1);
     }
+
     function mouseOut(){
-        label.filter(label => !label.nodeClicked)
+        label.filter(label => !selectedNodes.some(node => label.id === node.id))
             .attr("fill", d => color(d.community))
             .style('font-weight', 'normal');
         path.filter(path => !path.edgeClicked)
@@ -201,7 +217,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 
-        const t = svg.transition()
+        const t = container.transition()
             .duration(750);
 
         label.transition(t)
@@ -214,8 +230,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
         path.transition(t)
-            .delay((d, i) => i * 40)
-            // .duration(750 + updatedNodeList.length * 20)
+            .delay((d, i) => i*10)
+            //.duration(750 + nodeList.length * 20)
             .attrTween("d", d => () => arc(d));
 
         overlay.transition(t)
@@ -224,6 +240,15 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`);
 
     }
+
+	d3.select('#centrality-arc').on('change', function() { 
+            centrality = this.value;
+            node.attr('r', d => d[`radius_${centrality}`]);
+/*            nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
+			// Recalculate collision detection based on selected centrality.
+			simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
+			simulation.alpha(1).restart();*/
+	});
 
     d3.select('#order-arc-nodes').on('change', function () {
         let orderValue = this.value;
@@ -243,4 +268,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         let orderValue = $('#order-arc-nodes').val();
         updateArc(orderValue, orderDirection);
     });
+
+    // Zooming function translates the size of the svg container.
+    function zoomed() {
+    	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+    }
+
+
 };
