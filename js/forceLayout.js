@@ -30,7 +30,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .classed("svg-content-responsive", true);
 
     // Call zoom for svg container.
-    svg.call(d3.zoom().on('zoom', zoomed));
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
 
     svg.append('rect')
 	.attr('width', '100%')
@@ -186,7 +186,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 			simulation.alpha(1).restart();
 	});
 	d3.select('#edge-weight').on('change', function() {
-        link.attr("stroke-width", d => this.checked ? d.scaled_weight / 2: 3)
+        link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
     });

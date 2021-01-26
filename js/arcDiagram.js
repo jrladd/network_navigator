@@ -27,7 +27,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
     // Call zoom for svg container.
-    svg.call(d3.zoom().on('zoom', zoomed));
+    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
 
     svg.append('rect')
         .attr('width', '100%')
@@ -92,6 +92,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 	    .classed("node-arc", true)
             .attr("r", d => size(d.degree))
             .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
+	    .attr("stroke", "white")
+	    .attr("stroke-width", 2)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
     var arcsDiv = container.insert("g", "*")
