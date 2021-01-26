@@ -4,6 +4,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     edgeList = edgeList.map(edge => ({...edge, edgeClicked: false}));
     let originalList = [...nodeList];
     let graphDirection = 'vertical';
+    let selectedNodes = [];
     const margin = {
         top: -200,
         right: 75,
@@ -27,6 +28,15 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // Call zoom for svg container.
     svg.call(d3.zoom().on('zoom', zoomed));
+
+    svg.append('rect')
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('fill', 'transparent')
+        .on('click', function () {
+            // Restore nodes and links to normal opacity.
+            releaseNode();
+        });
 
     var container = svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -109,69 +119,65 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("height", step)
             .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
-            .on("dblclick", releaseNode)
             .on("click", d => {
                 if (!d.nodeClicked) {
-                    d.nodeClicked = true;
-                    label.filter(label => label.id === d.id).attr('nodeClicked', true);
+                    d.nodeClicked = true;                    
                     path.filter(path => path.source.id === d.id || path.target.id === d.id)
                         .attr('edgeClicked', path => {
                             path.edgeClicked = true
                             return true
                         });
-                    nodeEvent(d);
+                    nodeEvent(d, 'click');
                 }
             })
             .on("mouseover", d => {
                 if (!d.nodeClicked) {
-                    nodeEvent(d)
+                    nodeEvent(d, 'mouseover');
                 }
             })
-            .on("mouseout", d => {
-                if (!d.nodeClicked) {
-                    mouseOut()
-                }
-            });
+            .on("mouseout", mouseOut);
 
     function releaseNode(){
+        selectedNodes = [];
         label.attr('nodeClicked', d => d.nodeClicked = false);
         path.attr('edgeClicked', d => d.edgeClicked = false);
         mouseOut();
     }
 
-    function nodeEvent(d){
+    function nodeEvent(d, typeOfEvent){
+        
         var nodesToHighlight = edgeList.map(function (edge) {
             return edge.source.id === d.id ? edge.target : edge.target.id === d.id ? edge.source : 0
         }).filter(function (d) {
             return d
         });
+       
         nodesToHighlight.push(d);
-
-        nodeList.map(d => {if (d.nodeClicked){nodesToHighlight.push(d)}});
-
+        nodesToHighlight = [...nodesToHighlight, ...selectedNodes];
+        if (typeOfEvent === 'click') {
+            selectedNodes = nodesToHighlight; 
+        }
+        
         nodesToHighlight = nodesToHighlight.reduce((unique, o) => {
             if (!unique.some(obj => obj.id === o.id)) {
                 unique.push(o);
             }
             return unique;
         }, []);
-
         label.attr('fill', '#ccc');
-        label.filter(label => label.id === d.id)
+        label.filter(label => label.id === d.id).attr('nodeClicked', true);
+        label.filter(label => label.nodeClicked)
             .attr('fill', 'black')
             .style('font-weight', 'bold');
         label.filter(label => nodesToHighlight.some(node => label.id === node.id))
-            .attr('nodeClicked', label => {
-                label.nodeClicked = true;
-                return true
-            })
             .attr('fill', '#333');
         path.filter(path => path.source.id === d.id ||path.target.id === d.id)
             .style('stroke', '#333')
             .style('stroke-opacity', 1);
     }
+
     function mouseOut(){
-        label.filter(label => !label.nodeClicked)
+        label.filter(label => !selectedNodes.some(node => label.id === node.id))
             .attr("fill", d => color(d.community))
             .style('font-weight', 'normal');
         path.filter(path => !path.edgeClicked)

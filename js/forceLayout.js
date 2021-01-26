@@ -37,10 +37,10 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 	.attr('height', '100%')
 	.attr('fill', 'transparent')
 	.on('click', function() {
-                    // Restore nodes and links to normal opacity.
-                    d3.selectAll('.edge').style('opacity', '1');
-                    d3.selectAll('.node').style('opacity', '1');
-                    d3.selectAll('.nodeLabel').style('opacity', '1');
+        // Restore nodes and links to normal opacity.
+        d3.selectAll('.edge').style('opacity', '1');
+        d3.selectAll('.node').style('opacity', '1');
+        d3.selectAll('.nodeLabel').style('opacity', '1');
 	});
 
     var container = svg.append('g')
@@ -82,7 +82,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data(edgeList)
         .enter().append("path")
 	    .classed("edge", true)
-            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight / 2 : 3)
+            .attr("stroke-width", d => d.scaled_weight)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
@@ -110,7 +110,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     d3.select(this).style('opacity', 1);
 		    d3.select(`#node${nodeList.indexOf(d)}`).style('opacity', 1);
         })
-        .on("dblclick", releasenode)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -171,12 +170,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         // d.fx = null;
         // d.fy = null;
     }
-
-    function releasenode(d) {
-        d.fx = null;
-        d.fy = null;
-    }
-
     // Zooming function translates the size of the svg container.
     function zoomed() {
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
