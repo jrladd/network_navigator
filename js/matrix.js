@@ -1,10 +1,12 @@
 export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
+
+  let originalList = [...nodeList];
    // Build initial matrix
   const matrix = nodeList.map(function (outer, i) {
     outer.index = i;
     return nodeList.map(function (inner, j) {
       // if we want to use community add a check and change final zero to inner.community
-      return {i: i, j: j, weight: i === j ? 0 : 0};
+      return {y: i, x: j, weight: i === j ? 0 : 0};
     });
    });
 
@@ -47,16 +49,18 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .paddingInner(0.1)
     .align(0);
 
-  x.domain(d3.range(nodeList.length));
+  x.domain(d3.range(nodeList.length),);
 
-  opacity.domain([0, d3.max(edgeList, (d) => d.betweenness * 20)]);
-
-  var row = svg.selectAll('g.row')
+  var row = svg.selectAll('row')
     .data(matrix)
     .enter().append('g')
-    .attr('class', 'row')
-    .attr('transform', (_, i) => 'translate(0,' + x(i) + ')')
-    .each(makeRow);
+      .attr('class', 'row')
+      .attr('transform', (_, i) => 'translate(0,' + x(i) + ')')
+      .each(makeRow);
+
+  row.append("line")
+    .attr("x2", width)
+    .style("stroke", '#fff');
 
   row.append('text')
     .attr('class', 'label')
@@ -68,11 +72,17 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .style('text-anchor', 'end')
     .text((_, i) => nodeList[i].id);
 
-  var column = svg.selectAll('g.column')
+  var column = svg.selectAll('column')
     .data(matrix)
     .enter().append('g')
-    .attr('class', 'column')
-    .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
+      .attr('class', 'column')
+      .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
+
+  column.append("line")
+    .attr("x1", -width)
+    .style("stroke", '#fff');
+
+  column
     .append('text')
     .attr('class', 'label')
     .attr('x', 14)
@@ -95,43 +105,96 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .call(legendLinear);
 
   function makeRow(rowData) {
-    var cell = d3.select(this).selectAll('rect.cell')
-      .data(rowData)
+    var cell = d3.select(this).selectAll('.cell')
+      .data(rowData.filter((d) => d.weight))
       .enter().append('rect')
-      .attr('class', 'cell')
-      .attr('x', (_, i) => x(i))
-      .attr('width', x.bandwidth())
-      .attr('height', x.bandwidth())
-      .style('stroke', '#000000')
-      .style('stroke-width', 0)
-      .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
-      .style('fill', (d) => color(d.weight))
-      .on('mouseover', function (d) {
-        d3.select(this).style('stroke-width', 1);
-        row.filter((_, i) => d.i === i)
-          .selectAll('text')
-          .style('fill', '#000000')
-          .style('font-weight', 'bold');
-        column.filter((_, j) => d.j === j)
-          .style('fill', '#000000')
-          .style('font-weight', 'bold');
-      })
-      .on('mouseout', function () {
-        d3.select(this).style('stroke-width', 0)
-        row.selectAll('text')
-          .style('fill', null)
-          .style('font-weight', null);
-        column
-          .style('fill', null)
-          .style('font-weight', null);
-      });
+        .attr('class', 'cell')
+        .attr('x', (d, i) => x(d.x))
+        .attr('width', x.bandwidth())
+        .attr('height', x.bandwidth())
+        .style('stroke', '#000000')
+        .style('stroke-width', 0)
+        .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
+        .style('fill', (d) => color(d.weight))
+        .on('mouseover', function (d) {
+          d3.select(this).style('stroke-width', 1);
+          row.filter((_, i) => d.y === i)
+            .selectAll('text')
+            .style('fill', '#000000')
+            .style('font-weight', 'bold');
+          column.filter((_, j) => d.x === j)
+            .style('fill', '#000000')
+            .style('font-weight', 'bold');
+        })
+        .on('mouseout', function () {
+          d3.select(this).style('stroke-width', 0)
+          row.selectAll('text')
+            .style('fill', null)
+            .style('font-weight', null);
+          column
+            .style('fill', null)
+            .style('font-weight', null);
+        });
     cell.append('title')
       .text(function (d) {
-        return nodeList[d.i].id + ' - ' + nodeList[d.j].id + ', degree: ' + d.weight;
+        return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
       });
   }
+  function updateMatrix(orderValue, orderDirection) {
+    let updatedNodeList;
+    if (orderValue === 'original') {
+      updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
+      updatedNodeList = d3.range(updatedNodeList.length).sort((a, b) => updatedNodeList[a].index - updatedNodeList[b].index);
+    } else {
+      updatedNodeList = (orderValue === 'name') ? 
+        (orderDirection ? 
+          d3.range(nodeList.length).sort((a, b) => d3.descending(nodeList[a].id, nodeList[b].id))
+        :
+          d3.range(nodeList.length).sort((a, b) => d3.ascending(nodeList[a].id, nodeList[b].id))
+        ) :
+        (orderDirection ?
+          d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue]).reverse()
+        :
+          d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue])
+        )
+    }
+    x.domain(updatedNodeList,);
+
+    var t = svg.transition().duration(1500);
+
+    t.selectAll(".row")
+      .delay(function (d, i) {
+        return x(i) * 4;
+      })
+      .attr("transform", function (d, i) {
+        return "translate(0," + x(i) + ")";
+      })
+    t.selectAll(".cell")
+      .delay(function (d) {
+        return x(d.x) * 4;
+      })
+      .attr("x", function (d) {
+        return x(d.x);
+      });
+
+    t.selectAll(".column")
+      .delay(function (d, i) {
+        return x(i) * 4;
+      })
+      .attr("transform", function (d, i) {
+        return "translate(" + x(i) + ")rotate(-90)";
+      });
+  }
+
   d3.select('#order-matrix-cells').on('change', function () {
     let orderValue = this.value;
-    console.log(orderValue);
+    let orderDirection = $('#reverse-matrix-order').is(':checked');
+    updateMatrix(orderValue, orderDirection);
+  });
+
+  d3.select('#reverse-matrix-order').on('change', function () {
+    let orderDirection = this.checked;
+    let orderValue = $('#order-matrix-cells').val();
+    updateMatrix(orderValue, orderDirection);
   });
 };

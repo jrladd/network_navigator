@@ -208,12 +208,10 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
         } else {
             orderValue = orderValue === 'name' ? 'id' : orderValue;
-            sortOrder = (orderValue === 'id' || orderValue === 'original') ? nodeList.map(node => node[orderValue]).sort() : nodeList.map(node => node[orderValue]).sort((a, b) => a - b);
+            sortOrder = (orderValue === 'id') ? nodeList.map(node => node[orderValue]).sort() : nodeList.map(node => node[orderValue]).sort((a, b) => a - b);
             sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
             updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
-        }
-        
-        
+        }        
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 

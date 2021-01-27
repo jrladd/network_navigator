@@ -209,15 +209,27 @@
 									<label for="vertical">Vertical Arc Diagram</label>
 								</div>
 							</div>
-							<div id="matrix" class="flex flex-column" style="display: none;">
+							<div id="adjacency-matrix" class="flex flex-column" style="display: none;">
 								<h1 class="f6 lh-copy">Customize Matrix</h1>
 								<div class="fl w-100 f6 mid-gray h2">
 									<label for="order-matrix-cells">Order Cells:</label>
 									<select name="order-matrix-cells" id="order-matrix-cells">
 										<option value="original">Original Order</option>
 										<option value="name">Name</option>
+										<option value="degree">Degree</option>
+										<option value="betweenness">Betweenness Centrality</option>
+										<option value="eigenvector">Eigenvector Centrality</option>
 										<option value="community">Community</option>
 									</select>
+								</div>
+								<div class="fl w-100 f6 mid-gray pv2">
+									<label for="color-picker-matrix">Choose a node color:</label>
+									<input name="color-picker-matrix" id="color-picker-matrix"
+										data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)'}" value='08B3E5' />
+								</div>
+								<div class="fl w-100 f6 mid-gray h2">
+									<label for="reverse-matrix-order">Reverse order?</label>
+									<input name="reverse-matrix-order" id="reverse-matrix-order" type="checkbox" />
 								</div>
 							</div>
 						</div>
