@@ -225,7 +225,7 @@
 								<div class="fl w-100 f6 mid-gray pv2">
 									<label for="color-picker-matrix">Choose a node color:</label>
 									<input name="color-picker-matrix" id="color-picker-matrix"
-										data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)'}" value='08B3E5' />
+										data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)', format: 'rgb'}" value='08B3E5' />
 								</div>
 								<div class="fl w-100 f6 mid-gray h2">
 									<label for="reverse-matrix-order">Reverse order?</label>
@@ -280,6 +280,25 @@
 	            d3.selectAll('.node').attr('fill', picker.toString());
 		} else if (type === 'arc') {
 	            d3.selectAll('.node-arc').attr('fill', picker.toString());
+		} else if (type === 'matrix') {
+		    var origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	            var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
+		    var newRGB = `rgb(${newColor.join(",")})`;
+		    var colorValues = d3.selectAll('.matrix-cell').data().map(d => d.weight);
+		    var color = d3.scaleLinear()
+                        .domain([d3.min(colorValues), d3.max(colorValues)])
+                        .range([newRGB,picker.toString()])
+		    d3.selectAll('.matrix-cell').style('fill', (d) => color(d.weight));
+		    var colorUniques = [...new Set(colorValues)].sort((a,b) => {return a-b;});
+		    var legendLinear = d3.legendColor()
+                          .shapeWidth(50)
+                          .cells(colorUniques)
+                          .scale(color)
+                          .labelOffset(40);
+                      
+                    d3.select(".legendLinear")
+                          .call(legendLinear);
+
 		}
             }
 
