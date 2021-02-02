@@ -15,6 +15,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
      matrix[l.source.index][l.target.index].weight = l.weight;
      matrix[l.target.index][l.source.index].weight = l.weight;
   });
+  console.log(matrix);
 
   const margin = {
   top: 200,
@@ -41,7 +42,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
   var opacity = d3.scaleLinear()
-    .range([0.5, 1])
+    .range([1, 1000])
     .clamp(true);
 
   var x = d3.scaleBand()
@@ -60,14 +61,13 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   row.append("line")
     .attr("x2", width)
-    .style("stroke", '#fff');
+    .style("stroke", '#f4f4f4');
 
   row.append('text')
     .attr('class', 'label')
     .attr('x', -14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
-    .style('fill', '#999')
     .style('font-size', '1rem')
     .style('text-anchor', 'end')
     .text((_, i) => nodeList[i].id);
@@ -80,7 +80,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   column.append("line")
     .attr("x1", -width)
-    .style("stroke", '#fff');
+    .style("stroke", '#f4f4f4');
 
   column
     .append('text')
@@ -106,7 +106,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   function makeRow(rowData) {
     var cell = d3.select(this).selectAll('.cell')
-      .data(rowData.filter((d) => d.weight))
+      .data(rowData)
       .enter().append('rect')
         .attr('class', 'cell')
         .attr('x', (d, i) => x(d.x))
@@ -114,7 +114,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .attr('height', x.bandwidth())
         .style('stroke', '#000000')
         .style('stroke-width', 0)
-        .style('fill-opacity', (d) => d.weight > 0 ? opacity(d.weight) : 1)
+        .style('fill-opacity', (d) => opacity(d.weight))
         .style('fill', (d) => color(d.weight))
         .on('mouseover', function (d) {
           d3.select(this).style('stroke-width', 1);
