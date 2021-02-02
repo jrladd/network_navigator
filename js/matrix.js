@@ -42,7 +42,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   var newRGB = `rgb(${newColor.join(",")})`;
 
   var color = d3.scaleLinear()
-    .domain([d3.min(colorValues), d3.max(colorValues)])
+    .domain([1, d3.max(colorValues)])
     .range([newRGB,$('#color-picker-matrix').val()])
     //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
@@ -102,7 +102,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   var legendLinear = d3.legendColor()
     .shapeWidth(50)
-    .cells(colorValues)
+    .cells(colorValues.slice(1))
     .scale(color)
     .labelOffset(40);
 
@@ -119,8 +119,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .attr('height', x.bandwidth())
         .style('stroke', '#000000')
         .style('stroke-width', 0)
-        .style('fill-opacity', (d) => opacity(d.weight))
-        .style('fill', (d) => color(d.weight))
+        //.style('fill-opacity', (d) => opacity(d.weight))
+        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
         .on('mouseover', function (d) {
           d3.select(this).style('stroke-width', 1);
           row.filter((_, i) => d.y === i)
