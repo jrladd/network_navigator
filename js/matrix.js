@@ -37,9 +37,14 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   const width = +svg.attr('width') + 1000 - margin.left;
   const height = +svg.attr('height') + 1000 - margin.top;
 
+  var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
+  var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
+  var newRGB = `rgb(${newColor.join(",")})`;
+
   var color = d3.scaleLinear()
-    .domain(colorValues)
-    .range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
+    .domain([d3.min(colorValues), d3.max(colorValues)])
+    .range([newRGB,$('#color-picker-matrix').val()])
+    //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
   var opacity = d3.scaleLinear()
     .range([1, 1000])
@@ -108,7 +113,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var cell = d3.select(this).selectAll('.cell')
       .data(rowData)
       .enter().append('rect')
-        .attr('class', 'cell')
+        .attr('class', 'matrix-cell')
         .attr('x', (d, i) => x(d.x))
         .attr('width', x.bandwidth())
         .attr('height', x.bandwidth())
