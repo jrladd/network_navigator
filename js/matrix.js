@@ -1,21 +1,8 @@
 export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
 
   let originalList = [...nodeList];
-   // Build initial matrix
-  const matrix = nodeList.map(function (outer, i) {
-    outer.index = i;
-    return nodeList.map(function (inner, j) {
-      // if we want to use community add a check and change final zero to inner.community
-      return {y: i, x: j, weight: i === j ? 0 : 0};
-    });
-   });
-
-   // Update matrix values depending on edges
-  edgeList.forEach(function (l) {
-     matrix[l.source.index][l.target.index].weight = l.weight;
-     matrix[l.target.index][l.source.index].weight = l.weight;
-  });
-  console.log(matrix);
+  let updatedNodeList = Array.from(Array(nodeList.length).keys())
+  var selectedNodes = [];
 
   const margin = {
   top: 200,
@@ -37,6 +24,9 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   const width = +svg.attr('width') + 1000 - margin.left;
   const height = +svg.attr('height') + 1000 - margin.top;
 
+  const brush = d3.brush().on('end', brushed);
+
+
   var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
   var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
   var newRGB = `rgb(${newColor.join(",")})`;
@@ -55,21 +45,46 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .paddingInner(0.1)
     .align(0);
 
+  var nodeIDs = nodeList.map(d => d.id);
+  updateFullMatrix(nodeList,edgeList,nodeIDs);
+
+function updateFullMatrix(nodeList,edgeList,nodeIDs) {
+   // Build initial matrix
+  let matrix = nodeList.map(function (outer, i) {
+    outer.index = i;
+    return nodeList.map(function (inner, j) {
+      // if we want to use community add a check and change final zero to inner.community
+      return {y: i, x: j, weight: i === j ? 0 : 0};
+    });
+   });
+   // Update matrix values depending on edges
+  edgeList.forEach(function (l,i) {
+     matrix[nodeIDs.indexOf(l.source.id)][nodeIDs.indexOf(l.target.id)].weight = l.weight;
+     matrix[nodeIDs.indexOf(l.target.id)][nodeIDs.indexOf(l.source.id)].weight = l.weight;
+  });
+
   x.domain(d3.range(nodeList.length),);
 
-  var row = svg.selectAll('row')
-    .data(matrix)
-    .enter().append('g')
+  var row = svg.selectAll('.row')
+    .data(matrix);
+
+  row.exit().remove();
+
+  var rowEnter = row.enter().append('g');
+
+  rowEnter.merge(row)
       .attr('class', 'row')
       .attr('transform', (_, i) => 'translate(0,' + x(i) + ')')
-      .each(makeRow);
+      .each(makeRow); 
 
-  row.append("line")
+  rowEnter.append("line")
     .attr("x2", width)
     .style("stroke", '#f4f4f4');
 
-  row.append('text')
-    .attr('class', 'label')
+  svg.selectAll('.row-label').remove();
+
+  rowEnter.merge(row).append('text')
+    .attr('class', 'row-label')
     .attr('x', -14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
@@ -77,24 +92,35 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .style('text-anchor', 'end')
     .text((_, i) => nodeList[i].id);
 
-  var column = svg.selectAll('column')
-    .data(matrix)
-    .enter().append('g')
+
+  var column = svg.selectAll('.column')
+    .data(matrix);
+
+  column.exit().remove();
+
+  var columnEnter = column.enter().append('g');
+
+  columnEnter.merge(column)
       .attr('class', 'column')
       .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
 
-  column.append("line")
+  columnEnter.append("line")
     .attr("x1", -width)
     .style("stroke", '#f4f4f4');
 
-  column
+  svg.selectAll('.column-label').remove();
+
+  columnEnter.merge(column)
     .append('text')
-    .attr('class', 'label')
+    .attr('class', 'column-label')
     .attr('x', 14)
     .attr('y', x.bandwidth() / 2)
     .attr('dy', '0.32em')
     .style('text-anchor', 'start')
     .text( (_, i) => nodeList[i].id);
+
+
+}
 
   svg.append("g")
   .attr("class", "legendLinear")
@@ -110,9 +136,14 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .call(legendLinear);
 
   function makeRow(rowData) {
-    var cell = d3.select(this).selectAll('.cell')
-      .data(rowData)
-      .enter().append('rect')
+    var cell = d3.select(this).selectAll('.matrix-cell')
+      .data(rowData);
+
+    cell.exit().remove()
+
+    var cellEnter = cell.enter().append('rect')
+
+    cellEnter.merge(cell)
         .attr('class', 'matrix-cell')
         .attr('x', (d, i) => x(d.x))
         .attr('width', x.bandwidth())
@@ -123,30 +154,30 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
         .on('mouseover', function (d) {
           d3.select(this).style('stroke-width', 1);
-          row.filter((_, i) => d.y === i)
+          /*rowEnter.filter((_, i) => d.y === i)
             .selectAll('text')
             .style('fill', '#000000')
             .style('font-weight', 'bold');
           column.filter((_, j) => d.x === j)
             .style('fill', '#000000')
-            .style('font-weight', 'bold');
+            .style('font-weight', 'bold');*/
         })
         .on('mouseout', function () {
           d3.select(this).style('stroke-width', 0)
-          row.selectAll('text')
+          /*rowEnter.selectAll('text')
             .style('fill', null)
             .style('font-weight', null);
           column
             .style('fill', null)
-            .style('font-weight', null);
+            .style('font-weight', null);*/
         });
-    cell.append('title')
+    cellEnter.append('title')
       .text(function (d) {
         return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
       });
+
   }
   function updateMatrix(orderValue, orderDirection) {
-    let updatedNodeList;
     if (orderValue === 'original') {
       updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
       updatedNodeList = d3.range(updatedNodeList.length).sort((a, b) => updatedNodeList[a].index - updatedNodeList[b].index);
@@ -202,4 +233,27 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     let orderValue = $('#order-matrix-cells').val();
     updateMatrix(orderValue, orderDirection);
   });
+  svg.append('g').call(brush);
+  function brushed() {
+	  if (d3.event.selection) {
+	    var [[x0,y0],[x1,y1]] = d3.event.selection;
+	    var selected = updatedNodeList.filter(d => x0 < x(d) && x1 > x(d));
+	    if (selectedNodes.length === 0) {
+	      selectedNodes = selected.map(d => nodeList[d]);
+	    } else { 
+	      selectedNodes = selected.map(d => selectedNodes[d]);
+	    }
+	    var selectedIDs = selectedNodes.map(d => d.id);
+	    var selectedEdges = edgeList.filter(e => selectedIDs.indexOf(e.source.id) !== -1 && selectedIDs.indexOf(e.target.id) !== -1);
+	    updateFullMatrix(selectedNodes,selectedEdges,selectedIDs);
+	  }
+	  
+  }
+  d3.select("#restore-zoom")
+    .style("visibility", "visible")
+    .on("click", function() {
+	    updateFullMatrix(nodeList,edgeList,nodeIDs);
+	    selectedNodes = [];
+  	    svg.append('g').call(brush);
+    });
 };

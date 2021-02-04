@@ -133,6 +133,14 @@ $('#selected-graph').on('click', function (e) {
     selectedGraph = e.target.text;
     drawGraphs(selectedGraph);
   }
+  if (selectedGraph === "Adjacency Matrix") {
+    d3.select("#restore-zoom")
+      .style("visibility", "visible");
+  } else {
+    d3.select("#restore-zoom")
+      .style("visibility", "hidden");
+  }
+
 });
 
 // Download solution
