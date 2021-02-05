@@ -236,7 +236,7 @@ $('#calculate').click(function () {
   $('#eigen-error').hide();
   $('#customize-form').hide();
   selectedGraph = "Force Layout";
-  setTimeout(function () {
+  $('.loader').addClass('is-active');
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
     // var graphMode = $("input[name='graphMode']:checked").val();
@@ -424,7 +424,8 @@ $('#calculate').click(function () {
       $('.viz').show();
       drawGraphs(selectedGraph);
     });
-  }, 2000);
+
+   $('.loader').removeClass('is-active');
 
 });
 
