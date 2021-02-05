@@ -241,7 +241,11 @@ $('#calculate').click(function () {
     graphType = $("input[name='graphType']:checked").val();
     // var graphMode = $("input[name='graphMode']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
+    var headerRow = document.querySelector("#headerRow");
     var edges = $.csv.toArrays(data);
+    if (headerRow.checked) {
+      edges = edges.slice(1);
+    }
     // For D3 visualizations
     edgeList = [];
     edges.map(edge => {
