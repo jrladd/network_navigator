@@ -3,6 +3,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   let originalList = [...nodeList];
   let updatedNodeList = Array.from(Array(nodeList.length).keys())
   var selectedNodes = [];
+  var color;
 
   const margin = {
   top: 200,
@@ -26,15 +27,9 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   const brush = d3.brush().on('end', brushed);
 
-
-  var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
-  var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
-  var newRGB = `rgb(${newColor.join(",")})`;
-
-  var color = d3.scaleLinear()
-    .domain([1, d3.max(colorValues)])
-    .range([newRGB,$('#color-picker-matrix').val()])
-    //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
+  svg.append("g")
+  .attr("class", "legendLinear")
+  .attr("transform", `translate(${width},0)`);
 
   var opacity = d3.scaleLinear()
     .range([1, 1000])
@@ -49,6 +44,24 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   updateFullMatrix(nodeList,edgeList,nodeIDs);
 
 function updateFullMatrix(nodeList,edgeList,nodeIDs) {
+  // Redo color scales each time to keep consistent with picker
+  var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
+  var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
+  var newRGB = `rgb(${newColor.join(",")})`;
+
+  color = d3.scaleLinear()
+    .domain([1, d3.max(colorValues)])
+    .range([newRGB,$('#color-picker-matrix').val()])
+    //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
+  var legendLinear = d3.legendColor()
+    .shapeWidth(50)
+    .cells(colorValues.slice(1))
+    .scale(color)
+    .labelOffset(40);
+
+  svg.select(".legendLinear")
+    .call(legendLinear);
+
    // Build initial matrix
   let matrix = nodeList.map(function (outer, i) {
     outer.index = i;
@@ -122,18 +135,6 @@ function updateFullMatrix(nodeList,edgeList,nodeIDs) {
 
 }
 
-  svg.append("g")
-  .attr("class", "legendLinear")
-  .attr("transform", `translate(${width},0)`);
-
-  var legendLinear = d3.legendColor()
-    .shapeWidth(50)
-    .cells(colorValues.slice(1))
-    .scale(color)
-    .labelOffset(40);
-
-  svg.select(".legendLinear")
-    .call(legendLinear);
 
   function makeRow(rowData) {
     var cell = d3.select(this).selectAll('.matrix-cell')
