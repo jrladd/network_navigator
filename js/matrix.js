@@ -246,6 +246,8 @@ function updateFullMatrix(nodeList,edgeList,nodeIDs) {
 	    var selectedIDs = selectedNodes.map(d => d.id);
 	    var selectedEdges = edgeList.filter(e => selectedIDs.indexOf(e.source.id) !== -1 && selectedIDs.indexOf(e.target.id) !== -1);
 	    updateFullMatrix(selectedNodes,selectedEdges,selectedIDs);
+            $('#order-matrix-cells').prop("disabled", true);
+            $('#reverse-matrix-order').prop("disabled", true);
 	  }
 	  
   }
@@ -255,5 +257,7 @@ function updateFullMatrix(nodeList,edgeList,nodeIDs) {
 	    updateFullMatrix(nodeList,edgeList,nodeIDs);
 	    selectedNodes = [];
   	    svg.append('g').call(brush);
+            $('#order-matrix-cells').prop("disabled", false);
+            $('#reverse-matrix-order').prop("disabled", false);
     });
 };
