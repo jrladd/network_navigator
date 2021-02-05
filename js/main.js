@@ -426,6 +426,7 @@ $('#calculate').click(function () {
     });
 
    $('.loader').removeClass('is-active');
+   document.querySelector("#results").scrollIntoView({behavior: "smooth"});
 
 });
 
