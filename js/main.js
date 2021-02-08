@@ -216,9 +216,12 @@ $('#download-graph').on('click', function (e) {
 var table = $('#metrics-table').DataTable({
 	paging: false,
 	scrollY: 400,
+	scrollX: true,
 	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
 	dom: 'Bfti',
-	order: [[1, 'desc']]
+	order: [[1, 'desc']],
+	responsive: true,
+	autoWidth: false
 });
 
 $('textarea').on('keypress', function(e) {
