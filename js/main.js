@@ -332,15 +332,15 @@ $('#calculate').click(function () {
       item['id'] = node;
       item['degree'] = degree[node];
       item['betweenness'] = betweenness[node].toFixed(4);
-      let betweennessString = `${betweenness[node].toFixed(4)} (${betweennessSorted.indexOf(node).toString()})`;
+      let betweennessString = `${betweenness[node].toFixed(4)} (${(betweennessSorted.indexOf(node) + 1).toString()})`;
       let eigenvectorString = "N/A";
       let clusteringString = "N/A";
       if (eigenvector) {
-        eigenvectorString = `${eigenvector[node].toFixed(4)} (${eigenvectorSorted.indexOf(node).toString()})`;
+        eigenvectorString = `${eigenvector[node].toFixed(4)} (${(eigenvectorSorted.indexOf(node) + 1).toString()})`;
         item['eigenvector'] = eigenvector[node].toFixed(4);
       }
       if (graphType === 'undirected') {
-        clusteringString = `${clustering[node].toFixed(4)} (${clusteringSorted.indexOf(node).toString()})`;
+        clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
         item['clustering'] = clustering[node].toFixed(4);
       }
       item ['community'] = 1;
