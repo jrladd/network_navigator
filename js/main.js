@@ -46,6 +46,7 @@ $('#metrics-collapse').click(function (e) {
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#metrics-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 	else if (metrics.classList.contains('width-collapse')) {
 		metrics.classList.remove('width-collapse');
@@ -53,12 +54,14 @@ $('#metrics-collapse').click(function (e) {
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#metrics-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	} else { 
 		metrics.classList.add('width-collapse');
 		viz.classList.remove('w-50-ns');
 		$('#metric-on').hide();
 		$('#metric-off').show();
 		$('#metrics-collapse em').text('expand');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
 
@@ -71,6 +74,7 @@ $('#viz-collapse').click(function (e) {
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#viz-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 	else if (viz.classList.contains('width-collapse')) {
 		viz.classList.remove('width-collapse');
@@ -78,12 +82,14 @@ $('#viz-collapse').click(function (e) {
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#viz-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	} else { 
 		viz.classList.add('width-collapse');
 		metrics.classList.remove('w-50-ns');
 		$('#viz-on').hide();
 		$('#viz-off').show();
 		$('#viz-collapse em').text('expand');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
 
@@ -220,7 +226,6 @@ var table = $('#metrics-table').DataTable({
 	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
 	dom: 'Bfti',
 	order: [[1, 'desc']],
-	responsive: true,
 	autoWidth: false
 });
 
@@ -434,7 +439,7 @@ $('#calculate').click(function () {
 
    $('.loader').removeClass('is-active');
    document.querySelector("#results").scrollIntoView({behavior: "smooth"});
-
+   table.columns.adjust();
 });
 
 function reverse_sort(dict) {
