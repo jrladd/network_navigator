@@ -89,14 +89,16 @@ $('#viz-collapse').click(function (e) {
 
 $('#customize-button').click(function () {
   let customize = document.getElementById('customize');
+  let customizeButton = document.getElementById('customize-button');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
 	if (!customize.classList.contains('customize-expand')) {
     customize.classList.add('customize-expand');
-    
+    customizeButton.classList.add('customize-art');
     $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
     customize.classList.remove('customize-expand');
+    customizeButton.classList.remove('customize-art');
     $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}

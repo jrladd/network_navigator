@@ -8,14 +8,12 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       // if we want to use community add a check and change final zero to inner.community
       return {y: i, x: j, weight: i === j ? 0 : 0};
     });
-   });
-
-   // Update matrix values depending on edges
-  edgeList.forEach(function (l) {
-     matrix[l.source.index][l.target.index].weight = l.weight;
-     matrix[l.target.index][l.source.index].weight = l.weight;
   });
-  console.log(matrix);
+  // Update matrix values depending on edges
+  edgeList.forEach(function (l) {
+    matrix[l.source.index][l.target.index].weight = l.weight;
+    matrix[l.target.index][l.source.index].weight = l.weight;
+  });
 
   const margin = {
   top: 200,
@@ -43,9 +41,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   var color = d3.scaleLinear()
     .domain([d3.min(colorValues), d3.max(colorValues)])
-    .range([newRGB,$('#color-picker-matrix').val()])
-    //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
-
+    .range([newRGB,$('#color-picker-matrix').val()]);
+  
   var opacity = d3.scaleLinear()
     .range([1, 1000])
     .clamp(true);
@@ -55,7 +52,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .paddingInner(0.1)
     .align(0);
 
-  x.domain(d3.range(nodeList.length),);
+  x.domain(d3.range(nodeList.length));
 
   var row = svg.selectAll('row')
     .data(matrix)
@@ -81,7 +78,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .data(matrix)
     .enter().append('g')
       .attr('class', 'column')
-      .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
+      .attr('transform', (_, i) => 'translate(' + x(i) + ')rotate(-90)')
 
   column.append("line")
     .attr("x1", -width)
@@ -113,7 +110,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var cell = d3.select(this).selectAll('.cell')
       .data(rowData)
       .enter().append('rect')
-        .attr('class', 'matrix-cell')
+        .attr('class', 'cell')
         .attr('x', (d, i) => x(d.x))
         .attr('width', x.bandwidth())
         .attr('height', x.bandwidth())
@@ -163,7 +160,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
           d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue])
         )
     }
-    x.domain(updatedNodeList,);
+    console.log(updatedNodeList, nodeList);
+    x.domain(updatedNodeList);
 
     var t = svg.transition().duration(1500);
 
