@@ -10,9 +10,11 @@
 	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" href="css-loader.css">
 </head>
 
 <body class="helvetica bg-near-white">
+	<div class="loader loader-default"></div>
 	<header class="w-100 pa3 gradient">
 		<nav class="f4 fw6 tracked i white garamond">
 			Network Navigator <span class="f7 fs-normal">v2.0</span>
@@ -76,6 +78,10 @@
 					<input type="radio" value="weighted" name="graphWeight" id="weighted">
 					<label for="weighted">Weighted</label>
 				</div>
+				<div class="pa2">
+					<input type="checkbox" name="headerRow" id="headerRow">
+					<label for="headerRow">Header Row?</label>
+				</div>
 			</div>
 			<div class="fl w-100">
 				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
@@ -93,7 +99,7 @@
 			<strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector
 			centrality cannot be calculated.
 		</div>
-		<div class="fl w-100 pa2">
+		<div class="fl w-100 pa2" id="results">
 			<div id="buttons" class="w-100 h2">
 				<span class="pointer fl" id="metrics-collapse">
 					<i class="em em-arrow_left" id="metric-on" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
@@ -107,8 +113,8 @@
 			</div>
 			<div class="fl w-100 w-50-ns pa2" id="metrics">
 				<div class="pa2 mv2" id="info-panel"></div>
-				<div class="link dim blue pointer bb b--gray mb2" id="show-hist">Show/Hide Metric Distributions</div>
-				<div class="dn pa2 ba b--gray br3 mv2" id="hist-container">
+				<div class="i link dim blue pointer bb b--gray mb2" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
+				<div class="pa2 ba b--gray br3 mv2" id="hist-container">
 				<form id="histType" class="pa2">
 					<input type="radio" value="degree" name="histType" id="degree" checked>
 					<label for="degree">Degree</label>
@@ -125,7 +131,7 @@
 					<div class="fl w-50 h-50" id="eigenvector-hist"></div>
 					<div class="fl w-50 h-50" id="clustering-hist"></div> -->
 				</div>
-				<table id="metrics-table" class="display compact">
+				<table id="metrics-table" class="display compact nowrap">
 					<thead>
 						<tr>
 							<th>Node ID</th>
@@ -145,8 +151,8 @@
 					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
-					<div class="fl w-100 flex">
-						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph" style="z-index: 998;">
+					<div class="fl w-100 flex" id="graph-controls">
+						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
 							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Force Layout</a>
 							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Arc Diagram</a>
 							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Adjacency Matrix</a>
@@ -245,10 +251,12 @@
 					<div class="fl w-100 flex">
 						<div id="force-layout-viz"></div>
 						<div id="arc-diagram-viz" style="visibility: hidden;" ></div>
-						<div id="matrix-viz" style="visibility: hidden;"></div>
+						<div id="matrix-viz" style="visibility: hidden;">
+					        </div>
 					</div>
-					<div class="fl w-100 flex" id="download-graph">
-						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Download Graph</a>
+					<div class="fl w-100 flex">
+						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Download Graph</a>
+						<a id="restore-zoom" style="visibility: hidden;" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Restore Zoom</a>
 					</div>
 				</div>
 			</div>
@@ -289,11 +297,11 @@
 		    var color = d3.scaleLinear()
                         .domain([d3.min(colorValues), d3.max(colorValues)])
                         .range([newRGB,picker.toString()])
-		    d3.selectAll('.matrix-cell').style('fill', (d) => color(d.weight));
+		    d3.selectAll('.matrix-cell').style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
 		    var colorUniques = [...new Set(colorValues)].sort((a,b) => {return a-b;});
 		    var legendLinear = d3.legendColor()
                           .shapeWidth(50)
-                          .cells(colorUniques)
+                          .cells(colorUniques.slice(1))
                           .scale(color)
                           .labelOffset(40);
                       

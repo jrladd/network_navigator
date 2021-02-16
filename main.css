@@ -1,6 +1,7 @@
 html {
 	position: relative;
 	min-height: 100%;
+	scroll-behavior: smooth;
 }
 
 .gradient {
@@ -94,8 +95,8 @@ rect.bar {
 		transition: width .5s, height.5s;
 		z-index: 999;
 		position: absolute;
-		width: 40%;
-		top: 1rem;
+		width: 98%;
+		top: 0;
 		right: 0;
 	}
 	.customize-art {
@@ -104,7 +105,5 @@ rect.bar {
 		position: absolute;
 		margin: .5rem;
 	}
-}
-@media only screen and (min-width: 30em) {
 
 }
