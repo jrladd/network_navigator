@@ -92,6 +92,9 @@ $('#viz-collapse').click(function (e) {
 		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
+$('#customize-form').click( function(e) {
+  e.stopPropagation();
+});
 
 $('#customize').click(function () {
   let customize = $('#customize');
