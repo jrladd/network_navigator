@@ -93,33 +93,30 @@ $('#viz-collapse').click(function (e) {
 	}
 });
 
-$('#customize-button').click(function () {
+$('#customize').click(function () {
   let customize = $('#customize');
-  let customizeButton = $('#customize-button');
+  let customizeIcon = $('#customize-icon');
   let graphControls = $('#graph-controls');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
   let mediaQuery = window.matchMedia('(min-width: 30em)');
-  console.log(customize.hasClass('customize-expand'));
+  console.log(customize.hasClass('customize-expand'), $("#graph-controls").hasClass('flex-column'));
 	if (!customize.hasClass('customize-expand')) {
+    customize.addClass('customize-expand');
     if (mediaQuery.matches) {
-      customize.addClass('customize-expand');
-      customizeButton.addClass('customize-art');
+      customizeIcon.addClass('customize-art');
     } else {
-      if ($("#graph-controls flex-column").length == 0) {
+      if (!$("#graph-controls").hasClass('flex-column')) {
         graphControls.addClass('flex-column');
-        $('#customize').prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
+        customize.prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
       }
     }
     $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
+    customize.removeClass('customize-expand');
     if (mediaQuery.matches) {
-      customize.removeClass('customize-expand');
-      customizeButton.removeClass('customize-art');
-    } else {
-      graphControls.removeClass('flex-column');
-      $('#customize').remove('<p>');
-    }
+      customizeIcon.removeClass('customize-art');
+    } 
     $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}
