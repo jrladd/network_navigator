@@ -90,6 +90,10 @@ rect.bar {
 #customize {
 	transition: width .5s, height.5s;
 }
+	.customize-expand {
+		transition: width .5s, height.5s;
+		width:98%;
+	}
 @media only screen and (min-width: 30em) {
 	.customize-expand {
 		transition: width .5s, height.5s;

@@ -102,7 +102,6 @@ $('#customize').click(function () {
   let graphControls = $('#graph-controls');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
   let mediaQuery = window.matchMedia('(min-width: 30em)');
-  console.log(customize.hasClass('customize-expand'), $("#graph-controls").hasClass('flex-column'));
 	if (!customize.hasClass('customize-expand')) {
     customize.addClass('customize-expand');
     if (mediaQuery.matches) {
