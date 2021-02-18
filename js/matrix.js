@@ -235,7 +235,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     let orderValue = $('#order-matrix-cells').val();
     updateMatrix(orderValue, orderDirection);
   });
-  svg.append('g').call(brush);
+  var brushArea = svg.append('g');
+  brushArea.call(brush);
   function brushed() {
 	  if (d3.event.selection) {
 	    var [[x0,y0],[x1,y1]] = d3.event.selection;
@@ -250,6 +251,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 	    updateFullMatrix(selectedNodes,selectedEdges,selectedIDs);
             $('#order-matrix-cells').prop("disabled", true);
             $('#reverse-matrix-order').prop("disabled", true);
+	    brushArea.call(brush.move, null);
 	  }
 	  
   }
