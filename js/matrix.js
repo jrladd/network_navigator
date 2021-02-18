@@ -137,7 +137,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
 
   function makeRow(rowData) {
-    var cell = d3.select(this).selectAll('.cell')
+    var cell = d3.select(this).selectAll('.matrix-cell')
       .data(rowData);
 
     cell.exit().remove()
@@ -145,7 +145,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var cellEnter = cell.enter().append('rect')
 
     cellEnter.merge(cell)
-        .attr('class', 'cell')
+        .attr('class', 'matrix-cell')
         .attr('x', (d, i) => x(d.x))
         .attr('width', x.bandwidth())
         .attr('height', x.bandwidth())
@@ -207,7 +207,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr("transform", function (d, i) {
         return "translate(0," + x(i) + ")";
       })
-    t.selectAll(".cell")
+    t.selectAll(".matrix-cell")
       .delay(function (d) {
         return x(d.x) * 4;
       })
