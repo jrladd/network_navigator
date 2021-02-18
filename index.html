@@ -10,9 +10,11 @@
 	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" href="css-loader.css">
 </head>
 
 <body class="helvetica bg-near-white">
+	<div class="loader loader-default"></div>
 	<header class="w-100 pa3 gradient">
 		<nav class="f4 fw6 tracked i white garamond">
 			Network Navigator <span class="f7 fs-normal">v2.0</span>
@@ -76,6 +78,10 @@
 					<input type="radio" value="weighted" name="graphWeight" id="weighted">
 					<label for="weighted">Weighted</label>
 				</div>
+				<div class="pa2">
+					<input type="checkbox" name="headerRow" id="headerRow">
+					<label for="headerRow">Header Row?</label>
+				</div>
 			</div>
 			<div class="fl w-100">
 				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
@@ -93,7 +99,7 @@
 			<strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector
 			centrality cannot be calculated.
 		</div>
-		<div class="fl w-100 pa2">
+		<div class="fl w-100 pa2" id="results">
 			<div id="buttons" class="w-100 h2">
 				<span class="pointer fl" id="metrics-collapse">
 					<i class="em em-arrow_left" id="metric-on" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
@@ -107,8 +113,8 @@
 			</div>
 			<div class="fl w-100 w-50-ns pa2" id="metrics">
 				<div class="pa2 mv2" id="info-panel"></div>
-				<div class="link dim blue pointer bb b--gray mb2" id="show-hist">Show/Hide Metric Distributions</div>
-				<div class="dn pa2 ba b--gray br3 mv2" id="hist-container">
+				<div class="i link dim blue pointer bb b--gray mb2" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
+				<div class="pa2 ba b--gray br3 mv2" id="hist-container">
 				<form id="histType" class="pa2">
 					<input type="radio" value="degree" name="histType" id="degree" checked>
 					<label for="degree">Degree</label>
@@ -125,7 +131,7 @@
 					<div class="fl w-50 h-50" id="eigenvector-hist"></div>
 					<div class="fl w-50 h-50" id="clustering-hist"></div> -->
 				</div>
-				<table id="metrics-table" class="display compact">
+				<table id="metrics-table" class="display compact nowrap">
 					<thead>
 						<tr>
 							<th>Node ID</th>
@@ -145,97 +151,112 @@
 					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
-				        <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize">
-						<i class="em em-art absolute top-0 right-0 ma1" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-button"></i>
-						<div id="customize-form">
-							<div id="force-layout" class="flex flex-column" style="display: none;">
-								<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
-								<div class="fl w-100 f6 mid-gray pv2">
-									<label for="centrality">Size by centrality:</label>
-									<select name="centrality" id="centrality">
-										<option value="degree">Degree</option>
-										<option value="betweenness">Betweenness</option>
-										<option value="eigenvector">Eigenvector</option>
-									</select>
-								</div>
-								<div class="fl w-100 f6 mid-gray pv2">
-									<label for="color-picker">Choose a node color:</label>
-									<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
-								</div>
-								<div class="fl w-100 f6 mid-gray pv2">
-							 		<label for="edge-weight">Include edge weights?</label>
-									<input name="edge-weight" id="edge-weight" type="checkbox" checked />
-								</div>
-								<div class="fl w-100 f6 mid-gray pv2">
-							 		<input type="radio" value="straight" name="lineType" id="straight" checked>
-							 		<label for="straight">Straight Lines</label>
-							 		<input type="radio" value="curved" name="lineType" id="curved">
-									<label for="curved">Curved Lines</label>
-								</div>
-							</div>
-							<div id="arc-diagram" class="flex flex-column" style="display: none;">
-								<h1 class="f6 lh-copy">Customize Arc Diagram</h1>
-								<div class="fl w-100 f6 mid-gray pv2">
-									<label for="centrality-arc">Size by centrality:</label>
-									<select name="centrality-arc" id="centrality-arc">
-										<option value="degree">Degree</option>
-										<option value="betweenness">Betweenness</option>
-										<option value="eigenvector">Eigenvector</option>
-									</select>
-								</div>
-								<div class="fl w-100 f6 mid-gray h2">
-									<label for="order-arc-nodes">Order nodes:</label>
-									<select name="order-arc-nodes" id="order-arc-nodes">
-										<option value="original">Original Order</option>
-										<option value="name">Name</option>
-										<option value="degree">Degree</option>
-										<option value="betweenness">Betweenness Centrality</option>
-										<option value="eigenvector">Eigenvector Centrality</option>
-										<option value="community">Community</option>
-									</select>
-								</div>
-								<div class="fl w-100 f6 mid-gray pv2">
-									<label for="color-picker-arc">Choose a node color:</label>
-									<input name="color-picker-arc" id="color-picker-arc" data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
-								</div>
-								<div class="fl w-100 f6 mid-gray h2">
-									<label for="reverse-arc-order">Reverse order?</label>
-									<input name="reverse-arc-order" id="reverse-arc-order" type="checkbox" />
-								</div>
-								<div class="fl w-100 f6 mid-gray h2">
-									<input type="radio" value="horizontal" name="graphDirection" id="horizontal">
-									<label for="horizontal">Horizontal Arc Diagram</label>
-									<input type="radio" value="vertical" name="graphDirection" id="vertical" checked>
-									<label for="vertical">Vertical Arc Diagram</label>
-								</div>
-							</div>
-							<div id="matrix" class="flex flex-column" style="display: none;">
-								<h1 class="f6 lh-copy">Customize Matrix</h1>
-								<div class="fl w-100 f6 mid-gray h2">
-									<label for="order-matrix-cells">Order Cells:</label>
-									<select name="order-matrix-cells" id="order-matrix-cells">
-										<option value="original">Original Order</option>
-										<option value="name">Name</option>
-										<option value="community">Community</option>
-									</select>
-								</div>
-							</div>
+					<div class="fl w-100 flex" id="graph-controls">
+						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
+							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Force Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Adjacency Matrix</a>
 						</div>
-					</div>
-					<div class="fl w-100 flex">
-						<div class="fl flex" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Force Layout</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Arc Diagram</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Adjacency Matrix</a>
+						<!-- <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize"> -->
+						<div class="fr b--gray br2 ba bg-near-white pa1 ph3 ma2 w-5-ns" id="customize">
+							<i class="em em-art" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-icon"></i>
+							<div id="customize-form">
+								<div id="force-layout" class="flex flex-column" style="display: none;">
+									<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="centrality">Size by centrality:</label>
+										<select name="centrality" id="centrality">
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker">Choose a node color:</label>
+										<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="edge-weight">Include edge weights?</label>
+										<input name="edge-weight" id="edge-weight" type="checkbox" checked />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<input type="radio" value="straight" name="lineType" id="straight" checked>
+										<label for="straight">Straight Lines</label>
+										<input type="radio" value="curved" name="lineType" id="curved">
+										<label for="curved">Curved Lines</label>
+									</div>
+								</div>
+								<div id="arc-diagram" class="flex flex-column" style="display: none;">
+									<h1 class="f6 lh-copy">Customize Arc Diagram</h1>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="centrality-arc">Size by centrality:</label>
+										<select name="centrality-arc" id="centrality-arc">
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="order-arc-nodes">Order nodes:</label>
+										<select name="order-arc-nodes" id="order-arc-nodes">
+											<option value="original">Original Order</option>
+											<option value="name">Name</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness Centrality</option>
+											<option value="eigenvector">Eigenvector Centrality</option>
+											<option value="community">Community</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker-arc">Choose a node color:</label>
+										<input name="color-picker-arc" id="color-picker-arc" data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="reverse-arc-order">Reverse order?</label>
+										<input name="reverse-arc-order" id="reverse-arc-order" type="checkbox" />
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<input type="radio" value="horizontal" name="graphDirection" id="horizontal">
+										<label for="horizontal">Horizontal Arc Diagram</label>
+										<input type="radio" value="vertical" name="graphDirection" id="vertical" checked>
+										<label for="vertical">Vertical Arc Diagram</label>
+									</div>
+								</div>
+								<div id="adjacency-matrix" class="flex flex-column" style="display: none;">
+									<h1 class="f6 lh-copy">Customize Matrix</h1>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="order-matrix-cells">Order Cells:</label>
+										<select name="order-matrix-cells" id="order-matrix-cells">
+											<option value="original">Original Order</option>
+											<option value="name">Name</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness Centrality</option>
+											<option value="eigenvector">Eigenvector Centrality</option>
+											<option value="community">Community</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker-matrix">Choose a node color:</label>
+										<input name="color-picker-matrix" id="color-picker-matrix"
+											data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)', format: 'rgb'}" value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="reverse-matrix-order">Reverse order?</label>
+										<input name="reverse-matrix-order" id="reverse-matrix-order" type="checkbox" />
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 					<div class="fl w-100 flex">
 						<div id="force-layout-viz"></div>
 						<div id="arc-diagram-viz" style="visibility: hidden;" ></div>
-						<div id="matrix-viz" style="visibility: hidden;"></div>
+						<div id="matrix-viz" style="visibility: hidden;">
+					        </div>
 					</div>
-					<div class="fl w-100 flex" id="download-graph">
-						<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Download Graph</a>
+					<div class="fl w-100 flex">
+						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Download Graph</a>
+						<a id="restore-zoom" style="visibility: hidden;" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Restore Zoom</a>
 					</div>
 				</div>
 			</div>
@@ -268,6 +289,25 @@
 	            d3.selectAll('.node').attr('fill', picker.toString());
 		} else if (type === 'arc') {
 	            d3.selectAll('.node-arc').attr('fill', picker.toString());
+		} else if (type === 'matrix') {
+		    var origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	            var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
+		    var newRGB = `rgb(${newColor.join(",")})`;
+		    var colorValues = d3.selectAll('.matrix-cell').data().map(d => d.weight);
+		    var color = d3.scaleLinear()
+                        .domain([d3.min(colorValues), d3.max(colorValues)])
+                        .range([newRGB,picker.toString()])
+		    d3.selectAll('.matrix-cell').style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
+		    var colorUniques = [...new Set(colorValues)].sort((a,b) => {return a-b;});
+		    var legendLinear = d3.legendColor()
+                          .shapeWidth(50)
+                          .cells(colorUniques.slice(1))
+                          .scale(color)
+                          .labelOffset(40);
+                      
+                    d3.select(".legendLinear")
+                          .call(legendLinear);
+
 		}
             }
 

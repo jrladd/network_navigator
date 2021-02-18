@@ -1,4 +1,4 @@
-export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight) {
+export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
     
     let lineType = $("input[name='lineType']:checked").val();
     let centrality = 'degree';
@@ -48,10 +48,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     
     const width = +svg.attr('width') + 1400 - margin.left;
     const height = +svg.attr('height') + 1000 - margin.top;
-    
-    var color = d3.scaleOrdinal()
-        .domain(colorValues)
-        .range([ "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
 
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id).distance(100).strength(1))

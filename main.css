@@ -1,6 +1,7 @@
 html {
 	position: relative;
 	min-height: 100%;
+	scroll-behavior: smooth;
 }
 
 .gradient {
@@ -89,8 +90,25 @@ rect.bar {
 #customize {
 	transition: width .5s, height.5s;
 }
+@media only screen and (min-width: 30em) {
+	.customize-expand {
+		transition: width .5s, height.5s;
+		z-index: 999;
+		position: absolute;
+		width: 98%;
+		top: 0;
+		right: 0;
+	}
+	.customize-art {
+		top: 0;
+		right: 0;
+		position: absolute;
+		margin: .5rem;
+	}
 
-.customize-expand {
-	width: 25vw;
-	transition: width .5s, height.5s;
+}
+@media only screen and (max-width: 30em) {
+	.customize-expand {
+		transition: width .5s, height.5s;
+	}
 }

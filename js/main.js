@@ -46,6 +46,7 @@ $('#metrics-collapse').click(function (e) {
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#metrics-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 	else if (metrics.classList.contains('width-collapse')) {
 		metrics.classList.remove('width-collapse');
@@ -53,12 +54,14 @@ $('#metrics-collapse').click(function (e) {
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#metrics-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	} else { 
 		metrics.classList.add('width-collapse');
 		viz.classList.remove('w-50-ns');
 		$('#metric-on').hide();
 		$('#metric-off').show();
 		$('#metrics-collapse em').text('expand');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
 
@@ -71,6 +74,7 @@ $('#viz-collapse').click(function (e) {
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#viz-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 	else if (viz.classList.contains('width-collapse')) {
 		viz.classList.remove('width-collapse');
@@ -78,25 +82,43 @@ $('#viz-collapse').click(function (e) {
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#viz-collapse em').text('collapse');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	} else { 
 		viz.classList.add('width-collapse');
 		metrics.classList.remove('w-50-ns');
 		$('#viz-on').hide();
 		$('#viz-off').show();
 		$('#viz-collapse em').text('expand');
+		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
+$('#customize-form').click( function(e) {
+  e.stopPropagation();
+});
 
-$('#customize-button').click(function () {
-  let customize = document.getElementById('customize');
+$('#customize').click(function () {
+  let customize = $('#customize');
+  let customizeIcon = $('#customize-icon');
+  let graphControls = $('#graph-controls');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-	if (!customize.classList.contains('customize-expand')) {
-    customize.classList.add('customize-expand');
-    
+  let mediaQuery = window.matchMedia('(min-width: 30em)');
+	if (!customize.hasClass('customize-expand')) {
+    customize.addClass('customize-expand');
+    if (mediaQuery.matches) {
+      customizeIcon.addClass('customize-art');
+    } else {
+      if (!$("#graph-controls").hasClass('flex-column')) {
+        graphControls.addClass('flex-column');
+        customize.prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
+      }
+    }
     $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
-    customize.classList.remove('customize-expand');
+    customize.removeClass('customize-expand');
+    if (mediaQuery.matches) {
+      customizeIcon.removeClass('customize-art');
+    } 
     $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}
@@ -133,6 +155,14 @@ $('#selected-graph').on('click', function (e) {
     selectedGraph = e.target.text;
     drawGraphs(selectedGraph);
   }
+  if (selectedGraph === "Adjacency Matrix") {
+    d3.select("#restore-zoom")
+      .style("visibility", "visible");
+  } else {
+    d3.select("#restore-zoom")
+      .style("visibility", "hidden");
+  }
+
 });
 
 // Download solution
@@ -208,9 +238,11 @@ $('#download-graph').on('click', function (e) {
 var table = $('#metrics-table').DataTable({
 	paging: false,
 	scrollY: 400,
+	scrollX: true,
 	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
 	dom: 'Bfti',
-	order: [[1, 'desc']]
+	order: [[1, 'desc']],
+	autoWidth: false
 });
 
 $('textarea').on('keypress', function(e) {
@@ -227,13 +259,22 @@ $('#calculate').click(function () {
   $('#row-error').hide();
   $('#eigen-error').hide();
   $('#customize-form').hide();
+  let mediaQuery = window.matchMedia('(min-width: 30em)');
+  if (!mediaQuery.matches){
+    $('#graph-controls').addClass('flex-column');
+    $('#customize').prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
+  }
   selectedGraph = "Force Layout";
-  setTimeout(function () {
+  $('.loader').addClass('is-active');
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
     // var graphMode = $("input[name='graphMode']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
+    var headerRow = document.querySelector("#headerRow");
     var edges = $.csv.toArrays(data);
+    if (headerRow.checked) {
+      edges = edges.slice(1);
+    }
     // For D3 visualizations
     edgeList = [];
     edges.map(edge => {
@@ -312,15 +353,15 @@ $('#calculate').click(function () {
       item['id'] = node;
       item['degree'] = degree[node];
       item['betweenness'] = betweenness[node].toFixed(4);
-      let betweennessString = `${betweenness[node].toFixed(4)} (${betweennessSorted.indexOf(node).toString()})`;
+      let betweennessString = `${betweenness[node].toFixed(4)} (${(betweennessSorted.indexOf(node) + 1).toString()})`;
       let eigenvectorString = "N/A";
       let clusteringString = "N/A";
       if (eigenvector) {
-        eigenvectorString = `${eigenvector[node].toFixed(4)} (${eigenvectorSorted.indexOf(node).toString()})`;
+        eigenvectorString = `${eigenvector[node].toFixed(4)} (${(eigenvectorSorted.indexOf(node) + 1).toString()})`;
         item['eigenvector'] = eigenvector[node].toFixed(4);
       }
       if (graphType === 'undirected') {
-        clusteringString = `${clustering[node].toFixed(4)} (${clusteringSorted.indexOf(node).toString()})`;
+        clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
         item['clustering'] = clustering[node].toFixed(4);
       }
       item ['community'] = 1;
@@ -416,8 +457,10 @@ $('#calculate').click(function () {
       $('.viz').show();
       drawGraphs(selectedGraph);
     });
-  }, 2000);
 
+   $('.loader').removeClass('is-active');
+   document.querySelector("#results").scrollIntoView({behavior: "smooth"});
+   table.columns.adjust();
 });
 
 function reverse_sort(dict) {
