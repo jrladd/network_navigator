@@ -52,7 +52,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     color = d3.scaleLinear()
       .domain([1, d3.max(colorValues)])
       .range([newRGB,$('#color-picker-matrix').val()])
-      //.range(["#f7fbff", "#e3eef9", "#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
+
     var legendLinear = d3.legendColor()
       .shapeWidth(50)
       .cells(colorValues.slice(1))
@@ -131,8 +131,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('dy', '0.32em')
       .style('text-anchor', 'start')
       .text( (_, i) => nodeList[i].id);
-
-
   }
 
 

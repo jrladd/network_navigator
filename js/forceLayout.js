@@ -29,8 +29,9 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         .attr("viewBox", "0 0 1400 1000")
         .classed("svg-content-responsive", true);
 
+    var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
     // Call zoom for svg container.
-    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
+    svg.call(zoom);
 
     svg.append('rect')
 	.attr('width', '100%')
@@ -197,6 +198,12 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
             .links(edgeList);
         
         simulation.alpha(1).restart();
+    });
+
+    $('#restore-zoom').on('click', function(){
+        if ($('#force-layout-viz').is(":visible")){
+            zoom.transform(container, d3.zoomIdentity);
+        }
     });
 
 };

@@ -11,6 +11,8 @@
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
 	<link rel="stylesheet" href="css-loader.css">
+	<link rel="icon"
+		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
 </head>
 
 <body class="helvetica bg-near-white">
@@ -120,7 +122,7 @@
 					<div class="w-100 bb b--gray flex-wrap flex">
 						<div class="i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
 						<div class="tr w-50 i link dim pointer mb3" id="download-hist">
-							download histogram <i class="em em-floppy_disk" aria-role="presentation" aria-label="BAR CHART"></i>
+							download histogram <i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
 						</div>
 					</div>
 					<div class="pa2 ba b--gray br3 mv2" id="hist-container">
@@ -163,13 +165,11 @@
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
 					<div class="fl w-100 flex" id="graph-controls">
 						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font"
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font"
 								href="#0">Force Layout</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font" href="#0">Adjacency
-								Matrix</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Adjacency Matrix</a>
 						</div>
-						<!-- <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize"> -->
 						<div class="fr b--gray br2 ba bg-near-white pa1 ph3 ma2 w-5-ns" id="customize">
 							<i class="em em-art" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-icon"></i>
 							<div id="customize-form">
@@ -263,12 +263,13 @@
 					<div class="fl w-100 flex">
 						<div id="force-layout-viz"></div>
 						<div id="arc-diagram-viz" style="visibility: hidden;" ></div>
-						<div id="matrix-viz" style="visibility: hidden;">
-					        </div>
+						<div id="matrix-viz" style="visibility: hidden;"></div>
 					</div>
 					<div class="fl w-100 flex">
-						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Download Graph</a>
-						<a id="restore-zoom" style="visibility: hidden;" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2" href="#0">Restore Zoom</a>
+						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Download Graph <i
+								class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i></a>
+						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
+						</a>
 					</div>
 				</div>
 			</div>

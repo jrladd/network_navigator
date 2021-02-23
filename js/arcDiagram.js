@@ -19,15 +19,15 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", "-50 -300 1600 1600")
         .classed("svg-content-responsive", true);
-        // .append('g')
-        // .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+   
     const step = 16;
     const width = +svg.attr('width') + 1200 - margin.left;
     const height = +svg.attr('height') + 1200 - margin.left;
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
+    var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
     // Call zoom for svg container.
-    svg.call(d3.zoom().scaleExtent([0.75,4]).on('zoom', zoomed));
+    svg.call(zoom);
 
     svg.append('rect')
         .attr('width', '100%')
@@ -272,5 +272,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
 
-
+    $('#restore-zoom').on('click', function () {
+        if ($('#arc-diagram-viz').is(":visible")) {
+            zoom.transform(container, d3.zoomIdentity);
+        }
+    });
 };

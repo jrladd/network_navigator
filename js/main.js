@@ -155,32 +155,24 @@ $('#selected-graph').on('click', function (e) {
     selectedGraph = e.target.text;
     drawGraphs(selectedGraph);
   }
-  if (selectedGraph === "Adjacency Matrix") {
-    d3.select("#restore-zoom")
-      .style("visibility", "visible");
-  } else {
-    d3.select("#restore-zoom")
-      .style("visibility", "hidden");
-  }
-
 });
 
 // Download solution
-function getDownloadURL(svg, filename, callback, source_height, source_width) {
+function getDownloadURL(svg, filename, callback) {
+  let height = parseInt(svg.style("height").split('px')[0]) + 1000;
+  let width = parseInt(svg.style("width").split('px')[0]) + 1000;
   let canvas;
   let doctype = '<?xml version="1.0" standalone="no"?>' + '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
 
   // serialize our SVG XML to a string.
-  let source = (new XMLSerializer()).serializeToString(svg);
-  source = source.replace('<svg', `<svg height="${source_height}" width="${source_width}"`);
+  let source = (new XMLSerializer()).serializeToString(svg.node());
+  source = source.replace('<svg', `<svg height="${height}" width="${width}"`);
   // create a file blob of our SVG.
   const blob = new Blob([doctype + source], {
     type: 'image/svg+xml;charset=utf-8'
   });
 
   const url = window.URL.createObjectURL(blob);
-  let width = 2400;
-  let height = 2000;
   let image = d3.select('body').append('img')
     .style('display', 'none')
     .attr('width', width)
@@ -214,8 +206,8 @@ function getDownloadURL(svg, filename, callback, source_height, source_width) {
   };
 }
 
-function updateDownloadURL(svg, filename, link, height, width) {
-  getDownloadURL(svg, filename, height, width, function (error, url) {
+function updateDownloadURL(svg, filename, link) {
+  getDownloadURL(svg, filename, function (error, url) {
     if (error) {
       console.error(error);
     } else {
@@ -229,7 +221,7 @@ $('#download-graph').on('click', function (e) {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
     if (filteredDiv.length > 0) {
-      updateDownloadURL(d3.selectAll(`${div} svg`).node(), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this), '2000', '2400');
+      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
     } 
   });
 });
@@ -237,7 +229,7 @@ $('#download-graph').on('click', function (e) {
 $('#download-hist').on('click', function (e) {
   let filename = 'histogram_' + $('input[name="histType"]:checked').val();
   console.log(filename);
-  updateDownloadURL(d3.selectAll(`#hist`).node(), filename, $(this), '400', '800');
+  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
 });
 
 
