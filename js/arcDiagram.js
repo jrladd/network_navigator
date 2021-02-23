@@ -274,7 +274,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     $('#restore-zoom').on('click', function () {
         if ($('#arc-diagram-viz').is(":visible")) {
-            zoom.transform(container, d3.zoomIdentity);
+            container.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
         }
     });
 };

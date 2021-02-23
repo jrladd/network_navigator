@@ -202,7 +202,9 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
 
     $('#restore-zoom').on('click', function(){
         if ($('#force-layout-viz').is(":visible")){
-            zoom.transform(container, d3.zoomIdentity);
+            container.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
         }
     });
 
