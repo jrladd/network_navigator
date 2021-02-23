@@ -16,8 +16,10 @@
 <body class="helvetica bg-near-white">
 	<div class="loader loader-default"></div>
 	<header class="w-100 pa3 gradient">
-		<nav class="f4 fw6 tracked i white garamond">
-			Network Navigator <span class="f7 fs-normal">v2.0</span>
+		<nav class="f4 fw6 tracked i white bb">
+			<h2 class="retro-font">
+				NETWORK NAVIGATOR <span class="f7 fs-normal">v2.0</span>
+			</h2>
 		</nav>
 	</header>
 	<main class="fl w-100 pa2 mb6 flex flex-column">
@@ -82,10 +84,11 @@
 					<input type="checkbox" name="headerRow" id="headerRow">
 					<label for="headerRow">Header Row?</label>
 				</div>
-			</div>
-			<div class="fl w-100">
-				<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient" id="calculate" type="button"
-					data-loading-text="Calculating..." autocomplete="off">Navigate <i class="em em-telescope" aria-role="presentation" aria-label="TELESCOPE"></i></button>
+				<div class="pa2">
+					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font" id="calculate" type="button"
+						data-loading-text="Calculating..." autocomplete="off">NAVIGATE <i class="em em-compass" aria-role="presentation" aria-label="COMPASS"></i>
+					</button>
+				</div>
 			</div>
 		</form>
 		</div>
@@ -104,46 +107,53 @@
 				<span class="pointer fl" id="metrics-collapse">
 					<i class="em em-arrow_left" id="metric-on" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
 					<i class="em em-arrow_right" id="metric-off" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
-					<em class="f6">collapse</em> <strong>Metrics</strong>
+					<em class="f6">collapse</em> <strong class="retro-font">METRICS</strong>
 				</span>
 				<span class="pointer fr" id="viz-collapse">
-					<strong>Visualizations</strong> <em class="f6">collapse</em>
+					<strong class="retro-font">VISUALIZATIONS</strong> <em class="f6">collapse</em>
 					<i class="em em-arrow_right" id="viz-on" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
 					<i class="em em-arrow_left" id="viz-off" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
 			</div>
 			<div class="fl w-100 w-50-ns pa2" id="metrics">
-				<div class="pa2 mv2" id="info-panel"></div>
-				<div class="i link dim blue pointer bb b--gray mb2" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
-				<div class="pa2 ba b--gray br3 mv2" id="hist-container">
-				<form id="histType" class="pa2">
-					<input type="radio" value="degree" name="histType" id="degree" checked>
-					<label for="degree">Degree</label>
-					<input type="radio" value="betweenness" name="histType" id="betweenness">
-					<label for="betweenness">Betweenness Centrality</label>
-					<input type="radio" value="eigenvector" name="histType" id="eigenvector">
-					<label for="eigenvector">Eigenvector Centrality</label>
-					<input type="radio" value="clustering" name="histType" id="clustering">
-					<label for="clustering">Clustering</label>
-				</form>
-					<svg id="hist"></svg>
-					<!-- <div class="fl w-50 h-50" id="degree-hist"></div>
-					<div class="fl w-50 h-50" id="betweenness-hist"></div>
-					<div class="fl w-50 h-50" id="eigenvector-hist"></div>
-					<div class="fl w-50 h-50" id="clustering-hist"></div> -->
+				<div class="pa2 flex flex-column relative">
+					<div class="pa2 mv2" id="info-panel"></div>
+					<div class="w-100 bb b--gray flex-wrap flex">
+						<div class="i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
+						<div class="tr w-50 i link dim pointer mb3" id="download-hist">
+							download histogram <i class="em em-floppy_disk" aria-role="presentation" aria-label="BAR CHART"></i>
+						</div>
+					</div>
+					<div class="pa2 ba b--gray br3 mv2" id="hist-container">
+					<form id="histType" class="pa2">
+						<input type="radio" value="degree" name="histType" id="degree" checked>
+						<label for="degree">Degree</label>
+						<input type="radio" value="betweenness" name="histType" id="betweenness">
+						<label for="betweenness">Betweenness Centrality</label>
+						<input type="radio" value="eigenvector" name="histType" id="eigenvector">
+						<label for="eigenvector">Eigenvector Centrality</label>
+						<input type="radio" value="clustering" name="histType" id="clustering">
+						<label for="clustering">Clustering</label>
+					</form>
+						<svg id="hist"></svg>
+						<!-- <div class="fl w-50 h-50" id="degree-hist"></div>
+						<div class="fl w-50 h-50" id="betweenness-hist"></div>
+						<div class="fl w-50 h-50" id="eigenvector-hist"></div>
+						<div class="fl w-50 h-50" id="clustering-hist"></div> -->
+					</div>
+					<table id="metrics-table" class="display compact nowrap mt2">
+						<thead>
+							<tr>
+								<th>Node ID</th>
+								<th>Degree</th>
+								<th>Betweenness Centrality</th>
+								<th>Eigenvector Centrality</th>
+								<th>Clustering Coefficient</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
 				</div>
-				<table id="metrics-table" class="display compact nowrap">
-					<thead>
-						<tr>
-							<th>Node ID</th>
-							<th>Degree</th>
-							<th>Betweenness Centrality</th>
-							<th>Eigenvector Centrality</th>
-							<th>Clustering Coefficient</th>
-						</tr>
-					</thead>
-					<tbody>
-					</tbody>
-				</table>
 			</div>
 			<div class="fl w-100 w-50-ns pa2" id="viz">
 				<div class="alert pa2 br4 ba b--dark-blue bg-light-blue dark-blue" role="alert" id="viz-warning">
@@ -153,9 +163,11 @@
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
 					<div class="fl w-100 flex" id="graph-controls">
 						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Force Layout</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Arc Diagram</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-25-ns w-100 tc" href="#0">Adjacency Matrix</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font"
+								href="#0">Force Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-25-ns w-100 tc gradient white br3 retro-font" href="#0">Adjacency
+								Matrix</a>
 						</div>
 						<!-- <div class="absolute top-1 right-1 w2 h-auto b--gray br2 ba bg-near-white pa3 z-999" id="customize"> -->
 						<div class="fr b--gray br2 ba bg-near-white pa1 ph3 ma2 w-5-ns" id="customize">
