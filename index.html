@@ -17,11 +17,12 @@
 
 <body class="helvetica bg-near-white">
 	<div class="loader loader-default"></div>
-	<header class="w-100 pa3 gradient">
-		<nav class="f4 fw6 tracked i white bb">
+	<header class="fl w-100 pa3 gradient">
+		<nav class="fl w-100 f4 fw6 tracked i white bb">
 			<h2 class="retro-font">
-				NETWORK NAVIGATOR <span class="f7 fs-normal">v2.0</span>
+				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
 			</h2>
+			<span class="f5 fr"><a href="/about" class="link white dim" target="_blank">About</a></span>
 		</nav>
 	</header>
 	<main class="fl w-100 pa2 mb6 flex flex-column">
@@ -87,7 +88,7 @@
 					<label for="headerRow">Header Row?</label>
 				</div>
 				<div class="pa2">
-					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font" id="calculate" type="button"
+					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font pointer" id="calculate" type="button"
 						data-loading-text="Calculating..." autocomplete="off">NAVIGATE <i class="em em-compass" aria-role="presentation" aria-label="COMPASS"></i>
 					</button>
 				</div>
@@ -165,10 +166,9 @@
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
 					<div class="fl w-100 flex" id="graph-controls">
 						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font"
-								href="#0">Force Layout</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Adjacency Matrix</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font pointer">Force Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font pointer">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font pointer">Adjacency Matrix</a>
 						</div>
 						<div class="fr b--gray br2 ba bg-near-white pa1 ph3 ma2 w-5-ns" id="customize">
 							<i class="em em-art" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-icon"></i>
@@ -266,9 +266,9 @@
 						<div id="matrix-viz" style="visibility: hidden;"></div>
 					</div>
 					<div class="fl w-100 flex">
-						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Download Graph <i
+						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Download Graph <i
 								class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i></a>
-						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
+						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
 						</a>
 					</div>
 				</div>
