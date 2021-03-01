@@ -243,12 +243,6 @@ var table = $('#metrics-table').DataTable({
 	autoWidth: false
 });
 
-$('textarea').on('keypress', function(e) {
-  if (e.which == 13) {
-    $('#calculate').click();
-    return false;
-  }
-});
 $('#calculate').click(function () {
   //var $btn = $(this).button('loading');
   divs.map((div) => {
