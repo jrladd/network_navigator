@@ -35,6 +35,7 @@ $('#show-instructions').click(function (e) {
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
+  $('#download-hist').slideToggle();
 })
 
 $('#metrics-collapse').click(function (e) {
