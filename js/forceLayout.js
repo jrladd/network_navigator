@@ -29,7 +29,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         .attr("viewBox", "0 0 1400 1000")
         .classed("svg-content-responsive", true);
 
-    var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
+    var zoom = d3.zoom().scaleExtent([0.5, 4]).on('zoom', zoomed);
     // Call zoom for svg container.
     svg.call(zoom);
 
@@ -51,7 +51,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
     const height = +svg.attr('height') + 1000 - margin.top;
 
     var simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(d => d.id).distance(100).strength(1))
+        .force("link", d3.forceLink().id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-1000))
         .force('collide', d3.forceCollide().radius(d => d[`radius_${centrality}`]))
         .force("center", d3.forceCenter(width / 2, height / 2))
