@@ -22,13 +22,6 @@ html {
 	height: 500px;
 }
 
-#instructions {
-	display: none;
-	background-color: #E6EAF0;
-	border: 1px solid #AEB1B5;
-	border-radius: 4px;
-}
-
 #metrics,
 #viz,
 #buttons {
