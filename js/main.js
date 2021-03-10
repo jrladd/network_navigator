@@ -35,6 +35,7 @@ $('#show-instructions').click(function (e) {
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
+  $('#download-hist').slideToggle();
 })
 
 $('#metrics-collapse').click(function (e) {
@@ -42,6 +43,7 @@ $('#metrics-collapse').click(function (e) {
 	let viz = document.querySelector('#viz');
 	if (!metrics.classList.contains('w-50-ns')) {
 		metrics.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		viz.classList.remove('width-collapse');
 		$('#viz-off').hide();
 		$('#viz-on').show();
@@ -51,6 +53,7 @@ $('#metrics-collapse').click(function (e) {
 	else if (metrics.classList.contains('width-collapse')) {
 		metrics.classList.remove('width-collapse');
 		viz.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#metrics-collapse em').text('collapse');
@@ -71,6 +74,7 @@ $('#viz-collapse').click(function (e) {
 	if (!viz.classList.contains('w-50-ns')) {
 		viz.classList.add('w-50-ns');
 		metrics.classList.remove('width-collapse');
+		metrics.classList.add('br');
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#viz-collapse em').text('collapse');
@@ -79,6 +83,7 @@ $('#viz-collapse').click(function (e) {
 	else if (viz.classList.contains('width-collapse')) {
 		viz.classList.remove('width-collapse');
 		metrics.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#viz-collapse em').text('collapse');
@@ -86,6 +91,7 @@ $('#viz-collapse').click(function (e) {
 	} else { 
 		viz.classList.add('width-collapse');
 		metrics.classList.remove('w-50-ns');
+		metrics.classList.remove('br');
 		$('#viz-on').hide();
 		$('#viz-off').show();
 		$('#viz-collapse em').text('expand');
@@ -235,12 +241,6 @@ var table = $('#metrics-table').DataTable({
 	autoWidth: false
 });
 
-$('textarea').on('keypress', function(e) {
-  if (e.which == 13) {
-    $('#calculate').click();
-    return false;
-  }
-});
 $('#calculate').click(function () {
   //var $btn = $(this).button('loading');
   divs.map((div) => {

@@ -15,58 +15,45 @@
 		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
 </head>
 
-<body class="helvetica bg-near-white">
+<body class="avenir">
 	<div class="loader loader-default"></div>
-	<header class="w-100 pa3 gradient">
-		<nav class="f4 fw6 tracked i white bb">
+	<header class="fl w-100 pa3 gradient">
+		<nav class="fl w-100 f4 fw6 tracked i white bb">
 			<h2 class="retro-font">
-				NETWORK NAVIGATOR <span class="f7 fs-normal">v2.0</span>
+				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
 			</h2>
+			<span class="f5 fr"><a href="/about.html" class="link white dim" target="_blank">About</a></span>
 		</nav>
 	</header>
 	<main class="fl w-100 pa2 mb7 flex flex-column">
-		<div class="link dim blue pointer" id="show-instructions">Show/Hide Instructions</div>
-		<div id="instructions" class="w-80">
+		<div class="link dim blue pointer" id="show-instructions"><i class="em em-grey_question" aria-role="presentation" aria-label="WHITE QUESTION MARK ORNAMENT"></i> Show/Hide Instructions</div>
+		<div id="instructions" class="dn w-50 lh-copy ml5 f6 ba b--black-40 br2 bg-washed-green pa2">
 
-			<p>This tool is meant to provide a metrics-focused look into your network data. We hope it will be a quick
-				and easy way to get the most popular network measurements. While we provide a small visualization for
-				comparison purposes, visualization is not the focus. Instead, we hope the sortable tables will allow you
-				to assess and navigate your network in new ways.</p>
+			<p><strong>Network Navigator</strong> is designed to give you a first glimpse of your network data, with both metrics and visualizations. For more on who we are and how the site works, visit our <a href="/about.html" target="_blank" class="link dark-blue b dim">About</a> page.</p>
 
-			<p>Type or drag-and-drop your edge list into the box below. Use a CSV file or type your edges separated by
-				commas, like so (do not include a header row):</p>
+			<p>Type or drag-and-drop your edge list into the box below. Use a CSV file or type your edges separated by commas, like so (do not include a header row):</p>
 
-			<p>
+			<p class="measure center">
 				<code>Person One,Person Two
-					Person Two,Person Three
-					Person Three,Person One</code></p>
+Person Two,Person Three
+Person Three,Person One</code></p>
 
-			<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is
-				weighted, you'll need to add a third column to every line with the weight value:</p>
+			<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is weighted, you'll need to add a third column to every line with the weight value:</p>
 
-			<p><code>Person One,Person Two,5</code></p>
+			<p class="measure center"><code>Person One,Person Two,5</code></p>
 
-			<p>For more information about managing network data and an introduction to the various network metrics used
-				here, we recommend two <em>Programming Historian</em> tutorials: <a
-					href="https://programminghistorian.org/lessons/creating-network-diagrams-from-historical-sources"
-					target="_blank">Creating Network Diagrams from Historical Sources</a> and <a
-					href="https://programminghistorian.org/lessons/exploring-and-analyzing-network-data-with-python"
-					target="_blank">Exploring and Analyzing Network Data</a>. n.b.: Network Navigator is currently only
-				set up for unimodal (or unipartite) networks. While it will give results for any edge list, be advised
-				that the metrics for bipartite networks aren't reliable.</p>
+			<p><em>n.b.: Network Navigator is currently only set up for unimodal (or unipartite) networks. While it will give results for any edge list, be advised that the metrics for bipartite networks aren't reliable.</em></p>
 
-			<p><strong>This website does not collect or store <em>any</em> data. Your data remains on your computer
-					alone and is not sent to an external server. No one can view your data or results but you.</strong>
+			<p><strong>This website does not collect or store <em>any</em> data. Your data remains on your computer alone and is not sent to an external server. No one can view your data or results but you.</strong>
 			</p>
 
-			<p>If you have comments or suggestions, feel free to <a href="http://twitter.com/johnrladd"
-					target="_blank">say hello on Twitter</a>.</p>
+			<p>If you have comments or suggestions, or if anything's not working the way it should, feel free to reach out to <a href="http://twitter.com/johnrladd" target="_blank" class="link dark-blue b dim">John</a> on Twitter.</p>
 
 		</div>
-		<form>
+		<form><!-- onkeydown="event.preventDefault()" -->
 			<div class="fl w-100 w-two-thirds-ns pa2">
-				<textarea class="db border-box hover-black w-100 h5 ba b--black-20 pa2 br2 mb2"
-					placeholder="Paste data from your spreadsheet or drag CSV file here"></textarea>
+				<textarea class="db border-box hover-black w-100 h5 ba b--black-60 br2 pa2 mb2"
+					placeholder="Paste data from your spreadsheet or drag CSV file here" ></textarea>
 			</div>
 
 			<div class="fl w-100 w-third-ns pa2">
@@ -87,7 +74,7 @@
 					<label for="headerRow">Header Row?</label>
 				</div>
 				<div class="pa2">
-					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font" id="calculate" type="button"
+					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font pointer" id="calculate" type="button"
 						data-loading-text="Calculating..." autocomplete="off">NAVIGATE <i class="em em-compass" aria-role="presentation" aria-label="COMPASS"></i>
 					</button>
 				</div>
@@ -116,7 +103,7 @@
 					<i class="em em-arrow_right" id="viz-on" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
 					<i class="em em-arrow_left" id="viz-off" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
 			</div>
-			<div class="fl w-100 w-50-ns pa2" id="metrics">
+			<div class="fl w-100 w-50-ns pa2 br b--gray" id="metrics">
 				<div class="pa2 flex flex-column relative">
 					<div class="pa2 mv2" id="info-panel"></div>
 					<div class="w-100 bb b--gray flex-wrap flex">
@@ -125,8 +112,8 @@
 							download histogram <i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
 						</div>
 					</div>
-					<div class="pa2 ba b--gray br3 mv2" id="hist-container">
-					<form id="histType" class="pa2">
+					<div class="pa2 bb b--gray mv2" id="hist-container">
+					<form id="histType" class="pa2 f6">
 						<input type="radio" value="degree" name="histType" id="degree" checked>
 						<label for="degree">Degree</label>
 						<input type="radio" value="betweenness" name="histType" id="betweenness">
@@ -275,9 +262,9 @@
 						<div id="matrix-viz" style="visibility: hidden;"></div>
 					</div>
 					<div class="fl w-100 flex">
-						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Download Graph <i
+						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Download Graph <i
 								class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i></a>
-						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3" href="#0">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
+						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
 						</a>
 					</div>
 				</div>
@@ -285,15 +272,6 @@
 		</div>
 	</main>
 
-	<footer class="absolute bottom-0 bg-light-gray pa2">
-		<p class="mid-gray">Made by <a class="link" href="http://jrladd.com" target="_blank">J.R. Ladd</a> with hosting
-			and support from <a class="link" href="http://dsharp.library.cmu.edu/" target="_blank"><img id="logo"
-					src="CMU_Logo_Horiz_Red.png" /></a>. Inspiration, suggestions, and help from Ruth and Sebastian
-			Ahnert, Scott Weingart, Dan Evans, WUSTL's Humanities Digital Workshop, and <a class="link"
-				href="http://sixdegreesoffrancisbacon.com">Six Degrees of Francis Bacon</a>. All of this made possible
-			by <a class="link" href="http://jsnetworkx.org/" target="_blank">JSNetworkX</a>. Last updated: 30 August
-			2019.</p>
-	</footer>
 	<!-- Latest jQuery API -->
 	<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
 
