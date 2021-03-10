@@ -1,7 +1,11 @@
+// Complete code for Arc Diagram network viz
 export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
+
     // Add properties to control showing and hiding elements
     nodeList = nodeList.map(node => ({...node, nodeClicked: false}));
     edgeList = edgeList.map(edge => ({...edge, edgeClicked: false}));
+
+    // Initialize variables
     let originalList = [...nodeList];
     let graphDirection = 'vertical';
     let selectedNodes = [];
@@ -12,6 +16,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         left: 100
     };
 
+    // Create Responsive SVG
     var svg = d3.select('#arc-diagram-viz')
         .append("div")
         .classed("svg-container", true)
@@ -25,10 +30,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const height = +svg.attr('height') + 1200 - margin.left;
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
+    // Create and call zoom for SVG
     var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
-    // Call zoom for svg container.
     svg.call(zoom);
 
+    // Create rectangle and container for visualization
     svg.append('rect')
         .attr('width', '100%')
         .attr('height', '100%')
@@ -41,22 +47,12 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var container = svg.append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-    var color = d3.scaleOrdinal(d3.schemeCategory20);
-
-    // List of groups
-    var allGroups = nodeList.map(d => (d.community == 'undefined' ? 1 : d.community))
-    allGroups = [...new Set(allGroups)]
-
-    // // A color scale for groups:
-    var color = d3.scaleOrdinal()
-        .domain(colorValues)
-        .range(["#cfe1f2", "#b5d4e9", "#93c3df", "#6daed5", "#4b97c9", "#2f7ebc", "#1864aa", "#0a4a90", "#08306b"]);
-
     // A linear scale for node size
     var size = d3.scaleLinear()
         .domain([1, 10])
         .range([10, 15]);
 
+    // Scales for horizontal (x) or vertical (y) orientation
     var x = d3.scalePoint()
         .domain(nodeList.map(d => d.id))
         .range([0, width]);
@@ -65,6 +61,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .domain(nodeList.map(d => d.id))
         .range([0, height]);
 
+    // Create labels
     var labelsDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
@@ -75,11 +72,12 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .data(nodeList)
         .enter().append("text")
             .attr("x", -16)
-            .attr("fill", d => color(d.community))
+            .attr("fill", 'black')
             .text(d => d.id)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})rotate(0)` : `translate(${d.x = x(d.id)}, ${height - margin.left})rotate(-45)`)
             .attr("y", graphDirection === 'vertical' ? "0.35em" : 10);
 
+    // Create container and circles for nodes
     var nodesDiv = container.append("g")
         .style("font-family", "sans-serif")
         .style("font-size", 14)
@@ -91,11 +89,12 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .enter().append("circle")
 	    .classed("node-arc", true)
             .attr("r", d => size(d.degree))
-            .attr("fill", $('#color-picker-arc').val())//d => color(d.community))
+            .attr("fill", $('#color-picker-arc').val())
 	    .attr("stroke", "white")
 	    .attr("stroke-width", 2)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
 
+    // Create container and paths for arcs (edges)
     var arcsDiv = container.insert("g", "*")
         .attr("fill", "none")
         .style("stroke-opacity", 0.6)
@@ -105,10 +104,10 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var path = arcsDiv.selectAll("path")
         .data(edgeList)
         .enter().append("path")
-            .style("stroke", d => d.source.id === d.target.id ? color(d.source.community) : "#aaa")
+            .style("stroke", "#aaa")
             .attr("d", d => arc(d));
 
-
+    // Create overlays to handle mouse events
     var overlaysDiv = container.append("g")
         .attr("class", "overlays")
         .attr("fill", "none")
@@ -139,6 +138,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             })
             .on("mouseout", mouseOut);
 
+    // Handle node behavior for click and mouse events
     function releaseNode(){
         selectedNodes = [];
         label.attr('nodeClicked', d => d.nodeClicked = false);
@@ -180,13 +180,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     function mouseOut(){
         label.filter(label => !selectedNodes.some(node => label.id === node.id))
-            .attr("fill", d => color(d.community))
+            .attr("fill", 'black')
             .style('font-weight', 'normal');
         path.filter(path => !path.edgeClicked)
-            .style("stroke", d =>  d.source.id === d.target.id ? color(d.source.community) : "#aaa")
+            .style("stroke", "#aaa")
             .style("stroke-opacity", 0.6);
     }
 
+    // Coordinates for drawing arcs
     function arc(d) {
         if (graphDirection === 'vertical') {
             const y1 = y(d.source.id);
@@ -202,6 +203,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         
     }
 
+
+    // Handle movement of arcs when graph updates
     function updateArc(orderValue, orderDirection) {
         let sortOrder, updatedNodeList;
         if (orderValue === 'original') {
@@ -239,14 +242,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     }
 
-	d3.select('#centrality-arc').on('change', function() { 
-            centrality = this.value;
-            node.attr('r', d => d[`radius_${centrality}`]);
-/*            nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
-			// Recalculate collision detection based on selected centrality.
-			simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
-			simulation.alpha(1).restart();*/
-	});
+    // Buttons for changing centrality, node order, and graph orientation
+    d3.select('#centrality-arc').on('change', function() { 
+        centrality = this.value;
+        node.attr('r', d => d[`radius_${centrality}`]);
+    });
 
     d3.select('#order-arc-nodes').on('change', function () {
         let orderValue = this.value;
@@ -272,6 +272,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
 
+    // Restore to original zoom
     $('#restore-zoom').on('click', function () {
         if ($('#arc-diagram-viz').is(":visible")) {
             container.transition()
