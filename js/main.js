@@ -2,6 +2,7 @@ import { drawMatrix } from './matrix.js';
 import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
+import { parse } from './csv.min.js';
 
 
 // Define global variables
@@ -257,7 +258,7 @@ $('#calculate').click(function () {
     // var graphMode = $("input[name='graphMode']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
     var headerRow = document.querySelector("#headerRow");
-    var edges = $.csv.toArrays(data);
+    var edges = parse(data);
     if (headerRow.checked) {
       edges = edges.slice(1);
     }
