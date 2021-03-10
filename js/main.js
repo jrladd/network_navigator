@@ -98,27 +98,19 @@ $('#customize-form').click( function(e) {
 
 $('#customize').click(function () {
   let customize = $('#customize');
-  let customizeIcon = $('#customize-icon');
-  let graphControls = $('#graph-controls');
+  let customizeOpen = $('#open-customize-form');
+  let customizeClose = $('#close-customize-form');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-  let mediaQuery = window.matchMedia('(min-width: 30em)');
 	if (!customize.hasClass('customize-expand')) {
     customize.addClass('customize-expand');
-    if (mediaQuery.matches) {
-      customizeIcon.addClass('customize-art');
-    } else {
-      if (!$("#graph-controls").hasClass('flex-column')) {
-        graphControls.addClass('flex-column');
-        customize.prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
-      }
-    }
+    customizeOpen.toggleClass('dn');
+    customizeClose.toggleClass('dn');
     $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
     customize.removeClass('customize-expand');
-    if (mediaQuery.matches) {
-      customizeIcon.removeClass('customize-art');
-    } 
+    customizeOpen.toggleClass('dn');
+    customizeClose.toggleClass('dn');
     $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}
@@ -257,11 +249,7 @@ $('#calculate').click(function () {
   $('#row-error').hide();
   $('#eigen-error').hide();
   $('#customize-form').hide();
-  let mediaQuery = window.matchMedia('(min-width: 30em)');
-  if (!mediaQuery.matches){
-    $('#graph-controls').addClass('flex-column');
-    $('#customize').prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
-  }
+
   selectedGraph = "Force Layout";
   $('.loader').addClass('is-active');
     var data = $('textarea').val();

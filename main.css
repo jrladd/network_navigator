@@ -106,4 +106,10 @@ code {
 	.customize-expand {
 		transition: width .5s, height.5s;
 	}
+	.customize-art {
+		top: 10;
+		right: 0.5;
+		position: absolute;
+		margin: .5rem;
+	}
 }

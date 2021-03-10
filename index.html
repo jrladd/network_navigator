@@ -24,7 +24,7 @@
 			</h2>
 		</nav>
 	</header>
-	<main class="fl w-100 pa2 mb6 flex flex-column">
+	<main class="fl w-100 pa2 mb7 flex flex-column">
 		<div class="link dim blue pointer" id="show-instructions">Show/Hide Instructions</div>
 		<div id="instructions" class="w-80">
 
@@ -163,15 +163,21 @@
 					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
 				</div>
 				<div class="ba br3 b--gray pa2 flex flex-column relative">
-					<div class="fl w-100 flex" id="graph-controls">
-						<div class="fl flex w-90-ns w-100 flex-wrap" id="selected-graph">
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font"
-								href="#0">Force Layout</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
-							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100 tc gradient white br3 retro-font" href="#0">Adjacency Matrix</a>
+					<div class="w-100 flex" id="graph-controls">
+						<div class="flex w-100 flex-wrap" id="selected-graph">
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font" href="#0">Force Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font" href="#0">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font" href="#0">Adjacency Matrix</a>
 						</div>
-						<div class="fr b--gray br2 ba bg-near-white pa1 ph3 ma2 w-5-ns" id="customize">
-							<i class="em em-art" aria-role="presentation" aria-label="ARTIST PALETTE" id="customize-icon"></i>
+						
+					</div>
+					<div class="w-100 flex">
+						<div class="ml-auto f6 link pv2 dib mid-gray tc br3 b--gray br2 ba bg-near-white pa1 ph3 ma2 w-40-ns w-100-m w-100" id="customize">
+							<div id="open-customize-form" class="w-100">
+							Customize Selected Graph <i class="em em-art" aria-role="presentation" aria-label="ARTIST PALETTE" ></i>
+							</div>
+							<div class="dn" id="close-customize-form"><i class="em em-heavy_multiplication_x customize-art" aria-role="presentation"
+							aria-label="HEAVY MULTIPLICATION X"></i></div>
 							<div id="customize-form">
 								<div id="force-layout" class="flex flex-column" style="display: none;">
 									<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
@@ -185,7 +191,8 @@
 									</div>
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="color-picker">Choose a node color:</label>
-										<input name="color-picker" id="color-picker" data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
+										<input name="color-picker" id="color-picker"
+											data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
 									</div>
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="edge-weight">Include edge weights?</label>
@@ -221,7 +228,8 @@
 									</div>
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="color-picker-arc">Choose a node color:</label>
-										<input name="color-picker-arc" id="color-picker-arc" data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
+										<input name="color-picker-arc" id="color-picker-arc"
+											data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
 									</div>
 									<div class="fl w-100 f6 mid-gray h2">
 										<label for="reverse-arc-order">Reverse order?</label>
@@ -250,7 +258,8 @@
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="color-picker-matrix">Choose a node color:</label>
 										<input name="color-picker-matrix" id="color-picker-matrix"
-											data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)', format: 'rgb'}" value='08B3E5' />
+											data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)', format: 'rgb'}"
+											value='08B3E5' />
 									</div>
 									<div class="fl w-100 f6 mid-gray h2">
 										<label for="reverse-matrix-order">Reverse order?</label>
