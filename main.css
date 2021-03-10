@@ -54,12 +54,6 @@ code {
 	left: 0;
 }
 
-/* .circles circle {
-	fill: #DDD;
-	stroke: #777;
-	stroke-width: 2px;
-} */
-
 .circles text {
 	font-family: sans-serif;
 	text-anchor: middle;
