@@ -4,6 +4,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   let updatedNodeList = Array.from(Array(nodeList.length).keys())
   var selectedNodes = [];
   var color;
+  var brushArea;
 
   const margin = {
   top: 200,
@@ -30,6 +31,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   svg.append("g")
   .attr("class", "legendLinear")
   .attr("transform", `translate(${width},0)`);
+
 
   var opacity = d3.scaleLinear()
     .range([1, 1000])
@@ -131,6 +133,12 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('dy', '0.32em')
       .style('text-anchor', 'start')
       .text( (_, i) => nodeList[i].id);
+
+    if (brushArea) {
+      brushArea.remove();
+    }
+    brushArea = svg.append('g');
+    brushArea.call(brush);
   }
 
 
@@ -150,8 +158,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .style('stroke', '#000000')
         .style('stroke-width', 0)
         //.style('fill-opacity', (d) => opacity(d.weight))
-        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
-        .on('mouseover', function (d) {
+        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} });
+/*        .on('mouseover', function (d) {
           d3.select(this).style('stroke-width', 1);
           /*rowEnter.filter((_, i) => d.y === i)
             .selectAll('text')
@@ -159,7 +167,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
             .style('font-weight', 'bold');
           column.filter((_, j) => d.x === j)
             .style('fill', '#000000')
-            .style('font-weight', 'bold');*/
+            .style('font-weight', 'bold');
         })
         .on('mouseout', function () {
           d3.select(this).style('stroke-width', 0)
@@ -168,8 +176,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
             .style('font-weight', null);
           column
             .style('fill', null)
-            .style('font-weight', null);*/
-        });
+            .style('font-weight', null);
+        });*/
     cellEnter.append('title')
       .text(function (d) {
         return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
@@ -233,8 +241,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     let orderValue = $('#order-matrix-cells').val();
     updateMatrix(orderValue, orderDirection);
   });
-  var brushArea = svg.append('g');
-  brushArea.call(brush);
   function brushed() {
 	  if (d3.event.selection) {
 	    var [[x0,y0],[x1,y1]] = d3.event.selection;
@@ -258,7 +264,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .on("click", function() {
 	    updateFullMatrix(nodeList,edgeList,nodeIDs);
 	    selectedNodes = [];
-  	    svg.append('g').call(brush);
             $('#order-matrix-cells').prop("disabled", false);
             $('#reverse-matrix-order').prop("disabled", false);
     });
