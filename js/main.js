@@ -9,6 +9,8 @@ import { parse } from './csv.min.js';
 let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
 
 const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
+
+// Allow drag and drop on textarea
 $('textarea').on('dragover', function (e) {
   e.preventDefault(e);
   e.stopPropagation(e);
@@ -28,6 +30,7 @@ $('textarea').on('drop', function (e) {
   }
 });
 
+// Toggle instructions and histogram
 $('#show-instructions').click(function (e) {
   e.preventDefault(e);
   $('#instructions').slideToggle();
@@ -39,6 +42,7 @@ $('#show-hist').click(function (e) {
   $('#download-hist').slideToggle();
 })
 
+// Manage side-by-side collapsing metrics/viz panels
 $('#metrics-collapse').click(function (e) {
 	let metrics = document.querySelector('#metrics');
 	let viz = document.querySelector('#viz');
@@ -99,6 +103,8 @@ $('#viz-collapse').click(function (e) {
 		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
+
+// Handle collapse for customize graph form
 $('#customize-form').click( function(e) {
   e.stopPropagation();
 });
@@ -123,6 +129,7 @@ $('#customize').click(function () {
 	}
 });
 
+// Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
@@ -156,7 +163,7 @@ $('#selected-graph').on('click', function (e) {
   }
 });
 
-// Download solution
+// Download visualizations
 function getDownloadURL(svg, filename, callback) {
   let height = parseInt(svg.style("height").split('px')[0]) + 1000;
   let width = parseInt(svg.style("width").split('px')[0]) + 1000;
@@ -198,7 +205,6 @@ function getDownloadURL(svg, filename, callback) {
     a.download = `${filename}_visualization.png`;
     a.href = canvas.toDataURL('image/png');
     document.body.appendChild(a);
-    // window.open(a.href, "_blank");
     a.click();
     document.body.removeChild(a);
     d3.selectAll([canvas, image]).remove();
@@ -215,6 +221,7 @@ function updateDownloadURL(svg, filename, link) {
   });
 }
 
+// Download buttons for main visualization and histogram
 $('#download-graph').on('click', function (e) {
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
@@ -231,7 +238,7 @@ $('#download-hist').on('click', function (e) {
   updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
 });
 
-
+// Initialize DataTable for metrics
 var table = $('#metrics-table').DataTable({
 	paging: false,
 	scrollY: 400,
@@ -242,8 +249,8 @@ var table = $('#metrics-table').DataTable({
 	autoWidth: false
 });
 
+// Calculate metrics and display graphs when user clicks "Navigate" button
 $('#calculate').click(function () {
-  //var $btn = $(this).button('loading');
   divs.map((div) => {
     $(div).html('');
   });
@@ -252,10 +259,10 @@ $('#calculate').click(function () {
   $('#customize-form').hide();
 
   selectedGraph = "Force Layout";
-  $('.loader').addClass('is-active');
+  $('.loader').addClass('is-active'); // CSS Loader while calculating
+    // Get CSV and parse rows
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
-    // var graphMode = $("input[name='graphMode']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
     var headerRow = document.querySelector("#headerRow");
     var edges = parse(data);
@@ -285,6 +292,8 @@ $('#calculate').click(function () {
     colorValues.sort((a, b) => a - b);
 
     $('#info-panel').empty();
+	
+    // Create JSNetworkX object and calculate metrics
 
     G = (graphType === 'undirected') ? new jsnx.Graph() : new jsnx.DiGraph();
 
@@ -314,7 +323,6 @@ $('#calculate').click(function () {
     } catch (err) {
       console.error(err);
       $("#row-error").show();
-      //$btn.button('reset');
     }
 
     try {
@@ -404,6 +412,7 @@ $('#calculate').click(function () {
       e.scaled_weight = edgeWidth(e.weight);
     });
 
+    // Add metrics to DataTable and page, display all
     table.clear().rows.add(tableData).draw();
     let metrics = document.getElementById("metrics");
     let viz = document.getElementById("viz");
@@ -432,6 +441,7 @@ $('#calculate').click(function () {
       selectHist();
     });
 
+    // Draw Force Layout by default
     if ((G.nodes().length <= 500) && (selectedGraph == 'Force Layout')) {
       drawGraphs(selectedGraph);
     } else {
@@ -457,6 +467,7 @@ function reverse_sort(dict) {
   });
 }
 
+// Radio buttons for histogram
 function selectHist() {
 	  let radios = document.getElementsByName('histType');
 	  radios.forEach(r => {

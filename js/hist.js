@@ -1,10 +1,12 @@
+// Code to create and draw histogram of metrics
 export function drawHist(data) {
+	// Reconfigure data object
 	data = Object.entries(data).map(d => { return {name: d[0], metric:d[1]}; });
 	
+	// Create SVG and containers
 	var svg = d3.select("svg#hist")
          .attr("preserveAspectRatio", "xMinYMin meet")
          .attr("viewBox", "0 0 1400 500");
-        //  .classed("svg-content-responsive", true);
      
         var margin = {top: 10, right: 30, bottom: 30, left: 40},
 	  width = +svg.attr('width')+1400 - margin.left - margin.right,
@@ -22,7 +24,7 @@ export function drawHist(data) {
 	var y = d3.scaleLinear()
           .range([height, 0]);
 	
-	// set the parameters for the histogram
+	// Set the parameters for the histogram
 	var histogram = d3.histogram()
 	    .value(function(d) { return d.metric; })
 	    .domain(x.domain());
@@ -32,7 +34,7 @@ export function drawHist(data) {
 	// Scale the range of the data in the y domain
 	y.domain([0, d3.max(bins, function(d) { return d.length; })]);
 	
-	// append the bar rectangles to the svg element
+	// Append the bar rectangles to the svg element
 	container.selectAll("rect")
 	    .data(bins)
 	  .enter().append("rect")
@@ -45,12 +47,12 @@ export function drawHist(data) {
 		})
 		.style('fill', '#08B3E5');
 	
-	// add the x Axis
+	// Add the x Axis
 	container.append("g")
 	    .attr("transform", "translate(0," + height + ")")
 	    .call(d3.axisBottom(x));
 	
-	// add the y Axis
+	// Add the y Axis
 	container.append("g")
 	    .call(d3.axisLeft(y));
 }
