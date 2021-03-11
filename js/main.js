@@ -114,19 +114,11 @@ $('#customize').click(function () {
   let customizeOpen = $('#open-customize-form');
   let customizeClose = $('#close-customize-form');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-	if (!customize.hasClass('customize-expand')) {
-    customize.addClass('customize-expand');
-    customizeOpen.toggleClass('dn');
-    customizeClose.toggleClass('dn flex');
-    $(`#${selectedDiv}`).show();
-		$('#customize-form').show();
-	} else {
-    customize.removeClass('customize-expand');
-    customizeOpen.toggleClass('dn');
-    customizeClose.toggleClass('dn flex');
-    $(`#${selectedDiv}`).hide();
-		$('#customize-form').hide();
-	}
+  customize.toggleClass('customize-expand');
+  customizeOpen.toggleClass('dn');
+  customizeClose.toggleClass('dn flex');
+  $(`#${selectedDiv}`).toggle();
+  $('#customize-form').toggle();
 });
 
 // Draw each graph type when it is selected by user
