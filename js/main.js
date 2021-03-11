@@ -110,13 +110,13 @@ $('#customize').click(function () {
 	if (!customize.hasClass('customize-expand')) {
     customize.addClass('customize-expand');
     customizeOpen.toggleClass('dn');
-    customizeClose.toggleClass('dn');
+    customizeClose.toggleClass('dn flex');
     $(`#${selectedDiv}`).show();
 		$('#customize-form').show();
 	} else {
     customize.removeClass('customize-expand');
     customizeOpen.toggleClass('dn');
-    customizeClose.toggleClass('dn');
+    customizeClose.toggleClass('dn flex');
     $(`#${selectedDiv}`).hide();
 		$('#customize-form').hide();
 	}
