@@ -1,9 +1,14 @@
+// Code for Adjacency Matrix network visualzation
 export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
 
+  // Keep track of original list while allowing nodelist to change
   let originalList = [...nodeList];
   let updatedNodeList = Array.from(Array(nodeList.length).keys())
   var selectedNodes = [];
+
+  // Initialize variables
   var color;
+  var brushArea;
 
   const margin = {
   top: 200,
@@ -12,6 +17,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   left: 200
   };
 
+  // Create responsive CSV
   let svg = d3.select('#matrix-viz')
     .append("div")
     .classed("svg-container", true)
@@ -25,24 +31,32 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   const width = +svg.attr('width') + 1000 - margin.left;
   const height = +svg.attr('height') + 1000 - margin.top;
 
+  // Create brush for zooming
   const brush = d3.brush().on('end', brushed);
 
+  // Container for legend
   svg.append("g")
   .attr("class", "legendLinear")
   .attr("transform", `translate(${width},0)`);
 
+  // Scale for square opacity
   var opacity = d3.scaleLinear()
     .range([1, 1000])
     .clamp(true);
 
+  // Scale for X-axis
   var x = d3.scaleBand()
     .rangeRound([0, width])
     .paddingInner(0.1)
     .align(0);
 
+  // Keep track of node IDs
   var nodeIDs = nodeList.map(d => d.id);
+
+  // Draw matrix
   updateFullMatrix(nodeList,edgeList,nodeIDs);
 
+  // Function to draw matrix
   function updateFullMatrix(nodeList,edgeList,nodeIDs) {
     // Redo color scales each time to keep consistent with picker
     var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
@@ -53,6 +67,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .domain([1, d3.max(colorValues)])
       .range([newRGB,$('#color-picker-matrix').val()])
 
+    // Create and draw legend
     var legendLinear = d3.legendColor()
       .shapeWidth(50)
       .cells(colorValues.slice(1))
@@ -78,6 +93,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
     x.domain(d3.range(nodeList.length),);
 
+    // Create and update rows
     var row = svg.selectAll('.row')
       .data(matrix);
 
@@ -106,6 +122,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .text((_, i) => nodeList[i].id);
 
 
+    // Create and update columns
     var column = svg.selectAll('.column')
       .data(matrix);
 
@@ -131,10 +148,19 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('dy', '0.32em')
       .style('text-anchor', 'start')
       .text( (_, i) => nodeList[i].id);
+
+    // Call brush so that brushArea is always on top
+    if (brushArea) {
+      brushArea.remove();
+    }
+    brushArea = svg.append('g');
+    brushArea.call(brush);
   }
 
 
+  // A function to create shaded cells in each row of matrix
   function makeRow(rowData) {
+    // Create and update cells
     var cell = d3.select(this).selectAll('.matrix-cell')
       .data(rowData);
 
@@ -149,33 +175,17 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .attr('height', x.bandwidth())
         .style('stroke', '#000000')
         .style('stroke-width', 0)
-        //.style('fill-opacity', (d) => opacity(d.weight))
-        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
-        .on('mouseover', function (d) {
-          d3.select(this).style('stroke-width', 1);
-          /*rowEnter.filter((_, i) => d.y === i)
-            .selectAll('text')
-            .style('fill', '#000000')
-            .style('font-weight', 'bold');
-          column.filter((_, j) => d.x === j)
-            .style('fill', '#000000')
-            .style('font-weight', 'bold');*/
-        })
-        .on('mouseout', function () {
-          d3.select(this).style('stroke-width', 0)
-          /*rowEnter.selectAll('text')
-            .style('fill', null)
-            .style('font-weight', null);
-          column
-            .style('fill', null)
-            .style('font-weight', null);*/
-        });
+        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} });
+
+    // Add title text to each cell (currently you can't see this because of the brush)
     cellEnter.append('title')
       .text(function (d) {
         return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
       });
 
   }
+
+  // Reorder matrix based on centrality measures
   function updateMatrix(orderValue, orderDirection) {
     if (orderValue === 'original') {
       updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
@@ -222,6 +232,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       });
   }
 
+  // Handle buttons for reordering matrix
   d3.select('#order-matrix-cells').on('change', function () {
     let orderValue = this.value;
     let orderDirection = $('#reverse-matrix-order').is(':checked');
@@ -233,8 +244,9 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     let orderValue = $('#order-matrix-cells').val();
     updateMatrix(orderValue, orderDirection);
   });
-  var brushArea = svg.append('g');
-  brushArea.call(brush);
+
+  // When graph is brushed, zoom to the brush selection
+  // (Uses only the x-axis to determine a square brush area
   function brushed() {
 	  if (d3.event.selection) {
 	    var [[x0,y0],[x1,y1]] = d3.event.selection;
@@ -253,12 +265,13 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 	  }
 	  
   }
+
+  // Restore zoom to original matrix, with full node list
   d3.select("#restore-zoom")
     .style("visibility", "visible")
     .on("click", function() {
 	    updateFullMatrix(nodeList,edgeList,nodeIDs);
 	    selectedNodes = [];
-  	    svg.append('g').call(brush);
             $('#order-matrix-cells').prop("disabled", false);
             $('#reverse-matrix-order').prop("disabled", false);
     });

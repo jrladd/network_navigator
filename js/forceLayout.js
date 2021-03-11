@@ -1,6 +1,8 @@
+// Force Layout node-link diagram for network visualization
 export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
     
-    let lineType = $("input[name='lineType']:checked").val();
+    // Set initial variables
+    let lineType = $("input[name='lineType']:checked").val(); // i.e. curved or straight
     let centrality = 'degree';
     const margin = {
         top: 75,
@@ -21,6 +23,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
   	  return linkedByIndex[a.id + ',' + b.id];
     }
 
+    // Create responsive SVG
     var svg = d3.select('#force-layout-viz')
         .append("div")
         .classed("svg-container", true)
@@ -29,10 +32,11 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         .attr("viewBox", "0 0 1400 1000")
         .classed("svg-content-responsive", true);
 
+    // Create and call zoom
     var zoom = d3.zoom().scaleExtent([0.5, 4]).on('zoom', zoomed);
-    // Call zoom for svg container.
     svg.call(zoom);
 
+    // Rectangle and containers to hold diagram
     svg.append('rect')
 	.attr('width', '100%')
 	.attr('height', '100%')
@@ -50,6 +54,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
     const width = +svg.attr('width') + 1400 - margin.left;
     const height = +svg.attr('height') + 1000 - margin.top;
 
+    // Initalize force simulation (determines how close and far apart the nodes are)
     var simulation = d3.forceSimulation()
         .force("link", d3.forceLink().id(d => d.id))
         .force('charge', d3.forceManyBody().strength(-1000))
@@ -58,6 +63,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
 
+    // Add arrows to nodes in directed graph
     container.append("defs").selectAll("marker")
         .data([{id: 'end-arrow', opacity: 1}, {id: 'end-arrow-fade',opacity: 0.1}]) // Different link/path types can be defined here
         .enter().append("marker") // This section adds in the arrows
@@ -72,6 +78,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
             .attr("d", "M0,-5L10,0L0,5")
             .style("fill", "#555");
 
+    // Add links
     var link = container.append("g")
         .attr("class", "links")
         .attr("fill", "none")
@@ -83,6 +90,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
+    // Add nodes
     var node = container.append("g")
         .attr("class", "nodes")
         .selectAll("circle")
@@ -112,6 +120,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
             .on("drag", dragged)
             .on("end", dragended));
 
+    // Add labels for nodes
     var nodeLabel = container.append("g")
         .attr("class", "nodeLabels")
         .selectAll("text")
@@ -124,6 +133,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         .attr('dy', 3)
         .style('font-size', d => d[`fontSize_${centrality}`]);
 
+    // Run simulation to determine node position
     simulation
         .nodes(nodeList)
         .on("tick", ticked);
@@ -138,8 +148,6 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
                 dr = lineType === 'curved' ? Math.sqrt(dx * dx + dy * dy) : 0;
             return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
         });
-
-        // node.attr("transform", d => "translate(" + d.x + "," + d.y + ")");
         node.attr("cx", function (d) {
                 return d.x;
             })
@@ -151,6 +159,8 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
             .attr('x', d => d.x)
             .attr('y', d => d.y);
     }
+
+    // Handle dragging of nodes
     function dragstarted(d) {
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
@@ -164,30 +174,32 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
 
     function dragended(d) {
         if (!d3.event.active) simulation.alphaTarget(0);
-        // d.fx = null;
-        // d.fy = null;
     }
+
     // Zooming function translates the size of the svg container.
     function zoomed() {
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
 
-        // A dropdown menu with three different centrality measures, calculated in NetworkX.
-	// Accounts for node collision.
-	d3.select('#centrality').on('change', function() { 
-            centrality = this.value;
-            node.attr('r', d => d[`radius_${centrality}`]);
-            nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
-			// Recalculate collision detection based on selected centrality.
-			simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
-			simulation.alpha(1).restart();
-	});
-	d3.select('#edge-weight').on('change', function() {
-        link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
-            .attr("stroke", "#88A")
-            .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
+    // A dropdown menu with three different centrality measures, calculated in NetworkX.
+    // Accounts for node collision.
+    d3.select('#centrality').on('change', function() { 
+        centrality = this.value;
+        node.attr('r', d => d[`radius_${centrality}`]);
+        nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
+    		// Recalculate collision detection based on selected centrality.
+    		simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
+    		simulation.alpha(1).restart();
+    });
+
+    // Allow change of line width for edge weights
+    d3.select('#edge-weight').on('change', function() {
+      link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
+          .attr("stroke", "#88A")
+          .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
     });
     
+    // Changed to curved or straight lines
     d3.selectAll("input[name='lineType']").on("change", function () {
         lineType = $("input[name='lineType']:checked").val();
         simulation
@@ -200,6 +212,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
         simulation.alpha(1).restart();
     });
 
+    // Restore to original zoom
     $('#restore-zoom').on('click', function(){
         if ($('#force-layout-viz').is(":visible")){
             container.transition()
