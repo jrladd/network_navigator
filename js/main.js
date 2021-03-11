@@ -2,12 +2,15 @@ import { drawMatrix } from './matrix.js';
 import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
+import { parse } from './csv.min.js';
 
 
 // Define global variables
 let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
 
 const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
+
+// Allow drag and drop on textarea
 $('textarea').on('dragover', function (e) {
   e.preventDefault(e);
   e.stopPropagation(e);
@@ -27,6 +30,7 @@ $('textarea').on('drop', function (e) {
   }
 });
 
+// Toggle instructions and histogram
 $('#show-instructions').click(function (e) {
   e.preventDefault(e);
   $('#instructions').slideToggle();
@@ -35,13 +39,16 @@ $('#show-instructions').click(function (e) {
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
+  $('#download-hist').slideToggle();
 })
 
+// Manage side-by-side collapsing metrics/viz panels
 $('#metrics-collapse').click(function (e) {
 	let metrics = document.querySelector('#metrics');
 	let viz = document.querySelector('#viz');
 	if (!metrics.classList.contains('w-50-ns')) {
 		metrics.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		viz.classList.remove('width-collapse');
 		$('#viz-off').hide();
 		$('#viz-on').show();
@@ -51,6 +58,7 @@ $('#metrics-collapse').click(function (e) {
 	else if (metrics.classList.contains('width-collapse')) {
 		metrics.classList.remove('width-collapse');
 		viz.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#metrics-collapse em').text('collapse');
@@ -71,6 +79,7 @@ $('#viz-collapse').click(function (e) {
 	if (!viz.classList.contains('w-50-ns')) {
 		viz.classList.add('w-50-ns');
 		metrics.classList.remove('width-collapse');
+		metrics.classList.add('br');
 		$('#metric-off').hide();
 		$('#metric-on').show();
 		$('#viz-collapse em').text('collapse');
@@ -79,6 +88,7 @@ $('#viz-collapse').click(function (e) {
 	else if (viz.classList.contains('width-collapse')) {
 		viz.classList.remove('width-collapse');
 		metrics.classList.add('w-50-ns');
+		metrics.classList.add('br');
 		$('#viz-off').hide();
 		$('#viz-on').show();
 		$('#viz-collapse em').text('collapse');
@@ -86,44 +96,32 @@ $('#viz-collapse').click(function (e) {
 	} else { 
 		viz.classList.add('width-collapse');
 		metrics.classList.remove('w-50-ns');
+		metrics.classList.remove('br');
 		$('#viz-on').hide();
 		$('#viz-off').show();
 		$('#viz-collapse em').text('expand');
 		window.setTimeout(function() {table.columns.adjust()}, 500);
 	}
 });
+
+// Handle collapse for customize graph form
 $('#customize-form').click( function(e) {
   e.stopPropagation();
 });
 
 $('#customize').click(function () {
   let customize = $('#customize');
-  let customizeIcon = $('#customize-icon');
-  let graphControls = $('#graph-controls');
+  let customizeOpen = $('#open-customize-form');
+  let customizeClose = $('#close-customize-form');
   let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-  let mediaQuery = window.matchMedia('(min-width: 30em)');
-	if (!customize.hasClass('customize-expand')) {
-    customize.addClass('customize-expand');
-    if (mediaQuery.matches) {
-      customizeIcon.addClass('customize-art');
-    } else {
-      if (!$("#graph-controls").hasClass('flex-column')) {
-        graphControls.addClass('flex-column');
-        customize.prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
-      }
-    }
-    $(`#${selectedDiv}`).show();
-		$('#customize-form').show();
-	} else {
-    customize.removeClass('customize-expand');
-    if (mediaQuery.matches) {
-      customizeIcon.removeClass('customize-art');
-    } 
-    $(`#${selectedDiv}`).hide();
-		$('#customize-form').hide();
-	}
+  customize.toggleClass('customize-expand');
+  customizeOpen.toggleClass('dn');
+  customizeClose.toggleClass('dn flex');
+  $(`#${selectedDiv}`).toggle();
+  $('#customize-form').toggle();
 });
 
+// Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
@@ -155,32 +153,24 @@ $('#selected-graph').on('click', function (e) {
     selectedGraph = e.target.text;
     drawGraphs(selectedGraph);
   }
-  if (selectedGraph === "Adjacency Matrix") {
-    d3.select("#restore-zoom")
-      .style("visibility", "visible");
-  } else {
-    d3.select("#restore-zoom")
-      .style("visibility", "hidden");
-  }
-
 });
 
-// Download solution
+// Download visualizations
 function getDownloadURL(svg, filename, callback) {
+  let height = parseInt(svg.style("height").split('px')[0]) + 1000;
+  let width = parseInt(svg.style("width").split('px')[0]) + 1000;
   let canvas;
   let doctype = '<?xml version="1.0" standalone="no"?>' + '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
 
   // serialize our SVG XML to a string.
-  let source = (new XMLSerializer()).serializeToString(svg);
-  source = source.replace('<svg', '<svg height="2000" width="2400"');
+  let source = (new XMLSerializer()).serializeToString(svg.node());
+  source = source.replace('<svg', `<svg height="${height}" width="${width}"`);
   // create a file blob of our SVG.
   const blob = new Blob([doctype + source], {
     type: 'image/svg+xml;charset=utf-8'
   });
 
   const url = window.URL.createObjectURL(blob);
-  let width = 2400;
-  let height = 2000;
   let image = d3.select('body').append('img')
     .style('display', 'none')
     .attr('width', width)
@@ -207,7 +197,6 @@ function getDownloadURL(svg, filename, callback) {
     a.download = `${filename}_visualization.png`;
     a.href = canvas.toDataURL('image/png');
     document.body.appendChild(a);
-    // window.open(a.href, "_blank");
     a.click();
     document.body.removeChild(a);
     d3.selectAll([canvas, image]).remove();
@@ -224,17 +213,24 @@ function updateDownloadURL(svg, filename, link) {
   });
 }
 
+// Download buttons for main visualization and histogram
 $('#download-graph').on('click', function (e) {
   divs.map(div => {
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
     let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
     if (filteredDiv.length > 0) {
-      updateDownloadURL(d3.selectAll(`${div} svg`).node(), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
+      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
     } 
   });
 });
 
+$('#download-hist').on('click', function (e) {
+  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
+  console.log(filename);
+  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
+});
 
+// Initialize DataTable for metrics
 var table = $('#metrics-table').DataTable({
 	paging: false,
 	scrollY: 400,
@@ -245,33 +241,23 @@ var table = $('#metrics-table').DataTable({
 	autoWidth: false
 });
 
-$('textarea').on('keypress', function(e) {
-  if (e.which == 13) {
-    $('#calculate').click();
-    return false;
-  }
-});
+// Calculate metrics and display graphs when user clicks "Navigate" button
 $('#calculate').click(function () {
-  //var $btn = $(this).button('loading');
   divs.map((div) => {
     $(div).html('');
   });
   $('#row-error').hide();
   $('#eigen-error').hide();
   $('#customize-form').hide();
-  let mediaQuery = window.matchMedia('(min-width: 30em)');
-  if (!mediaQuery.matches){
-    $('#graph-controls').addClass('flex-column');
-    $('#customize').prepend('<p class="f6 ph3 ma2 mb2 dib mid-gray w-25-ns w-70 tr">Customize Graph</p>');
-  }
+
   selectedGraph = "Force Layout";
-  $('.loader').addClass('is-active');
+  $('.loader').addClass('is-active'); // CSS Loader while calculating
+    // Get CSV and parse rows
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
-    // var graphMode = $("input[name='graphMode']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
     var headerRow = document.querySelector("#headerRow");
-    var edges = $.csv.toArrays(data);
+    var edges = parse(data);
     if (headerRow.checked) {
       edges = edges.slice(1);
     }
@@ -298,6 +284,8 @@ $('#calculate').click(function () {
     colorValues.sort((a, b) => a - b);
 
     $('#info-panel').empty();
+	
+    // Create JSNetworkX object and calculate metrics
 
     G = (graphType === 'undirected') ? new jsnx.Graph() : new jsnx.DiGraph();
 
@@ -327,7 +315,6 @@ $('#calculate').click(function () {
     } catch (err) {
       console.error(err);
       $("#row-error").show();
-      //$btn.button('reset');
     }
 
     try {
@@ -417,6 +404,7 @@ $('#calculate').click(function () {
       e.scaled_weight = edgeWidth(e.weight);
     });
 
+    // Add metrics to DataTable and page, display all
     table.clear().rows.add(tableData).draw();
     let metrics = document.getElementById("metrics");
     let viz = document.getElementById("viz");
@@ -445,6 +433,7 @@ $('#calculate').click(function () {
       selectHist();
     });
 
+    // Draw Force Layout by default
     if ((G.nodes().length <= 500) && (selectedGraph == 'Force Layout')) {
       drawGraphs(selectedGraph);
     } else {
@@ -461,6 +450,7 @@ $('#calculate').click(function () {
    $('.loader').removeClass('is-active');
    document.querySelector("#results").scrollIntoView({behavior: "smooth"});
    table.columns.adjust();
+   $("#metrics-table_wrapper").addClass('mt2');
 });
 
 function reverse_sort(dict) {
@@ -469,6 +459,7 @@ function reverse_sort(dict) {
   });
 }
 
+// Radio buttons for histogram
 function selectHist() {
 	  let radios = document.getElementsByName('histType');
 	  radios.forEach(r => {
