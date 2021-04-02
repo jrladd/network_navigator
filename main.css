@@ -72,6 +72,46 @@ code {
 #customize {
 	transition: width .5s, height.5s;
 }
+#histType {
+  display: flex;
+}
+
+#histType input {
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  width: 1px;
+}
+
+#histType label {
+  font-size: 1em;
+  text-align: center;
+  padding: 0.5em 2em;
+  border: 1px solid grey;
+}
+
+#histType label:hover {
+  cursor: pointer;
+}
+
+#histType input:checked+label {
+  background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+  color: white;
+}
+
+#histType input#r-no:checked+label {
+  background-color: grey;
+  color: white;
+}
+
+#histType label:first-of-type {
+  border-radius: 25px 0 0 25px;
+}
+
+#histType label:last-of-type {
+  border-radius: 0 25px 25px 0;
+}
+
 @media only screen and (min-width: 30em) {
 	.customize-expand {
 		transition: width .5s, height.5s;
