@@ -112,6 +112,10 @@ code {
   border-radius: 0 25px 25px 0;
 }
 
+.tick text {
+	font-size: 2em;
+}
+
 @media only screen and (min-width: 30em) {
 	.customize-expand {
 		transition: width .5s, height.5s;
