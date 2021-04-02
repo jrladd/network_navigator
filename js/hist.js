@@ -8,7 +8,7 @@ export function drawHist(data) {
          .attr("preserveAspectRatio", "xMinYMin meet")
          .attr("viewBox", "0 0 1400 500");
      
-        var margin = {top: 10, right: 30, bottom: 30, left: 40},
+        var margin = {top: 10, right: 30, bottom: 50, left: 70},
 	  width = +svg.attr('width')+1400 - margin.left - margin.right,
           height = +svg.attr('height')+500 - margin.top - margin.bottom;
 
@@ -55,4 +55,21 @@ export function drawHist(data) {
 	// Add the y Axis
 	container.append("g")
 	    .call(d3.axisLeft(y));
+
+	container.append("text")
+            .attr("class", "x label")
+            .attr("text-anchor", "end")
+            .attr("x", width)
+            .attr("y", height + (margin.bottom - 5))
+	    .attr("font-size", "1.5em")
+            .text("value range for selected metric");
+
+	svg.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+	    .attr("x", -margin.top)
+            .attr("dy", ".75em")
+	    .attr("font-size", "1.5em")
+            .attr("transform", "rotate(-90)")
+            .text("number of nodes in range");
 }
