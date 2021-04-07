@@ -238,7 +238,10 @@ var table = $('#metrics-table').DataTable({
 	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
 	dom: 'Bfti',
 	order: [[1, 'desc']],
-	autoWidth: false
+	autoWidth: false,
+	columnDefs: [
+		{searchable: false, targets: [1,2,3,4]}
+	]
 });
 
 // Calculate metrics and display graphs when user clicks "Navigate" button
