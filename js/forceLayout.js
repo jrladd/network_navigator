@@ -34,7 +34,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
 
     // Create and call zoom
     var zoom = d3.zoom().scaleExtent([0.5, 4]).on('zoom', zoomed);
-    svg.call(zoom);
+    svg.call(zoom).on("dblclick.zoom", null);
 
     // Rectangle and containers to hold diagram
     svg.append('rect')
@@ -115,6 +115,7 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
                     d3.select(this).style('opacity', 1);
 		    d3.select(`#node${nodeList.indexOf(d)}`).style('opacity', 1);
         })
+	.on('dblclick', dragrelease)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -174,6 +175,12 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
 
     function dragended(d) {
         if (!d3.event.active) simulation.alphaTarget(0);
+    }
+
+    function dragrelease(d) {
+        d.fx = null;
+        d.fy = null;
+        simulation.alpha(1).restart();
     }
 
     // Zooming function translates the size of the svg container.
