@@ -360,7 +360,7 @@ $('#calculate').click(function () {
       nodeList.push(item);
     });
 
-    const sizes = ['degree', 'eigenvector', 'betweenness']
+    const sizes = ['degree', 'eigenvector', 'betweenness', 'clustering']
     sizes.map(size => {
       if (nodeList.some(node => node.hasOwnProperty(size))){
         var centralitySize = d3.scaleLinear()

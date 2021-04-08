@@ -199,6 +199,22 @@ export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
     		simulation.alpha(1).restart();
     });
 
+    // Change centrality if the user selects histogram button
+    d3.select('#histType').on('change', function() { 
+	let radios = document.getElementsByName('histType');
+	radios.forEach(r => {
+		if (r.checked) { 
+			centrality = r.value;
+		};
+	});
+	document.querySelector('#centrality').value = centrality;
+        node.attr('r', d => d[`radius_${centrality}`]);
+        nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
+    		// Recalculate collision detection based on selected centrality.
+    		simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
+    		simulation.alpha(1).restart();
+    });
+
     // Allow change of line width for edge weights
     d3.select('#edge-weight').on('change', function() {
       link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
