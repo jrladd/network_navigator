@@ -248,6 +248,18 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         node.attr('r', d => d[`radius_${centrality}`]);
     });
 
+    // Change centrality if the user selects histogram button
+    d3.select('#histType').on('change', function() { 
+	let radios = document.getElementsByName('histType');
+	radios.forEach(r => {
+		if (r.checked) { 
+			centrality = r.value;
+		};
+	});
+	document.querySelector('#centrality-arc').value = centrality;
+        node.attr('r', d => d[`radius_${centrality}`]);
+    });
+
     d3.select('#order-arc-nodes').on('change', function () {
         let orderValue = this.value;
         let orderDirection = $('#reverse-arc-order').is(':checked');
