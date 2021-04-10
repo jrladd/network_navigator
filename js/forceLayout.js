@@ -222,6 +222,14 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
           .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
     });
     
+    // Allow user to show or hide directed arrows
+    d3.select('#directed-arrows').on('change', function() {
+      link.attr("marker-end", this.checked ? "url(#end-arrow)" : "url()");
+    });
+
+    // Make sure checkbox is checked if graph is directed
+    if (graphType === 'directed') { document.querySelector('#directed-arrows').checked = true; }
+
     // Changed to curved or straight lines
     d3.selectAll("input[name='lineType']").on("change", function () {
         lineType = $("input[name='lineType']:checked").val();
