@@ -353,7 +353,7 @@ $('#calculate').click(function () {
       if (graphType === 'undirected') {
         clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
         item['clustering'] = clustering[node].toFixed(4);
-      }
+      } else {item['clustering'] = 5};
       item ['community'] = 1;
       var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
       tableData.push(row);
@@ -430,6 +430,9 @@ $('#calculate').click(function () {
     Transitivity: ${transitivity.toFixed(4)}<br/>
     </div>
     `
+    if (graphType === 'directed') {
+	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficient cannot be calculated for directed graphs.</div>`
+    }
     $('#info-panel').append(allInfo);
     selectHist();
     $('#histType').change(function() {
@@ -478,7 +481,9 @@ function selectHist() {
 					  drawHist(eigenvector);
 					  break;
 				  case 'clustering':
-					  drawHist(clustering);
+					  if (graphType !== 'directed') {
+					      drawHist(clustering);
+					  }
 			  };
 		  };
 	  });
