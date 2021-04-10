@@ -292,4 +292,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                 .call(zoom.transform, d3.zoomIdentity);
         }
     });
+
+    // When searching in table, filter visualization
+    var table = $('#metrics-table').DataTable();
+    table.on('search.dt', function() { 
+	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	    node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+    });
+
 };
