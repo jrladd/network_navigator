@@ -255,4 +255,14 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         }
     });
 
+    // When searching in table, filter visualization
+    var table = $('#metrics-table').DataTable();
+    table.on('search.dt', function() { 
+	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	    node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    nodeLabel.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    link.attr('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+            link.attr("marker-end", l => document.querySelector('#directed-arrows').checked && nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? "url(#end-arrow)" : "url()");
+    });
+
 };
