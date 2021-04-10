@@ -86,7 +86,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data(edgeList)
         .enter().append("path")
 	    .classed("edge", true)
-            .attr("stroke-width", d => d.scaled_weight)
+            .attr("stroke-width", d => graphWeight === 'weighted' ? d.scaled_weight: 3)
             .attr("stroke", "#88A")
             .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)": "url()");
 
@@ -219,15 +219,18 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     d3.select('#edge-weight').on('change', function() {
       link.attr("stroke-width", d => this.checked ? d.scaled_weight : 3)
           .attr("stroke", "#88A")
-          .attr("marker-end", graphType === 'directed' ? "url(#end-arrow)" : "url()");
+          .attr("marker-end", document.querySelector('#directed-arrows').checked ? "url(#end-arrow)" : "url()");
     });
     
+    // Make sure edge weight checkbox is checked if graph is weighted
+    if (graphWeight === 'weighted') { document.querySelector('#edge-weight').checked = true; }
+
     // Allow user to show or hide directed arrows
     d3.select('#directed-arrows').on('change', function() {
       link.attr("marker-end", this.checked ? "url(#end-arrow)" : "url()");
     });
 
-    // Make sure checkbox is checked if graph is directed
+    // Make sure arrow checkbox is checked if graph is directed
     if (graphType === 'directed') { document.querySelector('#directed-arrows').checked = true; }
 
     // Changed to curved or straight lines
