@@ -431,7 +431,7 @@ $('#calculate').click(function () {
     </div>
     `
     if (graphType === 'directed') {
-	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficient cannot be calculated for directed graphs.</div>`
+	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficients cannot be calculated for directed graphs.</div>`
     }
     $('#info-panel').append(allInfo);
     selectHist();
@@ -483,6 +483,9 @@ function selectHist() {
 				  case 'clustering':
 					  if (graphType !== 'directed') {
 					      drawHist(clustering);
+					  } else {
+					      d3.select("svg#hist").selectAll('*').remove();
+					      d3.select("svg#hist").append('text').attr('width', '100%').attr("x", 50).attr("y", 50).text("Clustering coefficients cannot be calculated for directed graphs.")
 					  }
 			  };
 		  };

@@ -194,9 +194,9 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         centrality = this.value;
         node.attr('r', d => d[`radius_${centrality}`]);
         nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
-    		// Recalculate collision detection based on selected centrality.
-    		simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
-    		simulation.alpha(1).restart();
+    	// Recalculate collision detection based on selected centrality.
+    	simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
+    	simulation.alpha(1).restart();
     });
 
     // Change centrality if the user selects histogram button
@@ -208,7 +208,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 		};
 	});
 	document.querySelector('#centrality').value = centrality;
-        node.attr('r', d => d[`radius_${centrality}`]);// === undefined ? 5: d[`radius_${centrality}`]);
+        node.attr('r', d => d[`radius_${centrality}`]);
         nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
   	// Recalculate collision detection based on selected centrality.
     	simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
