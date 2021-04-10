@@ -275,4 +275,13 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
             $('#order-matrix-cells').prop("disabled", false);
             $('#reverse-matrix-order').prop("disabled", false);
     });
+
+    // When searching in table, filter visualization
+    var table = $('#metrics-table').DataTable();
+    table.on('search.dt', function() { 
+	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	    d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
+	    d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
+    });
+
 };
