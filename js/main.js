@@ -437,6 +437,8 @@ $('#calculate').click(function () {
     selectHist();
     $('#histType').change(function() {
       selectHist();
+      // Change centrality if the user selects histogram button
+      nodeSizeHist();
     });
 
     // Draw Force Layout by default
@@ -491,3 +493,18 @@ function selectHist() {
 		  };
 	  });
 }
+
+function nodeSizeHist() {
+	let radios = document.getElementsByName('histType');
+	radios.forEach(r => {
+		if (r.checked) { 
+			centrality = r.value;
+		};
+	});
+	document.querySelector('#centrality').value = centrality;
+	document.querySelector('#centrality-arc').value = centrality;
+        d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
+        d3.selectAll('.nodeLabel').attr('font-size', d => d[`fontSize_${centrality}`]);
+        d3.selectAll('.node-arc').attr('r', d => d[`radius_${centrality}`]);
+}
+
