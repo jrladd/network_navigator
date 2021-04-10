@@ -1,5 +1,5 @@
 // Force Layout node-link diagram for network visualization
-export function drawForceLayout(edgeList, nodeList, graphType, graphWeight) {
+export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight) {
     
     // Set initial variables
     let lineType = $("input[name='lineType']:checked").val(); // i.e. curved or straight
