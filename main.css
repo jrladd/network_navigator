@@ -72,6 +72,7 @@ code {
 #customize {
 	transition: width .5s, height.5s;
 }
+
 #histType {
   display: flex;
 }
