@@ -73,10 +73,6 @@ code {
 	transition: width .5s, height.5s;
 }
 
-#histType {
-  display: flex;
-}
-
 #histType input {
   position: absolute !important;
   clip: rect(0, 0, 0, 0);
@@ -85,9 +81,7 @@ code {
 }
 
 #histType label {
-  font-size: 1em;
   text-align: center;
-  padding: 0.5em 2em;
   border: 1px solid grey;
 }
 
