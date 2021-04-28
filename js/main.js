@@ -514,6 +514,11 @@ function selectHist() {
 	  });
 }
 
+// Smaller node size for arc diagram
+var arcSize = d3.scaleLinear()
+    .domain([15, 50])
+    .range([3, 6]);
+
 function nodeSizeHist() {
 	let radios = document.getElementsByName('histType');
 	radios.forEach(r => {
@@ -525,6 +530,6 @@ function nodeSizeHist() {
 	document.querySelector('#centrality-arc').value = centrality;
         d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
         d3.selectAll('.nodeLabel').attr('font-size', d => d[`fontSize_${centrality}`]);
-        d3.selectAll('.node-arc').attr('r', d => d[`radius_${centrality}`]);
+        d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));
 }
 

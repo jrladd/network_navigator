@@ -31,7 +31,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
     // Create and call zoom for SVG
-    var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
+    var zoom = d3.zoom().extent(extent).scaleExtent([0.75, 4]).on('zoom', zoomed);
     svg.call(zoom);
 
     // Create rectangle and container for visualization
@@ -49,8 +49,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // A linear scale for node size
     var size = d3.scaleLinear()
-        .domain([1, 10])
-        .range([10, 15]);
+        .domain([15, 50])
+        .range([3, 6]);
 
     // Scales for horizontal (x) or vertical (y) orientation
     var x = d3.scalePoint()
@@ -64,7 +64,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Create labels
     var labelsDiv = container.append("g")
         .style("font-family", "sans-serif")
-        .style("font-size", 14)
+        .style("font-size", "8px")
         .attr("text-anchor", "end")
         .attr("id", "labels");
 
@@ -80,7 +80,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Create container and circles for nodes
     var nodesDiv = container.append("g")
         .style("font-family", "sans-serif")
-        .style("font-size", 14)
+        .style("font-size", "8px")
         .attr("text-anchor", "end")
         .attr("id", "nodes");
 
@@ -88,7 +88,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .data(nodeList)
         .enter().append("circle")
 	    .classed("node-arc", true)
-            .attr("r", d => size(d.degree))
+            .attr("r", d => size(d.radius_degree))
             .attr("fill", $('#color-picker-arc').val())
 	    .attr("stroke", "white")
 	    .attr("stroke-width", 2)
@@ -245,7 +245,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Buttons for changing centrality, node order, and graph orientation
     d3.select('#centrality-arc').on('change', function() { 
         centrality = this.value;
-        node.attr('r', d => d[`radius_${centrality}`]);
+        node.attr('r', d => size(d[`radius_${centrality}`]));
     });
 
     d3.select('#order-arc-nodes').on('change', function () {
@@ -269,7 +269,13 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // Zooming function translates the size of the svg container.
     function zoomed() {
-    	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+	  let transform = d3.event.transform;
+	  if (graphDirection === 'vertical') {
+		  transform.x = 0;
+	  } else {
+		  transform.y = Math.min(0, transform.y);
+	  }
+	  container.attr("transform", transform.toString());
     }
 
     // Restore to original zoom
