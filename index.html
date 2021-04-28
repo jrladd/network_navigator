@@ -11,6 +11,7 @@
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
 	<link rel="stylesheet" href="css-loader.css">
+	<!-- <link rel="stylesheet" href="nouislider.min.css"> -->
 	<link rel="icon"
 		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
 </head>
@@ -127,6 +128,16 @@ Person Three,Person One</code></p>
 					</form>
 						<svg id="hist"></svg>
 					</div>
+					<!-- <form>
+						<label for="metric-range">Select range by:</label>
+						<select name="metric-range" id="metric-range">
+							<option value="degree">Degree</option>
+							<option value="betweenness">Betweenness</option>
+							<option value="eigenvector">Eigenvector</option>
+							<option value="clustering">Clustering Coefficient</option>
+						</select>
+						<div id="slider"></div>
+					</form> -->
 					<table id="metrics-table" class="display compact nowrap mt2">
 						<thead>
 							<tr>
@@ -283,8 +294,9 @@ Person Three,Person One</code></p>
 	<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
 	<script type='text/javascript' src='js/jsnetworkx.js'></script>
+	<!-- <script type='text/javascript' src='js/nouislider.min.js'></script> -->
 	<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.js"></script>
-	</script>
+	<script type="text/javascript" src="//cdn.datatables.net/plug-ins/1.10.24/filtering/row-based/range_numbers.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
 	<script>
 	    function updateColor(picker, type) {

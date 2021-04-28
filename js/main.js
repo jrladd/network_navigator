@@ -121,6 +121,26 @@ $('#customize').click(function () {
   $('#customize-form').toggle();
 });
 
+/*//Code for eventual range slider
+
+var slider = document.getElementById('slider');
+
+noUiSlider.create(slider, {
+    start: [20, 80],
+    connect: true,
+    range: {
+        'min': 0,
+        'max': 100
+    }
+});
+
+// Handle table filter on range slider
+slider.noUiSlider.on('update', function() {
+	let sliderValue = slider.noUiSlider.get();
+	let low = sliderValue[0];
+	let high = sliderValue[1];
+});*/
+
 // Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
   divs.map(div => {
