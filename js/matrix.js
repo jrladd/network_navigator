@@ -4,7 +4,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   // Keep track of original list while allowing nodelist to change
   let originalList = [...nodeList];
   let updatedNodeList = Array.from(Array(nodeList.length).keys())
-  var selectedNodes = [];
+  var selectedXNodes = [];
+  var selectedYNodes = [];
 
   // Initialize variables
   var color;
@@ -50,14 +51,20 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .paddingInner(0.1)
     .align(0);
 
+  // Scale for Y-axis
+  var y = d3.scaleBand()
+    .rangeRound([0, height])
+    .paddingInner(0.1)
+    .align(0);
+
   // Keep track of node IDs
   var nodeIDs = nodeList.map(d => d.id);
 
   // Draw matrix
-  updateFullMatrix(nodeList,edgeList,nodeIDs);
+  updateFullMatrix(nodeList,nodeList,edgeList,nodeIDs,nodeIDs);
 
   // Function to draw matrix
-  function updateFullMatrix(nodeList,edgeList,nodeIDs) {
+  function updateFullMatrix(nodeXList,nodeYList,edgeList,nodeXIDs,nodeYIDs) {
     // Redo color scales each time to keep consistent with picker
     var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
     var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
@@ -78,20 +85,25 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .call(legendLinear);
 
     // Build initial matrix
-    let matrix = nodeList.map(function (outer, i) {
+    let matrix = nodeYList.map(function (outer, i) {
       outer.index = i;
-      return nodeList.map(function (inner, j) {
+      return nodeXList.map(function (inner, j) {
         // if we want to use community add a check and change final zero to inner.community
         return {y: i, x: j, weight: i === j ? 0 : 0};
       });
     });
     // Update matrix values depending on edges
     edgeList.forEach(function (l,i) {
-      matrix[nodeIDs.indexOf(l.source.id)][nodeIDs.indexOf(l.target.id)].weight = l.weight;
-      matrix[nodeIDs.indexOf(l.target.id)][nodeIDs.indexOf(l.source.id)].weight = l.weight;
+      try {
+          matrix[nodeYIDs.indexOf(l.source.id)][nodeXIDs.indexOf(l.target.id)].weight = l.weight;
+      } catch (e) {};
+      try {
+          matrix[nodeYIDs.indexOf(l.target.id)][nodeXIDs.indexOf(l.source.id)].weight = l.weight;
+      } catch (e) {};
     });
 
-    x.domain(d3.range(nodeList.length),);
+    x.domain(d3.range(nodeXList.length),);
+    y.domain(d3.range(nodeYList.length),);
 
     // Create and update rows
     var row = svg.selectAll('.row')
@@ -103,7 +115,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
     rowEnter.merge(row)
         .attr('class', 'row')
-        .attr('transform', (_, i) => 'translate(0,' + x(i) + ')')
+        .attr('transform', (_, i) => 'translate(0,' + y(i) + ')')
         .each(makeRow); 
 
     rowEnter.append("line")
@@ -115,16 +127,16 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     rowEnter.merge(row).append('text')
       .attr('class', 'row-label')
       .attr('x', -14)
-      .attr('y', x.bandwidth() / 2)
+      .attr('y', y.bandwidth() / 2)
       .attr('dy', '0.32em')
       .style('font-size', '1rem')
       .style('text-anchor', 'end')
-      .text((_, i) => nodeList[i].id);
+      .text((_, i) => nodeYList[i].id);
 
 
     // Create and update columns
     var column = svg.selectAll('.column')
-      .data(matrix);
+      .data(matrix[0]);
 
     column.exit().remove();
 
@@ -147,7 +159,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('y', x.bandwidth() / 2)
       .attr('dy', '0.32em')
       .style('text-anchor', 'start')
-      .text( (_, i) => nodeList[i].id);
+      .text( (_, i) => nodeXList[i].id);
 
     // Call brush so that brushArea is always on top
     if (brushArea) {
@@ -172,16 +184,16 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .attr('class', 'matrix-cell')
         .attr('x', (d, i) => x(d.x))
         .attr('width', x.bandwidth())
-        .attr('height', x.bandwidth())
+        .attr('height', y.bandwidth())
         .style('stroke', '#000000')
         .style('stroke-width', 0)
         .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} });
 
     // Add title text to each cell (currently you can't see this because of the brush)
-    cellEnter.append('title')
+    /*cellEnter.append('title')
       .text(function (d) {
         return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
-      });
+      });*/
 
   }
 
@@ -250,15 +262,22 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   function brushed() {
 	  if (d3.event.selection) {
 	    var [[x0,y0],[x1,y1]] = d3.event.selection;
-	    var selected = updatedNodeList.filter(d => x0 < x(d) && x1 > x(d));
-	    if (selectedNodes.length === 0) {
-	      selectedNodes = selected.map(d => nodeList[d]);
-	    } else { 
-	      selectedNodes = selected.map(d => selectedNodes[d]);
-	    }
-	    var selectedIDs = selectedNodes.map(d => d.id);
-	    var selectedEdges = edgeList.filter(e => selectedIDs.indexOf(e.source.id) !== -1 && selectedIDs.indexOf(e.target.id) !== -1);
-	    updateFullMatrix(selectedNodes,selectedEdges,selectedIDs);
+	    var selectedX = updatedNodeList.filter(d => x0 < x(d) && x1 > x(d));
+	    var selectedY = updatedNodeList.filter(d => y0 < y(d) && y1 > y(d));
+            if (selectedXNodes.length === 0) {
+              selectedXNodes = selectedX.map(d => nodeList[d]);
+            } else { 
+              selectedXNodes = selectedX.map(d => selectedXNodes[d]);
+            }
+            var selectedXIDs = selectedXNodes.map(d => d.id);
+            if (selectedYNodes.length === 0) {
+              selectedYNodes = selectedY.map(d => nodeList[d]);
+            } else { 
+              selectedYNodes = selectedY.map(d => selectedYNodes[d]);
+            }
+            var selectedYIDs = selectedYNodes.map(d => d.id);
+	    var selectedEdges = edgeList.filter(e => (selectedXIDs.indexOf(e.source.id) !== -1 && selectedYIDs.indexOf(e.target.id) !== -1) || (selectedYIDs.indexOf(e.source.id) !== -1 && selectedXIDs.indexOf(e.target.id) !== -1));
+	    updateFullMatrix(selectedXNodes,selectedYNodes,selectedEdges,selectedXIDs,selectedYIDs);
             $('#order-matrix-cells').prop("disabled", true);
             $('#reverse-matrix-order').prop("disabled", true);
 	    brushArea.call(brush.move, null);
@@ -270,8 +289,9 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   d3.select("#restore-zoom")
     .style("visibility", "visible")
     .on("click", function() {
-	    updateFullMatrix(nodeList,edgeList,nodeIDs);
-	    selectedNodes = [];
+	    updateFullMatrix(nodeList,nodeList,edgeList,nodeIDs,nodeIDs);
+	    selectedXNodes = [];
+	    selectedYNodes = [];
             $('#order-matrix-cells').prop("disabled", false);
             $('#reverse-matrix-order').prop("disabled", false);
     });
