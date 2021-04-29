@@ -39,7 +39,6 @@ $('#show-instructions').click(function (e) {
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
-  $('#download-hist').slideToggle();
 })
 
 // Manage side-by-side collapsing metrics/viz panels
@@ -233,22 +232,47 @@ function updateDownloadURL(svg, filename, link) {
   });
 }
 
-// Download buttons for main visualization and histogram
-$('#download-graph').on('click', function (e) {
-  divs.map(div => {
-    let splitDiv = div.split('-').map(d => d.replace('#', ''));
-    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
-    if (filteredDiv.length > 0) {
-      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
-    } 
-  });
-});
-
-$('#download-hist').on('click', function (e) {
-  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
-  console.log(filename);
-  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
-});
+const form = document.querySelector('#download-form')
+form.addEventListener('submit', event => {
+  // submit event detected
+  event.preventDefault()
+  let downloadType = document.querySelector("#download-type");
+  switch (downloadType.value) {
+	  case 'viz-png':
+  		  divs.map(div => {
+  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
+  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
+  		    if (filteredDiv.length > 0) {
+  		      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
+  		    } 
+  		  });
+		  break;
+	  case 'viz-svg':
+  		  divs.map(div => {
+  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
+  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
+  		    if (filteredDiv.length > 0) {
+                      var serializer = new XMLSerializer();
+                      var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
+                      var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
+		      let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
+    		      let a = document.createElement('a');
+    		      a.download = `${filename}_visualization.svg`;
+    		      a.href = imgData;
+    		      document.body.appendChild(a);
+    		      a.click();
+    		      document.body.removeChild(a);
+  		    } 
+  		  });
+		  break;
+	  case 'hist':
+  		  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
+  		  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
+		  break;
+	  case 'graphml':
+		  console.log("this is next!");
+  };
+})
 
 // Initialize DataTable for metrics
 var table = $('#metrics-table').DataTable({

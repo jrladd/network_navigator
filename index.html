@@ -111,11 +111,22 @@ Person Three,Person One</code></p>
 				<div class="pa2 flex flex-column relative">
 					<div class="pa2 mv2" id="info-panel"></div>
 					<p class="f7 tr w-100"><a class="link dim blue" href="https://jrladd.com/network-glossary.html" target="_blank">Looking for definitions of these terms?</a></p>
+					<div class="f6 pa2 flex w-100">
+						<form id="download-form">
+							<i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
+							<label for="download-type">Select file to download:</label>
+							<select name="download-type" id="download-type">
+								<option value="viz-png">Current visualization (png)</option>
+								<option value="viz-svg">Current visualization (svg)</option>
+								<option value="hist">Histogram (png)</option>
+								<option value="graphml">Complete network data (graphml)</option>
+							</select>
+							<input class="link dim pa2 br2 white retro-font gradient" type="submit" value="Download">
+						</form>
+					</div>
+
 					<div class="w-100 bb b--gray flex-wrap flex">
-						<div class="i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
-						<div class="tr w-50 i link dim pointer mb3" id="download-hist">
-							download histogram <i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
-						</div>
+						<div class="f7 i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
 					</div>
 					<div class="pa2 bb b--gray mv2" id="hist-container">
 					<div class="tc f7">Frequency Distribution for Selected Metrics:</div>
@@ -281,9 +292,7 @@ Person Three,Person One</code></p>
 						<div id="matrix-viz" style="visibility: hidden;"></div>
 					</div>
 					<div class="fl w-100 flex">
-						 <p class="f7">Scroll to zoom force layout and arc diagram, click and drag to zoom adjacency matrix.</p>
-						<a id="download-graph" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Download Graph <i
-								class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i></a>
+						<p class="f7">Scroll to zoom force layout and arc diagram, click and drag to zoom adjacency matrix.</p>
 						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
 						</a>
 					</div>
