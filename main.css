@@ -73,6 +73,22 @@ code {
 	transition: width .5s, height.5s;
 }
 
+.tooltip a span { display: none; }
+
+.tooltip a:hover span {
+	display: block;
+	position: absolute;
+	width: 125px;
+	padding: 5px;
+	margin: 10px;
+	z-index: 100;
+	color: black;
+	background-color:#FFFFCC;
+	border: 1px solid #ccc;
+	font: 10px Verdana, sans-serif;
+	text-align: center;
+}
+
 #histType input {
   position: absolute !important;
   clip: rect(0, 0, 0, 0);

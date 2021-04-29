@@ -108,6 +108,7 @@ Person Three,Person One</code></p>
 			<div class="fl w-100 w-50-ns pa2 br b--gray" id="metrics">
 				<div class="pa2 flex flex-column relative">
 					<div class="pa2 mv2" id="info-panel"></div>
+					<p class="f7 tr w-100"><a class="link dim blue" href="https://jrladd.com/network-glossary.html" target="_blank">Looking for definitions of these terms?</a></p>
 					<div class="w-100 bb b--gray flex-wrap flex">
 						<div class="i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
 						<div class="tr w-50 i link dim pointer mb3" id="download-hist">
@@ -118,13 +119,13 @@ Person Three,Person One</code></p>
 					<div class="tc f7">Frequency Distribution for Selected Metrics:</div>
 					<form id="histType" class="pa2 f7 f6-ns retro-font gray flex">
 						<input type="radio" value="degree" name="histType" id="degree" checked>
-						<label class="dib w-25 pa1" for="degree">Degree</label>
+						<label class="dib w-25 pa1 tooltip" for="degree">Degree<a><span>The number of connections (edges) a particular node possesses. Degree is the most basic measure of centrality.</span><i class="em em-information_source f7" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></a></label>
 						<input type="radio" value="betweenness" name="histType" id="betweenness">
-						<label class="dib w-25 pa1" for="betweenness">Betweenness Centrality</label>
+						<label class="dib w-25 pa1 tooltip" for="betweenness">Betweenness Centrality<a><span>In its simplest form, the number of shortest paths that must pass through a particular node. Betweenness centrality helps to measure how often any path in the network must go through a node and therefore can show if a node is connected to many disparate groups in the network.</span><i class="em em-information_source f7" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></a></label>
 						<input type="radio" value="eigenvector" name="histType" id="eigenvector">
-						<label class="dib w-25 pa1" for="eigenvector">Eigenvector Centrality</label>
+						<label class="dib w-25 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span><i class="em em-information_source f7" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></a></label>
 						<input type="radio" value="clustering" name="histType" id="clustering">
-						<label class="dib w-25 pa1" for="clustering">Clustering Coefficient</label>
+						<label class="dib w-25 pa1 tooltip" for="clustering">Clustering Coefficient<a><span>The ratio of how many of a node’s neighbors are connected to each other, relative to the total number of neighbors.</span><i class="em em-information_source f7" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></a></label>
 					</form>
 						<svg id="hist"></svg>
 					</div>
