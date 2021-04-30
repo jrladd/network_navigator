@@ -563,7 +563,6 @@ function nodeSizeHist() {
 	document.querySelector('#centrality').value = centrality;
 	document.querySelector('#centrality-arc').value = centrality;
         d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
-        d3.selectAll('.nodeLabel').attr('font-size', d => d[`fontSize_${centrality}`]);
         d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));
 }
 

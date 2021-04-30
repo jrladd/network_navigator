@@ -114,6 +114,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                     });
                     d3.select(this).style('opacity', 1);
 		    d3.select(`#node${nodeList.indexOf(d)}`).style('opacity', 1);
+		    d3.select(`#label${nodeList.indexOf(d)}`).style('opacity', 1);
         })
 	.on('dblclick', dragrelease)
         .call(d3.drag()
@@ -126,13 +127,38 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .attr("class", "nodeLabels")
         .selectAll("text")
         .data(nodeList)
-        .enter().append("text")
-        .text(d => d.id)
+	.enter().append('g')
 	.classed("nodeLabel", true)
-	.attr("id", d => `node${nodeList.indexOf(d)}`)
-        .attr('dx', d => d[`radius_${centrality}`] + 5)
-        .attr('dy', 3)
-        .style('font-size', d => d[`fontSize_${centrality}`]);
+	.attr("id", d => `label${nodeList.indexOf(d)}`);
+
+    nodeLabel.append("rect");
+
+    nodeLabel.append("text")
+        .text(d => d.id)
+	.call(getBB);
+
+    function getBB(selection) {
+        selection.each(function(d){d.labelBBox = this.getBBox();})
+    }
+
+    // adjust the padding values depending on font and font size
+    var paddingLeftRight = 8;
+    var paddingTopBottom = 2;
+
+    // set dimentions and positions of rectangles depending on the BBox exctracted before
+    d3.selectAll(".nodeLabel rect")
+      .attr("x", function(d) {
+        return 0 - d.labelBBox.width / 2 - paddingLeftRight / 2;
+      })
+      .attr("y", function(d) {
+        return 0 + 3 - d.labelBBox.height + paddingTopBottom / 2;
+      })
+      .attr("width", function(d) {
+        return d.labelBBox.width + paddingLeftRight;
+      })
+      .attr("height", function(d) {
+        return d.labelBBox.height + paddingTopBottom;
+      });
 
     // Run simulation to determine node position
     simulation
@@ -156,9 +182,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                 return d.y;
             });
 
-        nodeLabel
-            .attr('x', d => d.x)
-            .attr('y', d => d.y);
+        nodeLabel.attr("transform", function(d) { return `translate(${d.x},${d.y + 2.5})`});
     }
 
     // Handle dragging of nodes
@@ -193,7 +217,6 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     d3.select('#centrality').on('change', function() { 
         centrality = this.value;
         node.attr('r', d => d[`radius_${centrality}`]);
-        nodeLabel.attr('font-size', d => d[`fontSize_${centrality}`]);
     	// Recalculate collision detection based on selected centrality.
     	simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
     	simulation.alpha(1).restart();
