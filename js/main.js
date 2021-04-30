@@ -30,12 +30,22 @@ $('textarea').on('drop', function (e) {
   }
 });
 
-// Toggle instructions and histogram
-$('#show-instructions').click(function (e) {
+// Toggle instructions 
+$('#close-icon').click(function (e) {
   e.preventDefault(e);
-  $('#instructions').slideToggle();
+  $('#instructions').slideUp();
+  $('#close-icon').hide();
+  $('#info-icon').show();
 })
 
+$('#info-icon').click(function (e) {
+  e.preventDefault(e);
+  $('#instructions').slideDown();
+  $('#info-icon').hide();
+  $('#close-icon').show();
+})
+
+// Toggle histogram
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
