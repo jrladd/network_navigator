@@ -229,6 +229,11 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
           .attr("marker-end", document.querySelector('#directed-arrows').checked ? "url(#end-arrow)" : "url()");
     });
     
+    // Allow toggle for node labels
+    d3.select('#node-label').on('change', function() {
+      nodeLabel.attr("visibility", d => this.checked ? 'visible': 'hidden');
+    });
+
     // Make sure edge weight checkbox is checked if graph is weighted
     if (graphWeight === 'weighted') { document.querySelector('#edge-weight').checked = true; }
 
