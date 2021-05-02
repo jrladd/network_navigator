@@ -208,7 +208,17 @@
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="color-picker">Choose a node color:</label>
 										<input name="color-picker" id="color-picker"
-											data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)'}" value='08B3E5' />
+											data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)', format: 'rgb'}" value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-scale">Scale color by:</label>
+										<select name="color-scale" id="color-scale">
+											<option value="none">None</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering Coefficient</option>
+										</select>
 									</div>
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="edge-weight">Include edge weights?</label>
@@ -254,7 +264,18 @@
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="color-picker-arc">Choose a node color:</label>
 										<input name="color-picker-arc" id="color-picker-arc"
-											data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)'}" value='08B3E5' />
+											data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)', format: 'rgb'}"
+											value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-scale-arc">Scale color by:</label>
+										<select name="color-scale-arc" id="color-scale-arc">
+											<option value="none">None</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering Coefficient</option>
+										</select>
 									</div>
 									<div class="fl w-100 f6 mid-gray h2">
 										<label for="reverse-arc-order">Reverse order?</label>
@@ -321,9 +342,40 @@
 	<script>
 	    function updateColor(picker, type) {
 		if (type === 'force') {
-	            d3.selectAll('.node').attr('fill', picker.toString());
+	            centrality = $('#color-scale').val();
+	    	    if (centrality === 'none') {
+	    	    	d3.selectAll('.node').attr('fill', picker.toString());
+	    	    } else {
+	                // Create color scale
+	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+	                let newRGB = `rgb(${newColor.join(",")})`;
+	    
+	                let color = d3.scaleLinear()
+	                  .domain([0, d3.max(d3.selectAll('.node').data(), d => d[`${centrality}`])])
+	                  .range([newRGB,picker.toString()])
+	    
+	    	    	// Fill according to scale
+	    	    	d3.selectAll('.node').attr('fill', d => color(d[`${centrality}`]));
+	    	    }
+
 		} else if (type === 'arc') {
-	            d3.selectAll('.node-arc').attr('fill', picker.toString());
+	            centrality = $('#color-scale-arc').val();
+	    	    if (centrality === 'none') {
+	    	    	d3.selectAll('.node-arc').attr('fill', picker.toString());
+	    	    } else {
+	                // Create color scale
+	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+	                let newRGB = `rgb(${newColor.join(",")})`;
+	    
+	                let color = d3.scaleLinear()
+	                  .domain([0, d3.max(d3.selectAll('.node-arc').data(), d => d[`${centrality}`])])
+	                  .range([newRGB,picker.toString()])
+	    
+	    	    	// Fill according to scale
+	    	    	d3.selectAll('.node-arc').attr('fill', d => color(d[`${centrality}`]));
+	    	    }
 		} else if (type === 'matrix') {
 		    var origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
 	            var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});

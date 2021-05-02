@@ -63,6 +63,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .force('y', d3.forceY(0))
         .force('x', d3.forceX(0));
 
+
     // Add arrows to nodes in directed graph
     container.append("defs").selectAll("marker")
         .data([{id: 'end-arrow', opacity: 1}, {id: 'end-arrow-fade',opacity: 0.1}]) // Different link/path types can be defined here
@@ -98,7 +99,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .enter().append("circle")
 	.classed("node", true)
         .attr("r", d => d[`radius_${centrality}`])
-        .attr("fill", $('#color-picker').val())
+        .attr("fill", $('#color-picker').val())//color(d.degree))
 	.attr("stroke", "white")
 	.attr("stroke-width", 2)
         .on('click', function(d, i) {
@@ -212,7 +213,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
 
-    // A dropdown menu with three different centrality measures, calculated in NetworkX.
+    // A dropdown menu for size with different centrality measures
     // Accounts for node collision.
     d3.select('#centrality').on('change', function() { 
         centrality = this.value;
@@ -220,6 +221,26 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     	// Recalculate collision detection based on selected centrality.
     	simulation.force("collide", d3.forceCollide().radius( function (d) { return d[`radius_${centrality}`]; }));
     	simulation.alpha(1).restart();
+    });
+
+    // A dropdown menu for color with different centrality measures
+    d3.select('#color-scale').on('change', function() { 
+        centrality = this.value;
+	if (centrality === 'none') {
+		node.attr('fill', $('#color-picker').val());
+	} else {
+                // Create color scale
+                var origColor = $('#color-picker').val().replace(/[rgb\(\)]/gm, "").split(",");
+                var newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+                var newRGB = `rgb(${newColor.join(",")})`;
+            
+                var color = d3.scaleLinear()
+                  .domain([0, d3.max(nodeList, d => d[`${centrality}`])])
+                  .range([newRGB,$('#color-picker').val()])
+
+		// Fill according to scale
+		node.attr('fill', d => color(d[`${centrality}`]));
+	}
     });
 
     // Allow change of line width for edge weights

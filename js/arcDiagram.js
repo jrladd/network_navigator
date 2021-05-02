@@ -248,6 +248,27 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         node.attr('r', d => size(d[`radius_${centrality}`]));
     });
 
+    // A dropdown menu for color with different centrality measures
+    d3.select('#color-scale-arc').on('change', function() { 
+        centrality = this.value;
+	console.log(centrality);
+	if (centrality === 'none') {
+		node.attr('fill', $('#color-picker-arc').val());
+	} else {
+                // Create color scale
+                var origColor = $('#color-picker-arc').val().replace(/[rgb\(\)]/gm, "").split(",");
+                var newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+                var newRGB = `rgb(${newColor.join(",")})`;
+            
+                var color = d3.scaleLinear()
+                  .domain([0, d3.max(nodeList, d => d[`${centrality}`])])
+                  .range([newRGB,$('#color-picker-arc').val()])
+
+		// Fill according to scale
+		node.attr('fill', d => color(d[`${centrality}`]));
+	}
+    });
+
     d3.select('#order-arc-nodes').on('change', function () {
         let orderValue = this.value;
         let orderDirection = $('#reverse-arc-order').is(':checked');
