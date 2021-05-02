@@ -251,7 +251,6 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // A dropdown menu for color with different centrality measures
     d3.select('#color-scale-arc').on('change', function() { 
         centrality = this.value;
-	console.log(centrality);
 	if (centrality === 'none') {
 		node.attr('fill', $('#color-picker-arc').val());
 	} else {
