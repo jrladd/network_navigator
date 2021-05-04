@@ -314,31 +314,30 @@ $('#calculate').click(function () {
     graphType = $("input[name='graphType']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
     var headerRow = document.querySelector("#headerRow");
-    var edges = parse(data);
+    //var edges = parse(data, {'typed':true});
+    var edges;
     if (headerRow.checked) {
-      edges = edges.slice(1);
+      edges = d3.csvParse(data, function(d) {
+	      d = Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {});
+	      return [d.source,d.target,d.weight];
+      });
+      edgeList = d3.csvParse(data);
+      edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
+    } else {
+      edges = d3.csvParseRows(data);
     }
-    // For D3 visualizations
-    edgeList = [];
-    edges.map(edge => {
-      let item = {};
-      item['source'] = edge[0];
-      item['target'] = edge[1];
-      item['weight'] = typeof (edge[2]) === 'undefined' ? 1 : parseInt(edge[2]);
-      // item['val'] = 1;
-      // Check if multiple edges between same nodes
-      let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
-      if (match) {
-        item.weight = item.weight + match.weight;
-        Object.assign(match, item);
-      } else {
-        edgeList.push(item);
-      }
-    });
 
-    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
-    colorValues.push(0);
-    colorValues.sort((a, b) => a - b);
+// Deal with matches later
+        // Check if multiple edges between same nodes
+//        let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
+//        if (match) {
+//          item.weight = item.weight + match.weight;
+//          Object.assign(match, item);
+//        } else {
+//          edgeList.push(item);
+//        }
+//      });
+
 
     $('#info-panel').empty();
 	
@@ -388,6 +387,14 @@ $('#calculate').click(function () {
     if (eigenvector) {
       var eigenvectorSorted = reverse_sort(eigenvector);
     }
+
+    if (headerRow.checked === false) {
+        edgeList = G.edges(true).map(e => { e[2].source = e[0]; e[2].target = e[1]; e[2].weight = +e[2].weight; return e[2] });
+    }
+
+    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
+    colorValues.push(0);
+    colorValues.sort((a, b) => a - b);
 
     var tableData = [];
     nodeList = [];
