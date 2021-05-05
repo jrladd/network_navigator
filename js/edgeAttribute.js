@@ -5,7 +5,7 @@ export function addEdgeAttributeDropdown(currentEdgeList, type) {
 	d3.select('#attribute-section').remove();
 	edgeList = currentEdgeList;
 	let keys = Object.keys(edgeList[0]);
-	keys = keys.filter(k => ['source','target','weight'].indexOf(k) === -1);
+	keys = keys.filter(k => ['source','target','scaled_weight','index'].indexOf(k) === -1);
 	keys.unshift('none');
 	if (keys.length > 0) {
 		var optionDiv = d3.select(`#customize-form #${graphType}`).append('div').classed("fl w-100 f6 mid-gray pv2", true).attr('id', 'attribute-section'),
