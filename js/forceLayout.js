@@ -1,3 +1,5 @@
+import { addEdgeAttributeDropdown } from './edgeAttribute.js';
+
 // Force Layout node-link diagram for network visualization
 export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight) {
     
@@ -212,6 +214,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     function zoomed() {
     	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
     }
+
+    addEdgeAttributeDropdown(edgeList, 'force-layout')
 
     // A dropdown menu for size with different centrality measures
     // Accounts for node collision.

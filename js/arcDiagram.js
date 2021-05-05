@@ -1,3 +1,5 @@
+import { addEdgeAttributeDropdown } from './edgeAttribute.js';
+
 // Complete code for Arc Diagram network viz
 export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
 
@@ -41,6 +43,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .attr('fill', 'transparent')
         .on('click', function () {
             // Restore nodes and links to normal opacity.
+            d3.selectAll('.arc').style('opacity', '1');
+            d3.selectAll('.node-arc').style('opacity', '1');
+
             releaseNode();
         });
 
@@ -104,6 +109,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var path = arcsDiv.selectAll("path")
         .data(edgeList)
         .enter().append("path")
+	    .classed("arc", true)
             .style("stroke", "#aaa")
             .attr("d", d => arc(d));
 
@@ -306,6 +312,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                 .call(zoom.transform, d3.zoomIdentity);
         }
     });
+
+    addEdgeAttributeDropdown(edgeList, 'arc-diagram')
 
     // When searching in table, filter visualization
     var table = $('#metrics-table').DataTable();

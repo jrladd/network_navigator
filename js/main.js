@@ -297,8 +297,11 @@ var table = $('#metrics-table').DataTable({
 	]
 });
 
+
 // Calculate metrics and display graphs when user clicks "Navigate" button
 $('#calculate').click(function () {
+  $('.loader').addClass('is-active'); // CSS Loader while calculating
+
   divs.map((div) => {
     $(div).html('');
   });
@@ -307,7 +310,6 @@ $('#calculate').click(function () {
   $('#customize-form').hide();
 
   selectedGraph = "Force Layout";
-  $('.loader').addClass('is-active'); // CSS Loader while calculating
     // Get CSV and parse rows
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
@@ -571,4 +573,3 @@ function nodeSizeHist() {
         d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
         d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));
 }
-
