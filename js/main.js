@@ -261,16 +261,16 @@ form.addEventListener('submit', event => {
   		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
   		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
   		    if (filteredDiv.length > 0) {
-                      var serializer = new XMLSerializer();
-                      var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
-                      var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
-		      let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
-    		      let a = document.createElement('a');
-    		      a.download = `${filename}_visualization.svg`;
-    		      a.href = imgData;
-    		      document.body.appendChild(a);
-    		      a.click();
-    		      document.body.removeChild(a);
+            var serializer = new XMLSerializer();
+            var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
+            var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
+		        let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
+            let a = document.createElement('a');
+            a.download = `${filename}_visualization.svg`;
+            a.href = imgData;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
   		    } 
   		  });
 		  break;
@@ -481,12 +481,12 @@ $('#calculate').click(function () {
     $('#viz-off').hide();
     //$btn.button('reset');
     var allInfo = `
-          <div class="fl w-50 mv2">
+    <div class="fl w-50-ns w-100 mv2">
     Total Nodes: ${numberOfNodes}<br/>
     Total Edges: ${numberOfEdges}<br/>
     Average Degree: ${averageDegree}<br/>
     </div>
-    <div class="fl w-50 mv2">
+    <div class="fl w-50-ns w-100 mv2">
     Density: ${density.toFixed(4)}<br/>
     Avg. Clustering Coefficient: ${averageClustering}<br/>
     Transitivity: ${transitivity.toFixed(4)}<br/>

@@ -28,17 +28,14 @@
 		</nav>
 	</header>
 	<main class="fl w-100 pa2 flex flex-column">
-		<form>
-			<div class="fl w-100 w-two-thirds-ns pa3 h5">
-				<textarea class="db border-box hover-black w-100 h-100 ba b--black-60 br2 pa2 mb2"
-					placeholder="Paste data from your spreadsheet or drag CSV file here" ></textarea>
+		<form class="flex flex-wrap mw-100">
+			<div class="w-100 w-two-thirds-l pa3 h5">
+				<textarea class="db border-box hover-black w-100 h-100 ba b--black-60 br2 pa2 mb2" placeholder="Paste data from your spreadsheet or drag CSV file here" ></textarea>
 			</div>
-			<div class="link dim blue pointer absolute-ns right-2 mt3" id="show-instructions">
-				<span id="close-icon"><i class="em em-heavy_multiplication_x" aria-role="presentation" aria-label="HEAVY MULTIPLICATION X"></i></span>
-				<span id="info-icon" class="dn"><i class="em em-information_source" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></span>
-			</div>
-			<div id="instructions" class="fl w-100 w-third-ns mt2 h5 overflow-y-scroll lh-copy ba b--black-40 br2 bg-washed-green pt3 pb2 ph2">
-	
+			<div id="instructions" class="w-100 w-third-l mt2 h5 overflow-y-scroll lh-copy ba b--black-40 br2 bg-washed-green pt3 pb2 ph2">
+				<div class="link dim blue pointer absolute right-2" id="show-instructions">
+					<span id="close-icon"><i class="em em-heavy_multiplication_x" aria-role="presentation" aria-label="HEAVY MULTIPLICATION X"></i></span>
+				</div>
 				<p><strong>Network Navigator</strong> is designed to give you a first glimpse of your network data, with both metrics and visualizations. For more on who we are and how the site works, visit our <a href="/about.html" target="_blank" class="link dark-blue b dim">About</a> page.</p>
 	
 				<p>Type or drag-and-drop your edge list into the box. Use a CSV file or type your edges separated by commas, as below. (If you include a header row, the site will look for source, target, and weight columns.)</p>
@@ -64,7 +61,10 @@
 	
 			</div>
 
-			<div class="fl w-100 w-third-ns pa3">
+			<div class="w-100 w-third-l pa3">
+				<div class="link dim blue pointer absolute right-2" id="show-info">
+					<span id="info-icon" class="dn"><i class="em em-information_source" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></span>
+				</div>
 				<div class="pa2">
 					<input type="radio" value="undirected" name="graphType" id="undirected" checked>
 					<label for="undirected">Undirected</label>
@@ -88,7 +88,6 @@
 				</div>
 			</div>
 		</form>
-		</div>
 		<div class="alert fl w-100 pa2 br4 ba b--dark-red bg-light-red dark-red" role="alert" id="row-error">
 			<p><strong>Too many/too few values!</strong> One or more of the rows in your data has the wrong number of
 				values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or
@@ -117,8 +116,10 @@
 					<p class="f7 tr w-100"><a class="link dim blue" href="https://jrladd.com/network-glossary.html" target="_blank">Looking for definitions of these terms?</a></p>
 					<div class="f6 pa2 flex w-100">
 						<form id="download-form">
-							<i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
-							<label for="download-type">Select file to download:</label>
+							<div class="mb1-l mb2">
+								<i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
+								<label for="download-type">Select file to download:</label>
+							</div>
 							<select name="download-type" id="download-type">
 								<option value="viz-png">Current visualization (png)</option>
 								<option value="viz-svg">Current visualization (svg)</option>
