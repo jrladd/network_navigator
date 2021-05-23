@@ -197,8 +197,8 @@
 								<i class="em em-heavy_multiplication_x ml-auto" aria-role="presentation" aria-label="HEAVY MULTIPLICATION X"></i>
 							</div>
 							<div id="customize-form">
-								<div id="force-layout" class="flex flex-column" style="display: none;">
-									<h1 class="f6 lh-copy">Customize Force Layout Graph</h1>
+								<div id="force-layout" class="flex flex-wrap" style="display: none;">
+									<h1 class="f6 lh-copy w-100">Customize Force Layout Graph</h1>
 									<div class="fl w-100 f6 mid-gray pv2">
 										<label for="centrality">Size by:</label>
 										<select name="centrality" id="centrality">
@@ -223,29 +223,29 @@
 											<option value="clustering">Clustering Coefficient</option>
 										</select>
 									</div>
-									<div class="fl w-100 f6 mid-gray pv2">
+									<div class="fl w-50 f6 mid-gray pv2">
 										<label for="edge-weight">Include edge weights?</label>
 										<input name="edge-weight" id="edge-weight" type="checkbox"/>
 									</div>
-									<div class="fl w-100 f6 mid-gray pv2">
+									<div class="fl w-50 f6 mid-gray pv2">
 										<label for="node-label">Include node labels?</label>
 										<input name="node-label" id="node-label" type="checkbox" checked/>
 									</div>
-									<div class="fl w-100 f6 mid-gray pv2">
+									<div class="fl w-50 f6 mid-gray pv2">
 										<label for="directed-arrows">Include directed arrows?</label>
 										<input name="directed-arrows" id="directed-arrows" type="checkbox"/>
 										<br><small>(n.b. Arrows are meaningless if the network data isn't directed.)</small>
 									</div>
-									<div class="fl w-100 f6 mid-gray pv2">
+									<div class="fl w-50 f6 mid-gray pv2">
 										<input type="radio" value="straight" name="lineType" id="straight" checked>
 										<label for="straight">Straight Lines</label>
 										<input type="radio" value="curved" name="lineType" id="curved">
 										<label for="curved">Curved Lines</label>
 									</div>
 								</div>
-								<div id="arc-diagram" class="flex flex-column" style="display: none;">
-									<h1 class="f6 lh-copy">Customize Arc Diagram</h1>
-									<div class="fl w-100 f6 mid-gray pv2">
+								<div id="arc-diagram" class="flex flex-wrap" style="display: none;">
+									<h1 class="f6 lh-copy w-100">Customize Arc Diagram</h1>
+									<div class="fl w-50 f6 mid-gray pv2">
 										<label for="centrality-arc">Size by:</label>
 										<select name="centrality-arc" id="centrality-arc">
 											<option value="degree">Degree</option>
@@ -254,8 +254,8 @@
 											<option value="clustering">Clustering coefficient</option>
 										</select>
 									</div>
-									<div class="fl w-100 f6 mid-gray h2">
-										<label for="order-arc-nodes">Order nodes:</label>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="order-arc-nodes">Order by:</label>
 										<select name="order-arc-nodes" id="order-arc-nodes">
 											<option value="original">Original Order</option>
 											<option value="name">Name</option>
