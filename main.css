@@ -59,21 +59,6 @@ code {
 	pointer-events: none;
 }
 
-.nodeLabel text {
-	font-family: sans-serif;
-	text-anchor: middle;
-	pointer-events: none;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.nodeLabel rect {
-    fill: #fff;
-    opacity: 1;
-    stroke: #b9babc;
-    stroke-width: .5px;
-}
-
 .width-collapse {
 	width: 0;
 	height: 0;

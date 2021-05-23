@@ -139,6 +139,10 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 
     nodeLabel.append("text")
         .text(d => d.id)
+	.attr("font-family", "sans-serif")
+	.attr("text-anchor", "middle")
+	.attr("pointer-events", "none")
+	.attr("user-select", "none")
 	.call(getBB);
 
     function getBB(selection) {
@@ -162,7 +166,10 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
       })
       .attr("height", function(d) {
         return d.labelBBox.height + paddingTopBottom;
-      });
+      })
+      .attr("fill", "#fff")
+      .attr("stroke", "#b9babc")
+      .attr("stroke-width", ".5px");
 
     // Run simulation to determine node position
     simulation
