@@ -71,11 +71,12 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         .data([{id: 'end-arrow', opacity: 1}, {id: 'end-arrow-fade',opacity: 0.1}]) // Different link/path types can be defined here
         .enter().append("marker") // This section adds in the arrows
             .attr("id", d => d.id)
+	    .attr("markerUnits", "userSpaceOnUse")
             .attr("viewBox", "0 -5 10 10")
             .attr("refX", 15)
             .attr("refY", -0.5)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
+            .attr("markerWidth", 25)
+            .attr("markerHeight", 25)
             .attr("orient", "auto")
         .append("path")
             .attr("d", "M0,-5L10,0L0,5")
