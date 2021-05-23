@@ -471,6 +471,7 @@ $('#calculate').click(function () {
 
     // Add metrics to DataTable and page, display all
     table.clear().rows.add(tableData).draw();
+    $('.dataTables_filter input').attr("placeholder", "Find a Node ID");
     let metrics = document.getElementById("metrics");
     let viz = document.getElementById("viz");
     let buttons = document.getElementById("buttons");
