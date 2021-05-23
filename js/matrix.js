@@ -24,13 +24,13 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .classed("svg-container", true)
     .append('svg')
     .attr("preserveAspectRatio", "xMinYMin meet")
-    .attr("viewBox", "0 0 1400 1000")
+    .attr("viewBox", "0 0 1400 1400")
     .classed("svg-content-responsive", true)
     .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-  const width = +svg.attr('width') + 1000 - margin.left;
-  const height = +svg.attr('height') + 1000 - margin.top;
+  const width = +svg.attr('width') + 1200 - margin.left;
+  const height = +svg.attr('height') + 1200 - margin.top;
 
   // Create brush for zooming
   const brush = d3.brush().on('end', brushed);
@@ -38,7 +38,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   // Container for legend
   svg.append("g")
   .attr("class", "legendLinear")
-  .attr("transform", `translate(${width},0)`);
+  .attr("transform", `translate(${width+10},0)`);
 
   // Scale for square opacity
   var opacity = d3.scaleLinear()
@@ -47,14 +47,12 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 
   // Scale for X-axis
   var x = d3.scaleBand()
-    .rangeRound([0, width])
-    .paddingInner(0.1)
+    .range([0, width])
     .align(0);
 
   // Scale for Y-axis
   var y = d3.scaleBand()
-    .rangeRound([0, height])
-    .paddingInner(0.1)
+    .range([0, height])
     .align(0);
 
   // Keep track of node IDs
