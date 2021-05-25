@@ -482,12 +482,12 @@ $('#calculate').click(function () {
     $('#viz-off').hide();
     //$btn.button('reset');
     var allInfo = `
-    <div class="fl w-50-ns w-100 mv2">
+    <div class="fl w-50-l w-100 mv2">
     Total Nodes: ${numberOfNodes}<br/>
     Total Edges: ${numberOfEdges}<br/>
     Average Degree: ${averageDegree}<br/>
     </div>
-    <div class="fl w-50-ns w-100 mv2">
+    <div class="fl w-50-l w-100 mv2">
     Density: ${density.toFixed(4)}<br/>
     Avg. Clustering Coefficient: ${averageClustering}<br/>
     Transitivity: ${transitivity.toFixed(4)}<br/>

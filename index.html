@@ -135,16 +135,16 @@
 					</div>
 					<div class="pa2 bb b--gray mv2" id="hist-container">
 					<div class="tc f7">Frequency Distribution for Selected Metrics:</div>
-					<form id="histType" class="pa2 f7 f6-ns retro-font gray flex">
-						<input type="radio" value="degree" name="histType" id="degree" checked>
-						<label class="dib w-25 pa1 tooltip" for="degree">Degree<a><span>The number of connections (edges) a particular node possesses. Degree is the most basic measure of centrality.</span> <button class="f7 ba bw1 br4">i</button></a></label>
-						<input type="radio" value="betweenness" name="histType" id="betweenness">
-						<label class="dib w-25 pa1 tooltip" for="betweenness">Betweenness Centrality<a><span>In its simplest form, the number of shortest paths that must pass through a particular node. Betweenness centrality helps to measure how often any path in the network must go through a node and therefore can show if a node is connected to many disparate groups in the network.</span> <button class="f7 ba bw1 br4">i</button></a></label>
-						<input type="radio" value="eigenvector" name="histType" id="eigenvector">
-						<label class="dib w-25 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span> <button class="f7 ba bw1 br4">i</button></i></a></label>
-						<input type="radio" value="clustering" name="histType" id="clustering">
-						<label class="dib w-25 pa1 tooltip" for="clustering">Clustering Coefficient<a><span>The ratio of how many of a node’s neighbors are connected to each other, relative to the total number of neighbors.</span> <button class="f7 ba bw1 br4">i</button></a></label>
-					</form>
+						<form id="histType" class="pa2 f7 f6-ns retro-font gray flex flex-wrap" onsubmit="return false;">
+							<input type="radio" value="degree" name="histType" id="degree" checked>
+							<label class="dib w-20-l w-100 pa1 tooltip" for="degree">Degree<a><span>The number of connections (edges) a particular node possesses. Degree is the most basic measure of centrality.</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
+							<input type="radio" value="betweenness" name="histType" id="betweenness">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="betweenness">Betweenness Centrality<a><span>In its simplest form, the number of shortest paths that must pass through a particular node. Betweenness centrality helps to measure how often any path in the network must go through a node and therefore can show if a node is connected to many disparate groups in the network.</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
+							<input type="radio" value="eigenvector" name="histType" id="eigenvector">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span> <button type="button" class="f7 ba bw1 br4">i</button></i></a></label>
+							<input type="radio" value="clustering" name="histType" id="clustering">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="clustering">Clustering Coefficient<a><span>The ratio of how many of a node’s neighbors are connected to each other, relative to the total number of neighbors.</span><button type="button" class="f7 ba bw1 br4">i</button></a></label>
+						</form>
 						<svg id="hist"></svg>
 					</div>
 					<!-- <form>
