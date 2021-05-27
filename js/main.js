@@ -6,7 +6,7 @@ import { addEdgeAttributeDropdown } from './edgeAttribute.js';
 
 
 // Define global variables
-let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
+let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight, numberOfNodes, numberOfEdges, density, averageDegree, averageClustering, transitivity;
 
 const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
 
@@ -282,8 +282,23 @@ form.addEventListener('submit', event => {
   		  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
   		  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
 		  break;
-	  case 'graphml':
-		  console.log("this is next!");
+	  case 'metrics':
+                  let text = `Global Network Metrics:
+
+Total Nodes: ${numberOfNodes}
+Total Edges: ${numberOfEdges}
+Average Degree: ${averageDegree}
+Density: ${density.toFixed(4)}
+Avg. Clustering Coefficient: ${averageClustering}
+Transitivity: ${transitivity.toFixed(4)}
+
+Looking for node-level metrics? Click "Download as CSV" next to the data table on the main Network Navigator page.`
+                  let a = document.createElement('a');
+                  a.download = `global_network_metrics.txt`;
+                  a.href = `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
   };
 })
 
@@ -359,17 +374,17 @@ $('#calculate').click(function () {
       betweenness = jsnx.betweennessCentrality(G)._stringValues;
       degree = G.degree()._stringValues;
 
-      var density = jsnx.density(G);
-      var averageClustering = "N/A";
+      density = jsnx.density(G);
+      averageClustering = "N/A";
       if (graphType === 'undirected') {
         averageClustering = jsnx.averageClustering(G).toFixed(4);
         clustering = jsnx.clustering(G)._stringValues;
         var clusteringSorted = reverse_sort(clustering);
       }
-      var transitivity = jsnx.transitivity(G);
-      var numberOfNodes = G.nodes().length;
-      var numberOfEdges = G.edges().length;
-      var averageDegree = Object.values(degree).reduce((a, b) => {
+      transitivity = jsnx.transitivity(G);
+      numberOfNodes = G.nodes().length;
+      numberOfEdges = G.edges().length;
+      averageDegree = Object.values(degree).reduce((a, b) => {
         return a + b;
       }) / numberOfNodes;
 
