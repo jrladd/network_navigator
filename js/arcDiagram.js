@@ -1,5 +1,3 @@
-import { addEdgeAttributeDropdown } from './edgeAttribute.js';
-
 // Complete code for Arc Diagram network viz
 export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
 
@@ -312,8 +310,6 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                 .call(zoom.transform, d3.zoomIdentity);
         }
     });
-
-    addEdgeAttributeDropdown(edgeList, 'arc-diagram')
 
     // When searching in table, filter visualization
     var table = $('#metrics-table').DataTable();

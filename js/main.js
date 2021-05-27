@@ -2,6 +2,7 @@ import { drawMatrix } from './matrix.js';
 import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
+import { addEdgeAttributeDropdown } from './edgeAttribute.js';
 
 
 // Define global variables
@@ -165,6 +166,9 @@ function drawGraphs(selectedGraph) {
         if (filteredDiv.includes('force')) drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
         if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
       }
+      // Reload edge attribute filters when switching visualizations
+      if (filteredDiv.includes('force')) addEdgeAttributeDropdown(edgeList, 'force-layout');
+      if (filteredDiv.includes('arc')) addEdgeAttributeDropdown(edgeList, 'arc-diagram');
     } else {
       $(div).css('visibility', 'hidden');
       $(div).css('padding', '0');
