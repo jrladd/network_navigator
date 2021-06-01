@@ -57,9 +57,11 @@ function createCategoryDropdown() {
 		    if (graphType === 'force-layout') {
 			    d3.selectAll('.edge').style('opacity', l => { return l[attr].toString() === this.value ? 1 : 0.1});
 			    d3.selectAll('.node').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+			    d3.selectAll('.nodeLabel').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 		    } else if (graphType === 'arc-diagram') {
 			    d3.selectAll('.arc').style('opacity', l => { return l[attr].toString() === this.value ? 1 : 0.1});
 			    d3.selectAll('.node-arc').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+			    d3.selectAll('#labels text').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 		    }
 	    }),
 	    options = select.selectAll('option').data(categories); // Data join
@@ -207,9 +209,11 @@ function createContinuousGraph() {
 	    if (graphType === 'force-layout') {
 		    d3.selectAll('.edge').style('opacity', l => { return min <= l[attr] && l[attr] <= max ? 1 : 0.1});
 		    d3.selectAll('.node').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+		    d3.selectAll('.nodeLabel').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 	    } else if (graphType === 'arc-diagram') {
 		    d3.selectAll('.arc').style('opacity', l => { return min <= l[attr] && l[attr] <= max ? 1 : 0.1});
 		    d3.selectAll('.node-arc').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+		    d3.selectAll('#labels text').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 	    }
 	}
 

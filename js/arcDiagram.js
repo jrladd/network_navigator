@@ -43,6 +43,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             // Restore nodes and links to normal opacity.
             d3.selectAll('.arc').style('opacity', '1');
             d3.selectAll('.node-arc').style('opacity', '1');
+            d3.selectAll('#labels text').style('opacity', '1');
 
             releaseNode();
         });
