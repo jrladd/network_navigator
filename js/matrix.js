@@ -69,7 +69,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var newRGB = `rgb(${newColor.join(",")})`;
 
     color = d3.scaleLinear()
-      .domain([1, d3.max(colorValues)])
+      .domain([0, d3.max(colorValues)])
       .range([newRGB,$('#color-picker-matrix').val()])
 
     // Create and draw legend
