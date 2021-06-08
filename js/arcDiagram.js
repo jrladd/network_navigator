@@ -190,6 +190,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         path.filter(path => !path.edgeClicked)
             .style("stroke", "#aaa")
             .style("stroke-opacity", 0.6);
+    	let table = $('#metrics-table').DataTable();
+	let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
     }
 
     // Coordinates for drawing arcs
