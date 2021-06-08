@@ -298,8 +298,14 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var table = $('#metrics-table').DataTable();
     table.on('search.dt', function() { 
 	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
-	    d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
-	    d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
+	    console.log(nodeIds);
+	    if (selectedXNodes.length !== 0) {
+	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');
+	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(selectedXNodes[i].id) == -1 ? '0': '1');
+	    } else {
+	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
+	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
+	    }
     });
 
 };
