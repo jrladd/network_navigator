@@ -8,7 +8,7 @@ export function drawHist(data) {
          .attr("preserveAspectRatio", "xMinYMin meet")
          .attr("viewBox", "0 0 1400 500");
      
-        var margin = {top: 10, right: 30, bottom: 30, left: 40},
+        var margin = {top: 10, right: 30, bottom: 50, left: 90},
 	  width = +svg.attr('width')+1400 - margin.left - margin.right,
           height = +svg.attr('height')+500 - margin.top - margin.bottom;
 
@@ -21,8 +21,10 @@ export function drawHist(data) {
 	var x = d3.scaleLinear()
 	  .domain([0, d3.max(data, function(d) { return d.metric; })])
           .range([0, width]);
-	var y = d3.scaleLinear()
-          .range([height, 0]);
+	var y = d3.scaleLog()
+          .range([height, 0])
+	  .clamp(true)
+	  .nice();
 	
 	// Set the parameters for the histogram
 	var histogram = d3.histogram()
@@ -32,7 +34,7 @@ export function drawHist(data) {
 	var bins = histogram(data);
 
 	// Scale the range of the data in the y domain
-	y.domain([0, d3.max(bins, function(d) { return d.length; })]);
+	y.domain([0.1, d3.max(bins, function(d) { return d.length; })]);
 	
 	// Append the bar rectangles to the svg element
 	container.selectAll("rect")
@@ -55,4 +57,21 @@ export function drawHist(data) {
 	// Add the y Axis
 	container.append("g")
 	    .call(d3.axisLeft(y));
+
+	container.append("text")
+            .attr("class", "x label")
+            .attr("text-anchor", "end")
+            .attr("x", width)
+            .attr("y", height + (margin.bottom - 5))
+	    .attr("font-size", "1.5em")
+            .text("value range for selected metric");
+
+	svg.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+	    .attr("x", -margin.top)
+            .attr("dy", ".75em")
+	    .attr("font-size", "1.5em")
+            .attr("transform", "rotate(-90)")
+            .text("number of nodes in range (log scale)");
 }

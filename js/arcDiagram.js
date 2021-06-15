@@ -31,7 +31,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     const extent = [[margin.left, margin.top], [width - margin.right, height - margin.top]];
 
     // Create and call zoom for SVG
-    var zoom = d3.zoom().scaleExtent([0.75, 4]).on('zoom', zoomed);
+    var zoom = d3.zoom().extent(extent).scaleExtent([0.75, 4]).on('zoom', zoomed);
     svg.call(zoom);
 
     // Create rectangle and container for visualization
@@ -41,6 +41,10 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .attr('fill', 'transparent')
         .on('click', function () {
             // Restore nodes and links to normal opacity.
+            d3.selectAll('.arc').style('opacity', '1');
+            d3.selectAll('.node-arc').style('opacity', '1');
+            d3.selectAll('#labels text').style('opacity', '1');
+
             releaseNode();
         });
 
@@ -49,8 +53,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // A linear scale for node size
     var size = d3.scaleLinear()
-        .domain([1, 10])
-        .range([10, 15]);
+        .domain([15, 50])
+        .range([3, 6]);
 
     // Scales for horizontal (x) or vertical (y) orientation
     var x = d3.scalePoint()
@@ -64,7 +68,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Create labels
     var labelsDiv = container.append("g")
         .style("font-family", "sans-serif")
-        .style("font-size", 14)
+        .style("font-size", "8px")
         .attr("text-anchor", "end")
         .attr("id", "labels");
 
@@ -80,7 +84,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Create container and circles for nodes
     var nodesDiv = container.append("g")
         .style("font-family", "sans-serif")
-        .style("font-size", 14)
+        .style("font-size", "8px")
         .attr("text-anchor", "end")
         .attr("id", "nodes");
 
@@ -88,7 +92,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .data(nodeList)
         .enter().append("circle")
 	    .classed("node-arc", true)
-            .attr("r", d => size(d.degree))
+            .attr("r", d => size(d.radius_degree))
             .attr("fill", $('#color-picker-arc').val())
 	    .attr("stroke", "white")
 	    .attr("stroke-width", 2)
@@ -104,6 +108,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     var path = arcsDiv.selectAll("path")
         .data(edgeList)
         .enter().append("path")
+	    .classed("arc", true)
             .style("stroke", "#aaa")
             .attr("d", d => arc(d));
 
@@ -185,6 +190,11 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         path.filter(path => !path.edgeClicked)
             .style("stroke", "#aaa")
             .style("stroke-opacity", 0.6);
+    	let table = $('#metrics-table').DataTable();
+	let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
     }
 
     // Coordinates for drawing arcs
@@ -245,7 +255,27 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     // Buttons for changing centrality, node order, and graph orientation
     d3.select('#centrality-arc').on('change', function() { 
         centrality = this.value;
-        node.attr('r', d => d[`radius_${centrality}`]);
+        node.attr('r', d => size(d[`radius_${centrality}`]));
+    });
+
+    // A dropdown menu for color with different centrality measures
+    d3.select('#color-scale-arc').on('change', function() { 
+        centrality = this.value;
+	if (centrality === 'none') {
+		node.attr('fill', $('#color-picker-arc').val());
+	} else {
+                // Create color scale
+                var origColor = $('#color-picker-arc').val().replace(/[rgb\(\)]/gm, "").split(",");
+                var newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+                var newRGB = `rgb(${newColor.join(",")})`;
+            
+                var color = d3.scaleLinear()
+                  .domain([0, d3.max(nodeList, d => d[`${centrality}`])])
+                  .range([newRGB,$('#color-picker-arc').val()])
+
+		// Fill according to scale
+		node.attr('fill', d => color(d[`${centrality}`]));
+	}
     });
 
     d3.select('#order-arc-nodes').on('change', function () {
@@ -269,7 +299,13 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // Zooming function translates the size of the svg container.
     function zoomed() {
-    	  container.attr("transform", "translate(" + d3.event.transform.x + ", " + d3.event.transform.y + ") scale(" + d3.event.transform.k + ")");
+	  let transform = d3.event.transform;
+	  if (graphDirection === 'vertical') {
+		  transform.x = 0;
+	  } else {
+		  transform.y = Math.min(0, transform.y);
+	  }
+	  container.attr("transform", transform.toString());
     }
 
     // Restore to original zoom
@@ -280,4 +316,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                 .call(zoom.transform, d3.zoomIdentity);
         }
     });
+
+    // When searching in table, filter visualization
+    var table = $('#metrics-table').DataTable();
+    table.on('search.dt', function() { 
+	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+	    node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+	    path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+    });
+
 };

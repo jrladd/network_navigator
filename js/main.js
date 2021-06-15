@@ -2,11 +2,11 @@ import { drawMatrix } from './matrix.js';
 import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
 import { drawHist } from './hist.js';
-import { parse } from './csv.min.js';
+import { addEdgeAttributeDropdown } from './edgeAttribute.js';
 
 
 // Define global variables
-let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight;
+let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight, numberOfNodes, numberOfEdges, density, averageDegree, averageClustering, transitivity;
 
 const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
 
@@ -30,16 +30,25 @@ $('textarea').on('drop', function (e) {
   }
 });
 
-// Toggle instructions and histogram
-$('#show-instructions').click(function (e) {
+// Toggle instructions 
+$('#close-icon').click(function (e) {
   e.preventDefault(e);
-  $('#instructions').slideToggle();
+  $('#instructions').slideUp();
+  $('#close-icon').hide();
+  $('#info-icon').show();
 })
 
+$('#info-icon').click(function (e) {
+  e.preventDefault(e);
+  $('#instructions').slideDown();
+  $('#info-icon').hide();
+  $('#close-icon').show();
+})
+
+// Toggle histogram
 $('#show-hist').click(function (e) {
   e.preventDefault(e);
   $('#hist-container').slideToggle();
-  $('#download-hist').slideToggle();
 })
 
 // Manage side-by-side collapsing metrics/viz panels
@@ -121,6 +130,26 @@ $('#customize').click(function () {
   $('#customize-form').toggle();
 });
 
+/*//Code for eventual range slider
+
+var slider = document.getElementById('slider');
+
+noUiSlider.create(slider, {
+    start: [20, 80],
+    connect: true,
+    range: {
+        'min': 0,
+        'max': 100
+    }
+});
+
+// Handle table filter on range slider
+slider.noUiSlider.on('update', function() {
+	let sliderValue = slider.noUiSlider.get();
+	let low = sliderValue[0];
+	let high = sliderValue[1];
+});*/
+
 // Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
   divs.map(div => {
@@ -137,6 +166,9 @@ function drawGraphs(selectedGraph) {
         if (filteredDiv.includes('force')) drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
         if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
       }
+      // Reload edge attribute filters when switching visualizations
+      if (filteredDiv.includes('force')) addEdgeAttributeDropdown(edgeList, 'force-layout');
+      if (filteredDiv.includes('arc')) addEdgeAttributeDropdown(edgeList, 'arc-diagram');
     } else {
       $(div).css('visibility', 'hidden');
       $(div).css('padding', '0');
@@ -213,22 +245,62 @@ function updateDownloadURL(svg, filename, link) {
   });
 }
 
-// Download buttons for main visualization and histogram
-$('#download-graph').on('click', function (e) {
-  divs.map(div => {
-    let splitDiv = div.split('-').map(d => d.replace('#', ''));
-    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
-    if (filteredDiv.length > 0) {
-      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
-    } 
-  });
-});
+const form = document.querySelector('#download-form')
+form.addEventListener('submit', event => {
+  // submit event detected
+  event.preventDefault()
+  let downloadType = document.querySelector("#download-type");
+  switch (downloadType.value) {
+	  case 'viz-png':
+  		  divs.map(div => {
+  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
+  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
+  		    if (filteredDiv.length > 0) {
+  		      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
+  		    } 
+  		  });
+		  break;
+	  case 'viz-svg':
+  		  divs.map(div => {
+  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
+  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
+  		    if (filteredDiv.length > 0) {
+            var serializer = new XMLSerializer();
+            var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
+            var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
+		        let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
+            let a = document.createElement('a');
+            a.download = `${filename}_visualization.svg`;
+            a.href = imgData;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+  		    } 
+  		  });
+		  break;
+	  case 'hist':
+  		  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
+  		  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
+		  break;
+	  case 'metrics':
+                  let text = `Global Network Metrics:
 
-$('#download-hist').on('click', function (e) {
-  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
-  console.log(filename);
-  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
-});
+Total Nodes: ${numberOfNodes}
+Total Edges: ${numberOfEdges}
+Average Degree: ${averageDegree}
+Density: ${density.toFixed(4)}
+Avg. Clustering Coefficient: ${averageClustering}
+Transitivity: ${transitivity.toFixed(4)}
+
+Looking for node-level metrics? Click "Download as CSV" next to the data table on the main Network Navigator page.`
+                  let a = document.createElement('a');
+                  a.download = `global_network_metrics.txt`;
+                  a.href = `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+  };
+})
 
 // Initialize DataTable for metrics
 var table = $('#metrics-table').DataTable({
@@ -238,11 +310,17 @@ var table = $('#metrics-table').DataTable({
 	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
 	dom: 'Bfti',
 	order: [[1, 'desc']],
-	autoWidth: false
+	autoWidth: false,
+	columnDefs: [
+		{searchable: false, targets: [1,2,3,4]}
+	]
 });
+
 
 // Calculate metrics and display graphs when user clicks "Navigate" button
 $('#calculate').click(function () {
+  $('.loader').addClass('is-active'); // CSS Loader while calculating
+
   divs.map((div) => {
     $(div).html('');
   });
@@ -251,37 +329,35 @@ $('#calculate').click(function () {
   $('#customize-form').hide();
 
   selectedGraph = "Force Layout";
-  $('.loader').addClass('is-active'); // CSS Loader while calculating
     // Get CSV and parse rows
     var data = $('textarea').val();
     graphType = $("input[name='graphType']:checked").val();
     graphWeight = $("input[name='graphWeight']:checked").val();
     var headerRow = document.querySelector("#headerRow");
-    var edges = parse(data);
+    //var edges = parse(data, {'typed':true});
+    var edges;
     if (headerRow.checked) {
-      edges = edges.slice(1);
+      edges = d3.csvParse(data, function(d) {
+	      d = Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {});
+	      return [d.source,d.target,d.weight];
+      });
+      edgeList = d3.csvParse(data);
+      edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
+    } else {
+      edges = d3.csvParseRows(data);
     }
-    // For D3 visualizations
-    edgeList = [];
-    edges.map(edge => {
-      let item = {};
-      item['source'] = edge[0];
-      item['target'] = edge[1];
-      item['weight'] = typeof (edge[2]) === 'undefined' ? 1 : parseInt(edge[2]);
-      // item['val'] = 1;
-      // Check if multiple edges between same nodes
-      let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
-      if (match) {
-        item.weight = item.weight + match.weight;
-        Object.assign(match, item);
-      } else {
-        edgeList.push(item);
-      }
-    });
 
-    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
-    colorValues.push(0);
-    colorValues.sort((a, b) => a - b);
+// Deal with matches later
+        // Check if multiple edges between same nodes
+//        let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
+//        if (match) {
+//          item.weight = item.weight + match.weight;
+//          Object.assign(match, item);
+//        } else {
+//          edgeList.push(item);
+//        }
+//      });
+
 
     $('#info-panel').empty();
 	
@@ -298,17 +374,17 @@ $('#calculate').click(function () {
       betweenness = jsnx.betweennessCentrality(G)._stringValues;
       degree = G.degree()._stringValues;
 
-      var density = jsnx.density(G);
-      var averageClustering = "N/A";
+      density = jsnx.density(G);
+      averageClustering = "N/A";
       if (graphType === 'undirected') {
         averageClustering = jsnx.averageClustering(G).toFixed(4);
         clustering = jsnx.clustering(G)._stringValues;
         var clusteringSorted = reverse_sort(clustering);
       }
-      var transitivity = jsnx.transitivity(G);
-      var numberOfNodes = G.nodes().length;
-      var numberOfEdges = G.edges().length;
-      var averageDegree = Object.values(degree).reduce((a, b) => {
+      transitivity = jsnx.transitivity(G);
+      numberOfNodes = G.nodes().length;
+      numberOfEdges = G.edges().length;
+      averageDegree = Object.values(degree).reduce((a, b) => {
         return a + b;
       }) / numberOfNodes;
 
@@ -332,6 +408,14 @@ $('#calculate').click(function () {
       var eigenvectorSorted = reverse_sort(eigenvector);
     }
 
+    if (headerRow.checked === false) {
+        edgeList = G.edges(true).map(e => { e[2].source = e[0]; e[2].target = e[1]; e[2].weight = +e[2].weight; return e[2] });
+    }
+
+    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
+    colorValues.push(0);
+    colorValues.sort((a, b) => a - b);
+
     var tableData = [];
     nodeList = [];
     G.nodes().forEach(function (node) {
@@ -350,14 +434,14 @@ $('#calculate').click(function () {
       if (graphType === 'undirected') {
         clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
         item['clustering'] = clustering[node].toFixed(4);
-      }
+      } else {item['clustering'] = 5};
       item ['community'] = 1;
       var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
       tableData.push(row);
       nodeList.push(item);
     });
 
-    const sizes = ['degree', 'eigenvector', 'betweenness']
+    const sizes = ['degree', 'eigenvector', 'betweenness', 'clustering']
     sizes.map(size => {
       if (nodeList.some(node => node.hasOwnProperty(size))){
         var centralitySize = d3.scaleLinear()
@@ -406,6 +490,7 @@ $('#calculate').click(function () {
 
     // Add metrics to DataTable and page, display all
     table.clear().rows.add(tableData).draw();
+    $('.dataTables_filter input').attr("placeholder", "Find a Node ID");
     let metrics = document.getElementById("metrics");
     let viz = document.getElementById("viz");
     let buttons = document.getElementById("buttons");
@@ -416,21 +501,26 @@ $('#calculate').click(function () {
     $('#viz-off').hide();
     //$btn.button('reset');
     var allInfo = `
-          <div class="fl w-50 mv2">
+    <div class="fl w-50-l w-100 mv2">
     Total Nodes: ${numberOfNodes}<br/>
     Total Edges: ${numberOfEdges}<br/>
     Average Degree: ${averageDegree}<br/>
     </div>
-    <div class="fl w-50 mv2">
+    <div class="fl w-50-l w-100 mv2">
     Density: ${density.toFixed(4)}<br/>
     Avg. Clustering Coefficient: ${averageClustering}<br/>
     Transitivity: ${transitivity.toFixed(4)}<br/>
     </div>
     `
+    if (graphType === 'directed') {
+	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficients cannot be calculated for directed graphs.</div>`
+    }
     $('#info-panel').append(allInfo);
     selectHist();
     $('#histType').change(function() {
       selectHist();
+      // Change centrality if the user selects histogram button
+      nodeSizeHist();
     });
 
     // Draw Force Layout by default
@@ -475,8 +565,31 @@ function selectHist() {
 					  drawHist(eigenvector);
 					  break;
 				  case 'clustering':
-					  drawHist(clustering);
+					  if (graphType !== 'directed') {
+					      drawHist(clustering);
+					  } else {
+					      d3.select("svg#hist").selectAll('*').remove();
+					      d3.select("svg#hist").append('text').attr('width', '100%').attr("x", 50).attr("y", 50).text("Clustering coefficients cannot be calculated for directed graphs.")
+					  }
 			  };
 		  };
 	  });
+}
+
+// Smaller node size for arc diagram
+var arcSize = d3.scaleLinear()
+    .domain([15, 50])
+    .range([3, 6]);
+
+function nodeSizeHist() {
+	let radios = document.getElementsByName('histType');
+	radios.forEach(r => {
+		if (r.checked) { 
+			centrality = r.value;
+		};
+	});
+	document.querySelector('#centrality').value = centrality;
+	document.querySelector('#centrality-arc').value = centrality;
+        d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
+        d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));
 }
