@@ -343,6 +343,7 @@ $('#calculate').click(function () {
       });
       edgeList = d3.csvParse(data);
       edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
+      edgeList = edgeList.map(d => {d.weight = Number(d.weight); return d;});
     } else {
       edges = d3.csvParseRows(data);
     }
@@ -476,9 +477,9 @@ $('#calculate').click(function () {
 
     var edgeWidth = d3.scaleLinear()
       .domain([d3.min(edgeList, function (d) {
-        return Number(d.weight);
+        return d.weight;
       }), d3.max(edgeList, function (d) {
-        return Number(d.weight);
+        return d.weight;
       })])
       .range([3, 20]);
     // Embed nodes as source and target
