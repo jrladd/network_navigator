@@ -476,9 +476,9 @@ $('#calculate').click(function () {
 
     var edgeWidth = d3.scaleLinear()
       .domain([d3.min(edgeList, function (d) {
-        return d.weight;
+        return Number(d.weight);
       }), d3.max(edgeList, function (d) {
-        return d.weight;
+        return Number(d.weight);
       })])
       .range([3, 20]);
     // Embed nodes as source and target
