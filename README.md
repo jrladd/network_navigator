@@ -4,4 +4,4 @@ This repository contains the code for *Network Navigator*, a browser tool design
 
 ![](img/upload_data.gif)
 
-For more info, check out the [About](https://network-navigator.library.cmu.edu/about.html) and [How-To](https://network-navigator.library.cmu.edu/how-to.html) pages on our site.
+For more info, check out the [About](https://networknavigator.jrladd.com/about.html) and [How-To](https://networknavigator.jrladd.com/how-to.html) pages on our site.
