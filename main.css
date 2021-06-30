@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+
+html {
+	position: relative;
+	min-height: 100%;
+	scroll-behavior: smooth;
+}
+
+.retro-font {
+	font-family: 'Audiowide',
+	cursive;
+}
+
+.gradient {
+	background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+}
+
+#logo {
+	max-height: 15px;
+}
+
+.panel.viz {
+	height: 500px;
+}
+
+#metrics,
+#viz,
+#buttons {
+	display: none;
+	transition: visibility .1s, width .5s, height .5s;
+}
+
+code {
+	white-space: pre;
+}
+
+.alert {
+	display: none;
+}
+
+.svg-container {
+	display: inline-block;
+	position: relative;
+	width: 100%;
+	padding-bottom: 100%;
+	/* aspect ratio */
+	vertical-align: top;
+	overflow: hidden;
+}
+
+.svg-content-responsive {
+	display: inline-block;
+	position: absolute;
+	top: 10px;
+	left: 0;
+}
+
+.nodeLabel {
+	pointer-events: none;
+}
+
+.width-collapse {
+	width: 0;
+	height: 0;
+	visibility: hidden;
+	transition: visibility .6s, width .5s, height .5s;
+}
+
+#customize {
+	transition: width .5s, height.5s;
+}
+
+.tooltip a span { display: none; }
+
+.tooltip a:hover span {
+	display: block;
+	position: absolute;
+	width: 125px;
+	padding: 5px;
+	margin: 10px;
+	z-index: 100;
+	color: black;
+	background-color:#FFFFCC;
+	border: 1px solid #ccc;
+	font: 10px Verdana, sans-serif;
+	text-align: center;
+}
+
+#histType input {
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  width: 1px;
+}
+
+#histType label {
+  text-align: center;
+  border: 1px solid grey;
+}
+
+#histType label a button {
+  border: 1px solid black;
+}
+
+#histType input:checked+label a button {
+  background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+  color: white;
+  border: 1px solid white;
+}
+#histType label:hover {
+  cursor: pointer;
+}
+
+#histType input:checked+label {
+  background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+  color: white;
+  border: 1px solid grey;
+}
+
+#histType input#r-no:checked+label {
+  background-color: grey;
+  color: white;
+}
+
+#histType label:first-of-type {
+  border-radius: 25px 0 0 25px;
+}
+
+#histType label:last-of-type {
+  border-radius: 0 25px 25px 0;
+}
+
+.tick text {
+	font-size: 2em;
+}
+
+@media only screen and (min-width: 30em) {
+	.customize-expand {
+		transition: width .5s, height.5s;
+		z-index: 999;
+		position: absolute;
+		width: 98%;
+		top: 0;
+		right: 0;
+	}
+	.customize-art {
+		top: 0;
+		right: 0;
+		position: absolute;
+		margin: .5rem;
+	}
+
+}
+@media only screen and (max-width: 30em) {
+	.customize-expand {
+		transition: width .5s, height.5s;
+	}
+	.customize-art {
+		top: 10;
+		right: 0.5;
+		position: absolute;
+		margin: .5rem;
+	}
+}

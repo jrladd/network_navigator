@@ -1,5 +1,412 @@
 <!DOCTYPE html>
 <html lang="en">
+<<<<<<< HEAD
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Network Navigator</title>
+	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" href="css-loader.css">
+	<!-- <link rel="stylesheet" href="nouislider.min.css"> -->
+	<link rel="icon"
+		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+</head>
+
+<body class="avenir">
+	<div class="loader loader-default"></div>
+	<header class="fl w-100 pa3 gradient">
+		<nav class="fl w-100 f4 fw6 tracked i white bb">
+			<h2 class="retro-font">
+				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
+			</h2>
+			<span class="f5 fr ph3"><a href="how-to.html" class="link white dim" target="_blank">How-To</a></span>
+			<span class="f5 fr pl3"><a href="about.html" class="link white dim" target="_blank">About</a></span>
+			<span class="f5 fr"><a href="resources.html" class="link white dim" target="_blank">Resources</a></span>
+		</nav>
+	</header>
+	<main class="fl w-100 pa2 flex flex-column">
+		<form class="flex flex-wrap mw-100">
+			<div class="w-100 w-two-thirds-l pa3 h5">
+				<textarea class="db border-box hover-black w-100 h-100 ba b--black-60 br2 pa2 mb2" placeholder="Paste data from your spreadsheet or drag CSV file here" ></textarea>
+			</div>
+			<div id="instructions" class="w-100 w-third-l mt2 h5 overflow-y-scroll lh-copy ba b--black-40 br2 bg-washed-green pt3 pb2 ph2">
+				<div class="link dim blue pointer absolute right-2" id="show-instructions">
+					<span id="close-icon"><i class="em em-heavy_multiplication_x" aria-role="presentation" aria-label="HEAVY MULTIPLICATION X"></i></span>
+				</div>
+				<p><strong>Network Navigator</strong> is designed to give you a first glimpse of your network data, with both metrics and visualizations. For more on who we are and how the site works, visit our <a href="/about.html" target="_blank" class="link dark-blue b dim">About</a> and <a href="/how-to.html" target="_blank" class="link dark-blue b dim">How-To</a> pages.</p>
+	
+				<p>Type or drag-and-drop your edge list into the box. Use a CSV file or type your edges separated by commas, as below. (If you include a header row, the site will look for source, target, and weight columns.)</p>
+	
+				<p class="measure center">
+					<code>
+	Person One,Person Two
+	Person Two,Person Three
+	Person Three,Person One</code></p>
+	
+				<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is weighted, you'll need to add a third column to every line with the weight value:</p>
+	
+				<p class="measure center"><code>Person One,Person Two,5</code></p>
+	
+				<p>This site will work best with networks of up to 500 nodes and up to 10,000 edges, but networks of 250-500 edges will give the best visualization results. Networks larger than 500 nodes and ~10,000 edges may result in some slowdown of site functions.</p>
+	
+				<p><em>n.b.: Network Navigator is currently only set up for unimodal (or unipartite) networks. While it will give results for any edge list, be advised that the metrics for bipartite networks aren't reliable.</em></p>
+	
+				<p><strong>This website does not collect or store <em>any</em> data. Your data remains on your computer alone and is not sent to an external server. No one can view your data or results but you.</strong>
+				</p>
+	
+				<p>If you have comments or suggestions, or if anything's not working the way it should, feel free to reach out to <a href="http://twitter.com/johnrladd" target="_blank" class="link dark-blue b dim">John</a> on Twitter.</p>
+	
+			</div>
+
+			<div class="w-100 w-third-l pa3">
+				<div class="link dim blue pointer absolute right-2" id="show-info">
+					<span id="info-icon" class="dn"><i class="em em-information_source" aria-role="presentation" aria-label="INFORMATION SOURCE"></i></span>
+				</div>
+				<div class="pa2">
+					<input type="radio" value="undirected" name="graphType" id="undirected" checked>
+					<label for="undirected">Undirected</label>
+					<input type="radio" value="directed" name="graphType" id="directed">
+					<label for="directed">Directed</label>
+				</div>
+				<div class="pa2">
+					<input type="radio" value="unweighted" name="graphWeight" id="unweighted" checked>
+					<label for="unweighted">Unweighted</label>
+					<input type="radio" value="weighted" name="graphWeight" id="weighted">
+					<label for="weighted">Weighted</label>
+				</div>
+				<div class="pa2">
+					<input type="checkbox" name="headerRow" id="headerRow">
+					<label for="headerRow">Header Row?</label>
+				</div>
+				<div class="pa2">
+					<button class="f6 link dim br3 ph3 pv2 mb2 dib white gradient retro-font pointer" id="calculate" type="button"
+						data-loading-text="Calculating..." autocomplete="off">NAVIGATE <i class="em em-compass" aria-role="presentation" aria-label="COMPASS"></i>
+					</button>
+				</div>
+			</div>
+		</form>
+		<div class="alert fl w-100 pa2 br4 ba b--dark-red bg-light-red dark-red" role="alert" id="row-error">
+			<p><strong>Too many/too few values!</strong> One or more of the rows in your data has the wrong number of
+				values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or
+				<code>source,target,weight</code>. For weighted networks, each row must have three values:
+				<code>source,target,weight</code>. Please edit your data and try again.</p>
+		</div>
+		<div class="alert fl w-100 pa2 br4 ba b--gold bg-light-yellow gold" role="alert" id="eigen-error">
+			<strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector
+			centrality cannot be calculated.
+		</div>
+		<div class="fl w-100 pa2" id="results">
+			<div id="buttons" class="w-100 h2">
+				<span class="pointer fl" id="metrics-collapse">
+					<i class="em em-arrow_left" id="metric-on" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
+					<i class="em em-arrow_right" id="metric-off" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
+					<em class="f6">collapse</em> <strong class="retro-font">METRICS</strong>
+				</span>
+				<span class="pointer fr" id="viz-collapse">
+					<strong class="retro-font">VISUALIZATIONS</strong> <em class="f6">collapse</em>
+					<i class="em em-arrow_right" id="viz-on" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
+					<i class="em em-arrow_left" id="viz-off" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
+			</div>
+			<div class="fl w-100 w-50-ns pa2 br b--gray" id="metrics">
+				<div class="pa2 flex flex-column relative">
+					<div class="pa2 mv2" id="info-panel"></div>
+					<p class="f7 tr w-100"><a class="link dim blue" href="https://jrladd.com/network-glossary.html" target="_blank">Looking for definitions of these terms?</a></p>
+					<div class="f6 pa2 flex w-100">
+						<form id="download-form">
+							<div class="mb1-l mb2">
+								<i class="em em-floppy_disk" aria-role="presentation" aria-label="FLOPPY DISK"></i>
+								<label for="download-type">Select file to download:</label>
+							</div>
+							<select name="download-type" id="download-type">
+								<option value="viz-png">Current visualization (png)</option>
+								<option value="viz-svg">Current visualization (svg)</option>
+								<option value="hist">Histogram (png)</option>
+								<option value="metrics">Basic network metrics (txt)</option>
+							</select>
+							<input class="link dim pa2 br2 white retro-font gradient" type="submit" value="Download">
+						</form>
+					</div>
+
+					<div class="w-100 bb b--gray flex-wrap flex">
+						<div class="f7 i link dim blue pointer mb3 w-50" id="show-hist"><i class="em em-bar_chart" aria-role="presentation" aria-label="BAR CHART"></i> collapse/expand</div>
+					</div>
+					<div class="pa2 bb b--gray mv2" id="hist-container">
+					<div class="tc f7">Frequency Distribution for Selected Metrics:</div>
+						<form id="histType" class="pa2 f7 f6-ns retro-font gray flex flex-wrap" onsubmit="return false;">
+							<input type="radio" value="degree" name="histType" id="degree" checked>
+							<label class="dib w-20-l w-100 pa1 tooltip" for="degree">Degree<a><span>The number of connections (edges) a particular node possesses. Degree is the most basic measure of centrality.</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
+							<input type="radio" value="betweenness" name="histType" id="betweenness">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="betweenness">Betweenness Centrality<a><span>In its simplest form, the number of shortest paths that must pass through a particular node. Betweenness centrality helps to measure how often any path in the network must go through a node and therefore can show if a node is connected to many disparate groups in the network.</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
+							<input type="radio" value="eigenvector" name="histType" id="eigenvector">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span> <button type="button" class="f7 ba bw1 br4">i</button></i></a></label>
+							<input type="radio" value="clustering" name="histType" id="clustering">
+							<label class="dib w-20-l w-100 pa1 tooltip" for="clustering">Clustering Coefficient<a><span>The ratio of how many of a node’s neighbors are connected to each other, relative to the total number of neighbors.</span><button type="button" class="f7 ba bw1 br4">i</button></a></label>
+						</form>
+						<svg id="hist"></svg>
+					</div>
+					<!-- <form>
+						<label for="metric-range">Select range by:</label>
+						<select name="metric-range" id="metric-range">
+							<option value="degree">Degree</option>
+							<option value="betweenness">Betweenness</option>
+							<option value="eigenvector">Eigenvector</option>
+							<option value="clustering">Clustering Coefficient</option>
+						</select>
+						<div id="slider"></div>
+					</form> -->
+					<table id="metrics-table" class="display compact nowrap mt2">
+						<thead>
+							<tr>
+								<th>Node ID</th>
+								<th>Degree</th>
+								<th>Betweenness Centrality</th>
+								<th>Eigenvector Centrality</th>
+								<th>Clustering Coefficient</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="fl w-100 w-50-ns pa2" id="viz">
+				<div class="alert pa2 br4 ba b--dark-blue bg-light-blue dark-blue" role="alert" id="viz-warning">
+					<strong>Visualization too large</strong>: To protect browser speed, the visualization was not loaded.
+					<button class="btn btn-info" type="button" id="load-viz">Click to load</button>
+				</div>
+				<div class="pa2 flex flex-column relative">
+					<div class="w-100 flex" id="graph-controls">
+						<div class="flex w-100 flex-wrap" id="selected-graph">
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font pointer">Force Layout</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font pointer">Arc Diagram</a>
+							<a class="f6 link dim ba ph3 pv2 mb2 dib ma2 w-30-ns w-100-m w-100 tc gradient white br3 retro-font pointer">Adjacency Matrix</a>
+						</div>
+						
+					</div>
+					<div class="w-100 flex">
+						<a id="restore-zoom" class="f6 link dim ba ph3 pv2 mb2 dib mid-gray ma2 w-40 tc br3 pointer">Restore Zoom <i class="em em-dart" aria-role="presentation" aria-label="DIRECT HIT"></i>
+						</a>
+						<div class="ml-auto f6 link pv2 dib mid-gray tc br3 b--gray br2 ba bg-near-white pa1 ph3 ma2 w-40-ns w-100-m w-100" id="customize">
+							<div id="open-customize-form" class="w-100 pointer">
+							Customize Graph <i class="em em-gear" aria-role="presentation" aria-label="GEAR" ></i>
+							</div>
+							<div class="dn" id="close-customize-form">
+								<i class="em em-heavy_multiplication_x ml-auto" aria-role="presentation" aria-label="HEAVY MULTIPLICATION X"></i>
+							</div>
+							<div id="customize-form">
+								<div id="force-layout" class="flex flex-wrap" style="display: none;">
+									<h1 class="f6 lh-copy w-100">Customize Force Layout Graph</h1>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="centrality">Size by:</label>
+										<select name="centrality" id="centrality">
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering Coefficient</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker">Choose a node color:</label>
+										<input name="color-picker" id="color-picker"
+											data-jscolor="{onInput:'updateColor(this, &quot;force&quot;)', format: 'rgb'}" value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-scale">Scale color by:</label>
+										<select name="color-scale" id="color-scale">
+											<option value="none">None</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering Coefficient</option>
+										</select>
+									</div>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="edge-weight">Include edge weights?</label>
+										<input name="edge-weight" id="edge-weight" type="checkbox"/>
+									</div>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="node-label">Include node labels?</label>
+										<input name="node-label" id="node-label" type="checkbox" checked/>
+									</div>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="directed-arrows">Include directed arrows?</label>
+										<input name="directed-arrows" id="directed-arrows" type="checkbox"/>
+										<br><small>(n.b. Arrows are meaningless if the network data isn't directed.)</small>
+									</div>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<input type="radio" value="straight" name="lineType" id="straight" checked>
+										<label for="straight">Straight Lines</label>
+										<input type="radio" value="curved" name="lineType" id="curved">
+										<label for="curved">Curved Lines</label>
+									</div>
+								</div>
+								<div id="arc-diagram" class="flex flex-wrap" style="display: none;">
+									<h1 class="f6 lh-copy w-100">Customize Arc Diagram</h1>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="centrality-arc">Size by:</label>
+										<select name="centrality-arc" id="centrality-arc">
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering coefficient</option>
+										</select>
+									</div>
+									<div class="fl w-50 f6 mid-gray pv2">
+										<label for="order-arc-nodes">Order by:</label>
+										<select name="order-arc-nodes" id="order-arc-nodes">
+											<option value="original">Original Order</option>
+											<option value="name">Name</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness Centrality</option>
+											<option value="eigenvector">Eigenvector Centrality</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker-arc">Choose a node color:</label>
+										<input name="color-picker-arc" id="color-picker-arc"
+											data-jscolor="{onInput:'updateColor(this, &quot;arc&quot;)', format: 'rgb'}"
+											value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-scale-arc">Scale color by:</label>
+										<select name="color-scale-arc" id="color-scale-arc">
+											<option value="none">None</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness</option>
+											<option value="eigenvector">Eigenvector</option>
+											<option value="clustering">Clustering Coefficient</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="reverse-arc-order">Reverse order?</label>
+										<input name="reverse-arc-order" id="reverse-arc-order" type="checkbox" />
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<input type="radio" value="horizontal" name="graphDirection" id="horizontal">
+										<label for="horizontal">Horizontal Arc Diagram</label>
+										<input type="radio" value="vertical" name="graphDirection" id="vertical" checked>
+										<label for="vertical">Vertical Arc Diagram</label>
+									</div>
+								</div>
+								<div id="adjacency-matrix" class="flex flex-column" style="display: none;">
+									<h1 class="f6 lh-copy">Customize Matrix</h1>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="order-matrix-cells">Order Cells:</label>
+										<select name="order-matrix-cells" id="order-matrix-cells">
+											<option value="original">Original Order</option>
+											<option value="name">Name</option>
+											<option value="degree">Degree</option>
+											<option value="betweenness">Betweenness Centrality</option>
+											<option value="eigenvector">Eigenvector Centrality</option>
+										</select>
+									</div>
+									<div class="fl w-100 f6 mid-gray pv2">
+										<label for="color-picker-matrix">Choose a cell color:</label>
+										<input name="color-picker-matrix" id="color-picker-matrix"
+											data-jscolor="{onInput:'updateColor(this, &quot;matrix&quot;)', format: 'rgb'}"
+											value='08B3E5' />
+									</div>
+									<div class="fl w-100 f6 mid-gray h2">
+										<label for="reverse-matrix-order">Reverse order?</label>
+										<input name="reverse-matrix-order" id="reverse-matrix-order" type="checkbox" />
+									</div>
+									<p>Click and drag to zoom.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					<p class="f7 ph3">Scroll to zoom force layout and arc diagram, click and drag to zoom adjacency matrix.</p>
+					<div class="fl w-100 flex">
+						<div id="force-layout-viz"></div>
+						<div id="arc-diagram-viz" style="visibility: hidden;" ></div>
+						<div id="matrix-viz" style="visibility: hidden;"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<!-- Latest jQuery API -->
+	<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+	<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
+	<script type='text/javascript' src='js/jsnetworkx.js'></script>
+	<!-- <script type='text/javascript' src='js/nouislider.min.js'></script> -->
+	<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
+	<script>
+	    function updateColor(picker, type) {
+		if (type === 'force') {
+	            centrality = $('#color-scale').val();
+	    	    if (centrality === 'none') {
+	    	    	d3.selectAll('.node').attr('fill', picker.toString());
+	    	    } else {
+	                // Create color scale
+	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+	                let newRGB = `rgb(${newColor.join(",")})`;
+	    
+	                let color = d3.scaleLinear()
+	                  .domain([0, d3.max(d3.selectAll('.node').data(), d => d[`${centrality}`])])
+	                  .range([newRGB,picker.toString()])
+	    
+	    	    	// Fill according to scale
+	    	    	d3.selectAll('.node').attr('fill', d => color(d[`${centrality}`]));
+	    	    }
+
+		} else if (type === 'arc') {
+	            centrality = $('#color-scale-arc').val();
+	    	    if (centrality === 'none') {
+	    	    	d3.selectAll('.node-arc').attr('fill', picker.toString());
+	    	    } else {
+	                // Create color scale
+	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
+	                let newRGB = `rgb(${newColor.join(",")})`;
+	    
+	                let color = d3.scaleLinear()
+	                  .domain([0, d3.max(d3.selectAll('.node-arc').data(), d => d[`${centrality}`])])
+	                  .range([newRGB,picker.toString()])
+	    
+	    	    	// Fill according to scale
+	    	    	d3.selectAll('.node-arc').attr('fill', d => color(d[`${centrality}`]));
+	    	    }
+		} else if (type === 'matrix') {
+		    var origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
+	            var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
+		    var newRGB = `rgb(${newColor.join(",")})`;
+		    var colorValues = d3.selectAll('.matrix-cell').data().map(d => d.weight);
+		    var color = d3.scaleLinear()
+                        .domain([d3.min(colorValues), d3.max(colorValues)])
+                        .range([newRGB,picker.toString()])
+		    d3.selectAll('.matrix-cell').style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
+		    var colorUniques = [...new Set(colorValues)].sort((a,b) => {return a-b;});
+		    var legendLinear = d3.legendColor()
+                          .shapeWidth(50)
+                          .cells(colorUniques.slice(1))
+                          .scale(color)
+                          .labelOffset(40);
+                      
+                    d3.select(".legendLinear")
+                          .call(legendLinear);
+
+		}
+            }
+
+            jscolor.trigger('input');
+	</script>
+
+	<script type='module' src='js/main.js'></script>
+
+</body>
+
+=======
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -195,4 +602,5 @@ Person Three,Person One</code></p>
     <script type='text/javascript' src='main.js'></script>
 
   </body>
+>>>>>>> master
 </html>

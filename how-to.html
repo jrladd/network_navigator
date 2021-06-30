@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Network Navigator How-To</title>
+	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="icon"
+		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+</head>
+
+<body class="helvetica bg-near-white">
+	<header class="w-100 pa3 gradient">
+		<nav class="w-100 f4 fw6 tracked i white bb">
+			<h2 class="retro-font">
+				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
+			</h2>
+		</nav>
+	</header>
+	<main class="center pv3 measure-wide lh-copy">
+		<h1>How-To</h1>
+		<p>This page will walk you through the basics of <em>Network Navigator</em>, the browser tool designed for network metrics and visualization.</p>
+
+		<h2>Load Data</h2>
+
+		<img src="img/upload_data.gif" />
+		<p>To load data into <em>Network Navigator</em>, type or drag-and-drop your edge list into the box. Use a CSV file or type your edges separated by commas, as below. (If you include a header row, the site will look for source, target, and weight columns, and it will keep track of any other columns you enter.)</p>
+
+		<p class="measure center">
+			<code>Person One,Person Two
+Person Two,Person Three
+Person Three,Person One</code></p>
+
+		<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is weighted, you'll need to add a third column to every line with the weight value:</p>
+
+		<p class="measure center"><code>Person One,Person Two,5</code></p>
+
+		<p>This site will work best with networks of up to 500 nodes and up to 10,000 edges, but networks of 250-500 edges will give the best visualization results. Networks larger than 500 nodes and ~10,000 edges may result in some slowdown of site functions.</p>
+
+		<p><em>n.b.: Network Navigator is currently only set up for unimodal (or unipartite) networks. While it will give results for any edge list, be advised that the metrics for bipartite networks aren't reliable.</em></p>
+
+		<p>Once you've typed or drag-and-dropped your data into the textbox and selected the appropriate options, you can click "Navigate" to display the dashboard for your network.</p>
+
+		<h2>Read Results</h2>
+
+		<p>Clicking "Navigate" will load the network dashboard, with metrics on the left and visualizations on the right. If you need to make changes to the underlying data, you can scroll up to get to the original textbox, make your adjustments, and click "Navigate" again to start over.</p>
+
+		<img src="img/collapse_panels.gif" />
+		<p>You can collapse either the Metrics or Visualizations sides of the dashboard to get a better view of the data. On the metrics side, you will see a short list of global network metrics, a histogram showing the frequency distribution of different node-level metrics, and a table showing each node and its metric values. (You'll also see download options, which we discuss below.)</p>
+
+		<img src="img/select_hist.gif" />
+		<p>Clicking on the options above the histogram bar chart will show different graphs for each selected metric. These buttons will also update the size of the nodes in the force layout and arc diagram visualizations.</p>
+
+		<img src="img/filter_table.gif" />
+		<p>Searching for specific nodes in the data table will also filter the visualization, making it easier to find the node you're looking for.</p>
+
+		<p><em>Read results with care! Some metrics will be affected by the type of graph you select. For example, in many smaller directed graphs, eigenvector centrality will be 0 for every node. Though this looks like an error, it's due to the nature of eigenvector centrality. When possible, Network Navigator displays error messages to explain some of these special cases.</em></p>
+
+		<h2>Customize Visualizations</h2>
+
+		<img src="img/select_viz.gif" />
+		<p>One the right side of the screen, you have three different options for visualizations: clicking on "Force Layout," "Arc Diagram," and "Adjacency Matrix" will display these visualization types.</p>
+
+		<img src="img/zoom.gif" />
+		<p>You can scroll to zoom the Force Layout and Arc Diagram. In the Adjacency Matrix, you can click and drag to draw a box around the area you'd like to zoom into. In all visualizations, click the "Restore Zoom" button to return to the original display.</p>
+
+		<img src="img/customize.gif" />
+		<p>Clicking "Customize Graph" will open a menu, different for each visualization type, that gives options for changing the appearance of the network. You can update the size or color of nodes, hide and show labels, change the order of nodes, and more.</p>
+
+		<img src="img/attribute_filter.gif" />
+		<p>If your data had a header row and included more edge attributes, like edge weights, edge types, or timespans, you can filter the Force Layout and Arc Diagram based on those attributes. Select your desired attribute under "Filter by edge attribute" and navigate through the menus that appear.</p>
+
+		<h2>Export and Download</h2>
+
+		<img src="img/download.gif" />
+		<p>On the left side of the screen, beneath the global network metrics, is a set of options for downloading visualizations and data. Choose an option to download: a PNG or SVG of your current visualization view, a PNG of the current histogram, or a TXT file containing the global network metrics.</p>
+
+		<img src="img/csv_export.gif" />
+		<p>You can also download the full node table as a CSV. To do this, scroll down to the node table and click "Download as CSV." You can also copy the data to the clipboard.</p>
+
+		<p><em>Last Updated: July 2021</em></p>
+	</main>
+</body>
+
+</html>
