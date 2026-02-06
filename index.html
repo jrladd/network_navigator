@@ -8,7 +8,8 @@
 	<title>Network Navigator</title>
 	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
 	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css"/>
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.min.css"/>
 	<link rel="stylesheet" type="text/css" href="main.css">
 	<link rel="stylesheet" href="css-loader.css">
 	<!-- <link rel="stylesheet" href="nouislider.min.css"> -->
@@ -21,7 +22,7 @@
 	<header class="fl w-100 pa3 gradient">
 		<nav class="fl w-100 f4 fw6 tracked i white bb">
 			<h2 class="retro-font">
-				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
+				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v3.0</span>
 			</h2>
 			<span class="f5 fr ph3"><a href="how-to.html" class="link white dim" target="_blank">How-To</a></span>
 			<span class="f5 fr pl3"><a href="about.html" class="link white dim" target="_blank">About</a></span>
@@ -237,12 +238,14 @@
 										<input name="directed-arrows" id="directed-arrows" type="checkbox"/>
 										<br><small>(n.b. Arrows are meaningless if the network data isn't directed.)</small>
 									</div>
+									<!-- Curved lines not available with Sigma.js renderer
 									<div class="fl w-50 f6 mid-gray pv2">
 										<input type="radio" value="straight" name="lineType" id="straight" checked>
 										<label for="straight">Straight Lines</label>
 										<input type="radio" value="curved" name="lineType" id="curved">
 										<label for="curved">Curved Lines</label>
 									</div>
+									-->
 								</div>
 								<div id="arc-diagram" class="flex flex-wrap" style="display: none;">
 									<h1 class="f6 lh-copy w-100">Customize Arc Diagram</h1>
@@ -330,71 +333,71 @@
 		</div>
 	</main>
 
-	<!-- Latest jQuery API -->
-	<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
-	<script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
-	<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
-	<script type='text/javascript' src='js/jsnetworkx.js'></script>
-	<!-- <script type='text/javascript' src='js/nouislider.min.js'></script> -->
-	<script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.22/b-1.6.5/b-html5-1.6.5/datatables.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
 	<script>
 	    function updateColor(picker, type) {
 		if (type === 'force') {
-	            centrality = $('#color-scale').val();
+	            var centrality = document.getElementById('color-scale').value;
+	            var graph = window._graphologyInstance;
+	            var renderer = window._sigmaInstance;
+	            if (!graph || !renderer) return;
 	    	    if (centrality === 'none') {
-	    	    	d3.selectAll('.node').attr('fill', picker.toString());
+	    	    	graph.forEachNode(function(node) {
+	    	    	    graph.setNodeAttribute(node, 'color', picker.toString());
+	    	    	});
 	    	    } else {
-	                // Create color scale
-	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
-	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
-	                let newRGB = `rgb(${newColor.join(",")})`;
-	    
-	                let color = d3.scaleLinear()
-	                  .domain([0, d3.max(d3.selectAll('.node').data(), d => d[`${centrality}`])])
-	                  .range([newRGB,picker.toString()])
-	    
-	    	    	// Fill according to scale
-	    	    	d3.selectAll('.node').attr('fill', d => color(d[`${centrality}`]));
+	                var origColor = picker.toString().replace(/[rgb()]/gm, "").split(",");
+	                var newColor = origColor.map(function(c) { return Math.round((255-c)*0.9+parseInt(c)); });
+	                var newRGB = "rgb(" + newColor.join(",") + ")";
+	                var maxVal = 0;
+	                graph.forEachNode(function(node, attrs) {
+	                    var val = Number(attrs[centrality]);
+	                    if (val > maxVal) maxVal = val;
+	                });
+	                var color = d3.scaleLinear().domain([0, maxVal]).range([newRGB, picker.toString()]);
+	    	    	graph.forEachNode(function(node, attrs) {
+	    	    	    graph.setNodeAttribute(node, 'color', color(Number(attrs[centrality])));
+	    	    	});
 	    	    }
+	            renderer.refresh();
 
 		} else if (type === 'arc') {
-	            centrality = $('#color-scale-arc').val();
+	            var centrality = document.getElementById('color-scale-arc').value;
 	    	    if (centrality === 'none') {
 	    	    	d3.selectAll('.node-arc').attr('fill', picker.toString());
 	    	    } else {
-	                // Create color scale
-	                let origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
-	                let newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
-	                let newRGB = `rgb(${newColor.join(",")})`;
-	    
-	                let color = d3.scaleLinear()
-	                  .domain([0, d3.max(d3.selectAll('.node-arc').data(), d => d[`${centrality}`])])
-	                  .range([newRGB,picker.toString()])
-	    
-	    	    	// Fill according to scale
-	    	    	d3.selectAll('.node-arc').attr('fill', d => color(d[`${centrality}`]));
+	                var origColor = picker.toString().replace(/[rgb()]/gm, "").split(",");
+	                var newColor = origColor.map(function(c) { return Math.round((255-c)*0.9+parseInt(c)); });
+	                var newRGB = "rgb(" + newColor.join(",") + ")";
+	                var color = d3.scaleLinear()
+	                  .domain([0, d3.max(d3.selectAll('.node-arc').data(), function(d) { return d[centrality]; })])
+	                  .range([newRGB, picker.toString()]);
+	    	    	d3.selectAll('.node-arc').attr('fill', function(d) { return color(d[centrality]); });
 	    	    }
 		} else if (type === 'matrix') {
-		    var origColor = picker.toString().replace(/[rgb\(\)]/gm, "").split(",");
-	            var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
-		    var newRGB = `rgb(${newColor.join(",")})`;
-		    var colorValues = d3.selectAll('.matrix-cell').data().map(d => d.weight);
+		    var origColor = picker.toString().replace(/[rgb()]/gm, "").split(",");
+	            var newColor = origColor.map(function(c) { return Math.round((255-c)*0.8+parseInt(c)); });
+		    var newRGB = "rgb(" + newColor.join(",") + ")";
+		    var colorValues = d3.selectAll('.matrix-cell').data().map(function(d) { return d.weight; });
 		    var color = d3.scaleLinear()
                         .domain([d3.min(colorValues), d3.max(colorValues)])
-                        .range([newRGB,picker.toString()])
-		    d3.selectAll('.matrix-cell').style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} })
-		    var colorUniques = [...new Set(colorValues)].sort((a,b) => {return a-b;});
+                        .range([newRGB, picker.toString()]);
+		    d3.selectAll('.matrix-cell').style('fill', function(d) { if (d.weight===0) {return 'white';} else {return color(d.weight);} });
+		    var colorUniques = [...new Set(colorValues)].sort(function(a,b) { return a-b; });
 		    var legendLinear = d3.legendColor()
                           .shapeWidth(50)
                           .cells(colorUniques.slice(1))
                           .scale(color)
                           .labelOffset(40);
-                      
                     d3.select(".legendLinear")
                           .call(legendLinear);
-
 		}
             }
 

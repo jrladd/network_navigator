@@ -55,9 +55,13 @@ function createCategoryDropdown() {
 			    }
 		    });
 		    if (graphType === 'force-layout') {
-			    d3.selectAll('.edge').style('opacity', l => { return l[attr].toString() === this.value ? 1 : 0.1});
-			    d3.selectAll('.node').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
-			    d3.selectAll('.nodeLabel').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+			    var graph = window._graphologyInstance;
+			    var renderer = window._sigmaInstance;
+			    if (graph && renderer) {
+				    var nodeSet = new Set(nodes);
+				    window._edgeAttrFilteredNodes = nodeSet;
+				    renderer.refresh();
+			    }
 		    } else if (graphType === 'arc-diagram') {
 			    d3.selectAll('.arc').style('opacity', l => { return l[attr].toString() === this.value ? 1 : 0.1});
 			    d3.selectAll('.node-arc').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
@@ -98,7 +102,7 @@ function createContinuousGraph() {
 	  .nice();
 
 	// Set the parameters for the histogram
-	var histogram = d3.histogram()
+	var histogram = d3.bin()
 	    .value(function(d) { return d.metric; })
 	    .domain(x.domain());
 
@@ -192,8 +196,8 @@ function createContinuousGraph() {
               return brushPositionX + brushPositionWidth - 2;
             });
 	}
-	function brushed() { 
-            var s = d3.event.selection;
+	function brushed(event) {
+            var s = event.selection;
 	    var xConvert = d3.scaleLinear()
               .domain([0, width])
 	      .range([d3.min(data, d => d.metric), d3.max(data, d => d.metric)]);
@@ -207,9 +211,13 @@ function createContinuousGraph() {
 		    }
 	    });
 	    if (graphType === 'force-layout') {
-		    d3.selectAll('.edge').style('opacity', l => { return min <= l[attr] && l[attr] <= max ? 1 : 0.1});
-		    d3.selectAll('.node').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
-		    d3.selectAll('.nodeLabel').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
+		    var graph = window._graphologyInstance;
+		    var renderer = window._sigmaInstance;
+		    if (graph && renderer) {
+			    var nodeSet = new Set(nodes);
+			    window._edgeAttrFilteredNodes = nodeSet;
+			    renderer.refresh();
+		    }
 	    } else if (graphType === 'arc-diagram') {
 		    d3.selectAll('.arc').style('opacity', l => { return min <= l[attr] && l[attr] <= max ? 1 : 0.1});
 		    d3.selectAll('.node-arc').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
@@ -221,8 +229,8 @@ function createContinuousGraph() {
 }
 
 function resetOpacity() {
-	d3.selectAll('.edge').style('opacity', 1);
-	d3.selectAll('.node').style('opacity', 1);
 	d3.selectAll('.arc').style('opacity', 1);
 	d3.selectAll('.node-arc').style('opacity', 1);
+	window._edgeAttrFilteredNodes = null;
+	if (window._sigmaInstance) { window._sigmaInstance.refresh(); }
 }

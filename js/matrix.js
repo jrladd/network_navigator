@@ -18,7 +18,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   left: 200
   };
 
-  // Create responsive CSV
+  // Create responsive SVG
   let svg = d3.select('#matrix-viz')
     .append("div")
     .classed("svg-container", true)
@@ -64,13 +64,13 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   // Function to draw matrix
   function updateFullMatrix(nodeXList,nodeYList,edgeList,nodeXIDs,nodeYIDs) {
     // Redo color scales each time to keep consistent with picker
-    var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
+    var origColor = document.getElementById('color-picker-matrix').value.replace(/[rgb()]/gm, "").split(",");
     var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
     var newRGB = `rgb(${newColor.join(",")})`;
 
     color = d3.scaleLinear()
       .domain([0, d3.max(colorValues)])
-      .range([newRGB,$('#color-picker-matrix').val()])
+      .range([newRGB, document.getElementById('color-picker-matrix').value])
 
     // Create and draw legend
     var legendLinear = d3.legendColor()
@@ -114,7 +114,7 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     rowEnter.merge(row)
         .attr('class', 'row')
         .attr('transform', (_, i) => 'translate(0,' + y(i) + ')')
-        .each(makeRow); 
+        .each(makeRow);
 
     rowEnter.append("line")
       .attr("x2", width)
@@ -187,12 +187,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
         .style('stroke-width', 0)
         .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} });
 
-    // Add title text to each cell (currently you can't see this because of the brush)
-    /*cellEnter.append('title')
-      .text(function (d) {
-        return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
-      });*/
-
   }
 
   // Reorder matrix based on centrality measures
@@ -201,8 +195,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
       updatedNodeList = d3.range(updatedNodeList.length).sort((a, b) => updatedNodeList[a].index - updatedNodeList[b].index);
     } else {
-      updatedNodeList = (orderValue === 'name') ? 
-        (orderDirection ? 
+      updatedNodeList = (orderValue === 'name') ?
+        (orderDirection ?
           d3.range(nodeList.length).sort((a, b) => d3.descending(nodeList[a].id, nodeList[b].id))
         :
           d3.range(nodeList.length).sort((a, b) => d3.ascending(nodeList[a].id, nodeList[b].id))
@@ -245,59 +239,59 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   // Handle buttons for reordering matrix
   d3.select('#order-matrix-cells').on('change', function () {
     let orderValue = this.value;
-    let orderDirection = $('#reverse-matrix-order').is(':checked');
+    let orderDirection = document.getElementById('reverse-matrix-order').checked;
     updateMatrix(orderValue, orderDirection);
   });
 
   d3.select('#reverse-matrix-order').on('change', function () {
     let orderDirection = this.checked;
-    let orderValue = $('#order-matrix-cells').val();
+    let orderValue = document.getElementById('order-matrix-cells').value;
     updateMatrix(orderValue, orderDirection);
   });
 
   // When graph is brushed, zoom to the brush selection
   // (Uses only the x-axis to determine a square brush area
-  function brushed() {
-	  if (d3.event.selection) {
-	    var [[x0,y0],[x1,y1]] = d3.event.selection;
+  function brushed(event) {
+	  if (event.selection) {
+	    var [[x0,y0],[x1,y1]] = event.selection;
 	    var selectedX = updatedNodeList.filter(d => x0 < x(d) && x1 > x(d));
 	    var selectedY = updatedNodeList.filter(d => y0 < y(d) && y1 > y(d));
             if (selectedXNodes.length === 0) {
               selectedXNodes = selectedX.map(d => nodeList[d]);
-            } else { 
+            } else {
               selectedXNodes = selectedX.map(d => selectedXNodes[d]);
             }
             var selectedXIDs = selectedXNodes.map(d => d.id);
             if (selectedYNodes.length === 0) {
               selectedYNodes = selectedY.map(d => nodeList[d]);
-            } else { 
+            } else {
               selectedYNodes = selectedY.map(d => selectedYNodes[d]);
             }
             var selectedYIDs = selectedYNodes.map(d => d.id);
 	    var selectedEdges = edgeList.filter(e => (selectedXIDs.indexOf(e.source.id) !== -1 && selectedYIDs.indexOf(e.target.id) !== -1) || (selectedYIDs.indexOf(e.source.id) !== -1 && selectedXIDs.indexOf(e.target.id) !== -1));
 	    updateFullMatrix(selectedXNodes,selectedYNodes,selectedEdges,selectedXIDs,selectedYIDs);
-            $('#order-matrix-cells').prop("disabled", true);
-            $('#reverse-matrix-order').prop("disabled", true);
+            document.getElementById('order-matrix-cells').disabled = true;
+            document.getElementById('reverse-matrix-order').disabled = true;
 	    brushArea.call(brush.move, null);
 	  }
-	  
+
   }
 
   // Restore zoom to original matrix, with full node list
   d3.select("#restore-zoom")
     .style("visibility", "visible")
-    .on("click", function() {
+    .on("click", function(event) {
 	    updateFullMatrix(nodeList,nodeList,edgeList,nodeIDs,nodeIDs);
 	    selectedXNodes = [];
 	    selectedYNodes = [];
-            $('#order-matrix-cells').prop("disabled", false);
-            $('#reverse-matrix-order').prop("disabled", false);
+            document.getElementById('order-matrix-cells').disabled = false;
+            document.getElementById('reverse-matrix-order').disabled = false;
     });
 
     // When searching in table, filter visualization
-    var table = $('#metrics-table').DataTable();
-    table.on('search.dt', function() { 
-	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+    var table = new DataTable('#metrics-table');
+    table.on('search.dt', function() {
+	    let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
 	    console.log(nodeIds);
 	    if (selectedXNodes.length !== 0) {
 	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');

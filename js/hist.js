@@ -27,7 +27,7 @@ export function drawHist(data) {
 	  .nice();
 	
 	// Set the parameters for the histogram
-	var histogram = d3.histogram()
+	var histogram = d3.bin()
 	    .value(function(d) { return d.metric; })
 	    .domain(x.domain());
 	

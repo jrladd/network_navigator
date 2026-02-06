@@ -24,7 +24,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .attr("preserveAspectRatio", "xMinYMin meet")
         .attr("viewBox", "-50 -300 1600 1600")
         .classed("svg-content-responsive", true);
-   
+
     const step = 16;
     const width = +svg.attr('width') + 1200 - margin.left;
     const height = +svg.attr('height') + 1200 - margin.left;
@@ -39,7 +39,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .attr('width', '100%')
         .attr('height', '100%')
         .attr('fill', 'transparent')
-        .on('click', function () {
+        .on('click', function (event) {
             // Restore nodes and links to normal opacity.
             d3.selectAll('.arc').style('opacity', '1');
             d3.selectAll('.node-arc').style('opacity', '1');
@@ -93,7 +93,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .enter().append("circle")
 	    .classed("node-arc", true)
             .attr("r", d => size(d.radius_degree))
-            .attr("fill", $('#color-picker-arc').val())
+            .attr("fill", document.getElementById('color-picker-arc').value)
 	    .attr("stroke", "white")
 	    .attr("stroke-width", 2)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left},${d.y = y(d.id)})` : `translate(${d.x = x(d.id)}, ${height - margin.left})`);
@@ -125,9 +125,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .attr("height", step)
             .attr("width", graphDirection === 'vertical' ? margin.left + 40 : margin.left + 50)
             .attr("transform", d => graphDirection === 'vertical' ? `translate(${margin.left-90},${d.y = y(d.id) - 8})rotate(0)` : `translate(${d.x = x(d.id)- 90}, ${height - margin.left + 80})rotate(-45)`)
-            .on("click", d => {
+            .on("click", (event, d) => {
                 if (!d.nodeClicked) {
-                    d.nodeClicked = true;                    
+                    d.nodeClicked = true;
                     path.filter(path => path.source.id === d.id || path.target.id === d.id)
                         .attr('edgeClicked', path => {
                             path.edgeClicked = true
@@ -136,12 +136,12 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                     nodeEvent(d, 'click');
                 }
             })
-            .on("mouseover", d => {
+            .on("mouseover", (event, d) => {
                 if (!d.nodeClicked) {
                     nodeEvent(d, 'mouseover');
                 }
             })
-            .on("mouseout", mouseOut);
+            .on("mouseout", () => mouseOut());
 
     // Handle node behavior for click and mouse events
     function releaseNode(){
@@ -152,19 +152,19 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     }
 
     function nodeEvent(d, typeOfEvent){
-        
+
         var nodesToHighlight = edgeList.map(function (edge) {
             return edge.source.id === d.id ? edge.target : edge.target.id === d.id ? edge.source : 0
         }).filter(function (d) {
             return d
         });
-       
+
         nodesToHighlight.push(d);
         nodesToHighlight = [...nodesToHighlight, ...selectedNodes];
         if (typeOfEvent === 'click') {
-            selectedNodes = nodesToHighlight; 
+            selectedNodes = nodesToHighlight;
         }
-        
+
         nodesToHighlight = nodesToHighlight.reduce((unique, o) => {
             if (!unique.some(obj => obj.id === o.id)) {
                 unique.push(o);
@@ -190,8 +190,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         path.filter(path => !path.edgeClicked)
             .style("stroke", "#aaa")
             .style("stroke-opacity", 0.6);
-    	let table = $('#metrics-table').DataTable();
-	let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+    	let table = new DataTable('#metrics-table');
+	let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
 	node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 	label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 	path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
@@ -210,7 +210,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             const r = Math.abs(x2 - x1) / 2;
             return `M${x1} ${height - margin.left} A ${r},${r} 0 0,${x1 < x2 ? 1 : 0} ${x2},${height - margin.left}`;
         }
-        
+
     }
 
 
@@ -224,7 +224,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             sortOrder = (orderValue === 'id') ? nodeList.map(node => node[orderValue]).sort() : nodeList.map(node => node[orderValue]).sort((a, b) => a - b);
             sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
             updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
-        }        
+        }
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 
@@ -242,7 +242,6 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
         path.transition(t)
             .delay((d, i) => i*10)
-            //.duration(750 + nodeList.length * 20)
             .attrTween("d", d => () => arc(d));
 
         overlay.transition(t)
@@ -253,25 +252,25 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     }
 
     // Buttons for changing centrality, node order, and graph orientation
-    d3.select('#centrality-arc').on('change', function() { 
-        centrality = this.value;
+    d3.select('#centrality-arc').on('change', function() {
+        let centrality = this.value;
         node.attr('r', d => size(d[`radius_${centrality}`]));
     });
 
     // A dropdown menu for color with different centrality measures
-    d3.select('#color-scale-arc').on('change', function() { 
-        centrality = this.value;
+    d3.select('#color-scale-arc').on('change', function() {
+        let centrality = this.value;
 	if (centrality === 'none') {
-		node.attr('fill', $('#color-picker-arc').val());
+		node.attr('fill', document.getElementById('color-picker-arc').value);
 	} else {
                 // Create color scale
-                var origColor = $('#color-picker-arc').val().replace(/[rgb\(\)]/gm, "").split(",");
+                var origColor = document.getElementById('color-picker-arc').value.replace(/[rgb()]/gm, "").split(",");
                 var newColor = origColor.map(c => { return Math.round((255-c)*0.9+parseInt(c))});
                 var newRGB = `rgb(${newColor.join(",")})`;
-            
+
                 var color = d3.scaleLinear()
                   .domain([0, d3.max(nodeList, d => d[`${centrality}`])])
-                  .range([newRGB,$('#color-picker-arc').val()])
+                  .range([newRGB, document.getElementById('color-picker-arc').value])
 
 		// Fill according to scale
 		node.attr('fill', d => color(d[`${centrality}`]));
@@ -280,26 +279,26 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     d3.select('#order-arc-nodes').on('change', function () {
         let orderValue = this.value;
-        let orderDirection = $('#reverse-arc-order').is(':checked');
+        let orderDirection = document.getElementById('reverse-arc-order').checked;
         updateArc(orderValue, orderDirection);
     });
 
     d3.select('#reverse-arc-order').on('change', function () {
         let orderDirection = this.checked;
-        let orderValue = $('#order-arc-nodes').val();
+        let orderValue = document.getElementById('order-arc-nodes').value;
         updateArc(orderValue, orderDirection);
     });
 
     d3.selectAll("input[name='graphDirection']").on("change", function () {
-        graphDirection = $("input[name='graphDirection']:checked").val();
-        let orderDirection = $('#reverse-arc-order').is(':checked');
-        let orderValue = $('#order-arc-nodes').val();
+        graphDirection = document.querySelector("input[name='graphDirection']:checked").value;
+        let orderDirection = document.getElementById('reverse-arc-order').checked;
+        let orderValue = document.getElementById('order-arc-nodes').value;
         updateArc(orderValue, orderDirection);
     });
 
     // Zooming function translates the size of the svg container.
-    function zoomed() {
-	  let transform = d3.event.transform;
+    function zoomed(event) {
+	  let transform = event.transform;
 	  if (graphDirection === 'vertical') {
 		  transform.x = 0;
 	  } else {
@@ -309,8 +308,8 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     }
 
     // Restore to original zoom
-    $('#restore-zoom').on('click', function () {
-        if ($('#arc-diagram-viz').is(":visible")) {
+    document.getElementById('restore-zoom').addEventListener('click', function () {
+        if (document.getElementById('arc-diagram-viz').style.visibility !== 'hidden') {
             container.transition()
                 .duration(750)
                 .call(zoom.transform, d3.zoomIdentity);
@@ -318,9 +317,9 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     });
 
     // When searching in table, filter visualization
-    var table = $('#metrics-table').DataTable();
-    table.on('search.dt', function() { 
-	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
+    var table = new DataTable('#metrics-table');
+    table.on('search.dt', function() {
+	    let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
 	    node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 	    label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 	    path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
