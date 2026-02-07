@@ -62,7 +62,8 @@ code {
 #force-layout-viz {
 	position: relative;
 	width: 100%;
-	padding-bottom: 100%;
+	min-height: 600px;
+	height: 100%;
 	overflow: hidden;
 }
 
@@ -72,6 +73,12 @@ code {
 	left: 0;
 	width: 100% !important;
 	height: 100% !important;
+}
+
+#arc-diagram-viz, #matrix-viz {
+	min-height: 600px;
+	height: 100%;
+	width: 100%;
 }
 
 .width-collapse {
@@ -147,6 +154,50 @@ code {
 
 .tick text {
 	font-size: 2em;
+}
+
+/* Tabulator custom styles */
+.tabulator {
+	font-family: avenir, sans-serif;
+	font-size: 14px;
+}
+
+.tabulator .tabulator-header {
+	background-image: linear-gradient(to bottom right, #2AF598, #08B3E5);
+	color: white;
+	font-weight: bold;
+}
+
+.tabulator .tabulator-header .tabulator-col {
+	border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.tabulator .tabulator-header .tabulator-col-content {
+	padding: 8px;
+}
+
+.tabulator .tabulator-header input {
+	color: #333;
+	background: white;
+	border: 1px solid #ccc;
+	padding: 4px;
+	border-radius: 3px;
+}
+
+.tabulator-row {
+	min-height: 30px;
+}
+
+.tabulator-row.tabulator-row-even {
+	background-color: #f9f9f9;
+}
+
+.tabulator-row:hover {
+	background-color: #e6f7ff !important;
+}
+
+#copy-table, #download-csv {
+	cursor: pointer;
 }
 
 @media only screen and (min-width: 30em) {

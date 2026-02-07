@@ -190,11 +190,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         path.filter(path => !path.edgeClicked)
             .style("stroke", "#aaa")
             .style("stroke-opacity", 0.6);
-    	let table = new DataTable('#metrics-table');
-	let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
-	node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
-	label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
-	path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+    	let table = Tabulator.findTable('#metrics-table')[0];
+	if (table) {
+		let filteredRows = table.searchData.length > 0 ? table.getRows('active') : table.getRows();
+		let nodeIds = filteredRows.map(row => row.getData().nodeId);
+		node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+		label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+		path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+	}
     }
 
     // Coordinates for drawing arcs
@@ -317,12 +320,14 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
     });
 
     // When searching in table, filter visualization
-    var table = new DataTable('#metrics-table');
-    table.on('search.dt', function() {
-	    let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
-	    node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
-	    label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
-	    path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
-    });
+    var table = Tabulator.findTable('#metrics-table')[0];
+    if (table) {
+        table.on('dataFiltered', function(filters, rows) {
+            let nodeIds = rows.map(row => row.getData().nodeId);
+            node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+            label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
+            path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
+        });
+    }
 
 };

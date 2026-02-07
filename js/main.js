@@ -64,7 +64,7 @@ document.getElementById('metrics-collapse').addEventListener('click', function (
 		document.getElementById('viz-off').style.display = 'none';
 		document.getElementById('viz-on').style.display = 'inline';
 		document.querySelector('#metrics-collapse em').textContent = 'collapse';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	}
 	else if (metricsEl.classList.contains('width-collapse')) {
 		metricsEl.classList.remove('width-collapse');
@@ -73,14 +73,14 @@ document.getElementById('metrics-collapse').addEventListener('click', function (
 		document.getElementById('metric-off').style.display = 'none';
 		document.getElementById('metric-on').style.display = 'inline';
 		document.querySelector('#metrics-collapse em').textContent = 'collapse';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	} else {
 		metricsEl.classList.add('width-collapse');
 		vizEl.classList.remove('w-50-ns');
 		document.getElementById('metric-on').style.display = 'none';
 		document.getElementById('metric-off').style.display = 'inline';
 		document.querySelector('#metrics-collapse em').textContent = 'expand';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	}
 });
 
@@ -94,7 +94,7 @@ document.getElementById('viz-collapse').addEventListener('click', function (e) {
 		document.getElementById('metric-off').style.display = 'none';
 		document.getElementById('metric-on').style.display = 'inline';
 		document.querySelector('#viz-collapse em').textContent = 'collapse';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	}
 	else if (vizEl.classList.contains('width-collapse')) {
 		vizEl.classList.remove('width-collapse');
@@ -103,7 +103,7 @@ document.getElementById('viz-collapse').addEventListener('click', function (e) {
 		document.getElementById('viz-off').style.display = 'none';
 		document.getElementById('viz-on').style.display = 'inline';
 		document.querySelector('#viz-collapse em').textContent = 'collapse';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	} else {
 		vizEl.classList.add('width-collapse');
 		metricsEl.classList.remove('w-50-ns');
@@ -111,7 +111,7 @@ document.getElementById('viz-collapse').addEventListener('click', function (e) {
 		document.getElementById('viz-on').style.display = 'none';
 		document.getElementById('viz-off').style.display = 'inline';
 		document.querySelector('#viz-collapse em').textContent = 'expand';
-		window.setTimeout(function() {table.columns.adjust()}, 500);
+		window.setTimeout(function() {table.redraw(true)}, 500);
 	}
 });
 
@@ -137,6 +137,13 @@ document.getElementById('customize').addEventListener('click', function () {
   formPanel.style.display = formPanel.style.display === 'none' ? 'block' : 'none';
 });
 
+// Track which visualizations have been drawn
+const drawnVisualizations = {
+  force: false,
+  arc: false,
+  matrix: false
+};
+
 // Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
   divs.map(div => {
@@ -148,14 +155,22 @@ function drawGraphs(selectedGraph) {
       el.style.height = '100%';
       el.style.width = '100%';
       el.style.visibility = 'visible';
-      // Check if visualization has been drawn (SVG for D3, sigma-container for Sigma)
-      let hasSvg = el.querySelector('svg') !== null;
-      let hasSigma = el.querySelector('.sigma-container') !== null;
-      if (!hasSvg && !hasSigma) {
-        if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
-        if (filteredDiv.includes('force')) drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
-        if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
+
+      // Check if we need to draw the visualization
+      let needsDrawing = false;
+      if (filteredDiv.includes('matrix') && !drawnVisualizations.matrix) {
+        drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawnVisualizations.matrix = true;
       }
+      if (filteredDiv.includes('force') && !drawnVisualizations.force) {
+        drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawnVisualizations.force = true;
+      }
+      if (filteredDiv.includes('arc') && !drawnVisualizations.arc) {
+        drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawnVisualizations.arc = true;
+      }
+
       // Reload edge attribute filters when switching visualizations
       if (filteredDiv.includes('force')) addEdgeAttributeDropdown(edgeList, 'force-layout');
       if (filteredDiv.includes('arc')) addEdgeAttributeDropdown(edgeList, 'arc-diagram');
@@ -241,25 +256,107 @@ form.addEventListener('submit', event => {
 	  case 'viz-png':
 		  if (selectedGraph === 'Force Layout') {
 			  // Sigma canvas-based export
-			  const sigmaCanvases = document.querySelectorAll('#force-layout-viz canvas');
-			  if (sigmaCanvases.length > 0) {
-				  // Sigma uses multiple canvases; combine them
-				  const container = document.querySelector('#force-layout-viz .sigma-container');
-				  const w = container.offsetWidth;
-				  const h = container.offsetHeight;
-				  const mergedCanvas = document.createElement('canvas');
-				  mergedCanvas.width = w;
-				  mergedCanvas.height = h;
-				  const ctx = mergedCanvas.getContext('2d');
-				  ctx.fillStyle = '#FFFFFF';
-				  ctx.fillRect(0, 0, w, h);
-				  sigmaCanvases.forEach(c => ctx.drawImage(c, 0, 0));
-				  let a = document.createElement('a');
-				  a.download = 'force_layout_visualization.png';
-				  a.href = mergedCanvas.toDataURL('image/png');
-				  document.body.appendChild(a);
-				  a.click();
-				  document.body.removeChild(a);
+
+			  // First check if force layout has been drawn
+			  if (!drawnVisualizations.force) {
+				  alert('Force layout has not been generated yet. Please navigate to the Force Layout view first.');
+				  break;
+			  }
+
+			  if (window._sigmaInstance) {
+				  try {
+					  // Force Sigma to re-render to ensure WebGL buffers are populated
+					  window._sigmaInstance.refresh();
+
+					  // Sigma renders directly into #force-layout-viz (no wrapper element)
+					  const container = document.querySelector('#force-layout-viz');
+
+					  if (!container) {
+						  alert('Force layout container not found.');
+						  break;
+					  }
+
+					  // Get all canvases directly from the force-layout-viz container
+					  const canvases = container.querySelectorAll('canvas');
+					  if (canvases.length === 0) {
+						  alert('No canvas elements found in force layout. Please refresh and try again.');
+						  break;
+					  }
+
+					  console.log('Found', canvases.length, 'canvases');
+					  canvases.forEach((canvas, i) => {
+						  console.log(`Canvas ${i}: ${canvas.width}x${canvas.height}, class: ${canvas.className}`);
+					  });
+
+					  // Filter to only visual layers (exclude interactive hover/mouse layers)
+					  const visualLayers = ['sigma-edges', 'sigma-edgeLabels', 'sigma-nodes', 'sigma-labels'];
+					  const visualCanvases = Array.from(canvases).filter(canvas =>
+						  visualLayers.includes(canvas.className)
+					  );
+
+					  console.log('Rendering', visualCanvases.length, 'visual layers');
+
+					  // Use actual canvas dimensions (Sigma uses high DPI rendering)
+					  const firstCanvas = canvases[0];
+					  const w = firstCanvas.width;
+					  const h = firstCanvas.height;
+
+					  // Create a merged canvas at the same resolution
+					  const mergedCanvas = document.createElement('canvas');
+					  mergedCanvas.width = w;
+					  mergedCanvas.height = h;
+					  const ctx = mergedCanvas.getContext('2d');
+
+					  // White background
+					  ctx.fillStyle = '#FFFFFF';
+					  ctx.fillRect(0, 0, w, h);
+
+					  // Draw only the visual canvas layers (in correct order)
+					  visualCanvases.forEach(canvas => {
+						  console.log('Drawing layer:', canvas.className);
+
+						  // Check if canvas has content by sampling center pixel
+						  const testCtx = canvas.getContext('2d', { willReadFrequently: true });
+						  if (testCtx) {
+							  const centerX = Math.floor(canvas.width / 2);
+							  const centerY = Math.floor(canvas.height / 2);
+							  const imageData = testCtx.getImageData(centerX, centerY, 1, 1);
+							  const alpha = imageData.data[3];
+							  console.log(`  ${canvas.className} center pixel alpha:`, alpha);
+
+							  // Sample a few pixels to check for content
+							  let hasVisiblePixel = false;
+							  for (let y = 0; y < canvas.height; y += 100) {
+								  for (let x = 0; x < canvas.width; x += 100) {
+									  const sample = testCtx.getImageData(x, y, 1, 1);
+									  if (sample.data[3] > 0) {
+										  hasVisiblePixel = true;
+										  break;
+									  }
+								  }
+								  if (hasVisiblePixel) break;
+							  }
+							  console.log(`  ${canvas.className} has visible pixels:`, hasVisiblePixel);
+						  } else {
+							  console.log(`  ${canvas.className} context is null - might be WebGL`);
+						  }
+
+						  ctx.drawImage(canvas, 0, 0);
+					  });
+
+					  // Download
+					  const a = document.createElement('a');
+					  a.download = 'force_layout_visualization.png';
+					  a.href = mergedCanvas.toDataURL('image/png');
+					  document.body.appendChild(a);
+					  a.click();
+					  document.body.removeChild(a);
+				  } catch (err) {
+					  console.error('Error exporting force layout:', err);
+					  alert('Error exporting force layout: ' + err.message);
+				  }
+			  } else {
+				  alert('Force layout not initialized. Please generate the visualization first.');
 			  }
 		  } else {
 			  divs.map(div => {
@@ -317,28 +414,71 @@ Looking for node-level metrics? Click "Download as CSV" next to the data table o
   };
 })
 
-// Initialize DataTable for metrics
-var table = new DataTable('#metrics-table', {
-	paging: false,
-	scrollY: 400,
-	scrollX: true,
-	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
-	layout: {
-		topStart: 'buttons',
-		topEnd: 'search',
-		bottomStart: 'info'
-	},
-	order: [[1, 'desc']],
-	autoWidth: false,
-	columnDefs: [
-		{searchable: false, targets: [1,2,3,4]}
+// Initialize Tabulator for metrics
+var table = new Tabulator('#metrics-table', {
+	height: "400px",
+	layout: "fitDataStretch",
+	data: [],
+	columns: [
+		{title: "Node ID", field: "nodeId", headerFilter: "input"},
+		{title: "Degree", field: "degree", sorter: "number", headerSort: true},
+		{title: "Betweenness Centrality", field: "betweenness", sorter: "number", headerSort: true},
+		{title: "Eigenvector Centrality", field: "eigenvector", sorter: "number", headerSort: true},
+		{title: "Clustering Coefficient", field: "clustering", sorter: "number", headerSort: true}
+	],
+	initialSort: [
+		{column: "degree", dir: "desc"}
 	]
+});
+
+// Add copy to clipboard functionality
+document.getElementById('copy-table').addEventListener('click', function() {
+	try {
+		// Get all data from table
+		const data = table.getData();
+
+		// Create header row
+		const headers = ['Node ID', 'Degree', 'Betweenness Centrality', 'Eigenvector Centrality', 'Clustering Coefficient'];
+
+		// Create CSV format
+		let csv = headers.join('\t') + '\n';
+		data.forEach(row => {
+			csv += `${row.nodeId}\t${row.degree}\t${row.betweenness}\t${row.eigenvector}\t${row.clustering}\n`;
+		});
+
+		// Copy to clipboard
+		navigator.clipboard.writeText(csv).then(() => {
+			// Show success feedback
+			const btn = document.getElementById('copy-table');
+			const originalText = btn.textContent;
+			btn.textContent = 'Copied!';
+			setTimeout(() => {
+				btn.textContent = originalText;
+			}, 2000);
+		}).catch(err => {
+			console.error('Failed to copy:', err);
+			alert('Failed to copy to clipboard. Please try again or use the CSV download button.');
+		});
+	} catch (err) {
+		console.error('Error copying table:', err);
+		alert('Failed to copy to clipboard. Please try again or use the CSV download button.');
+	}
+});
+
+// Add CSV download functionality
+document.getElementById('download-csv').addEventListener('click', function() {
+	table.download("csv", "network_metrics.csv");
 });
 
 
 // Calculate metrics and display graphs when user clicks "Navigate" button
 document.getElementById('calculate').addEventListener('click', function () {
   document.querySelector('.loader').classList.add('is-active');
+
+  // Reset visualization tracking
+  drawnVisualizations.force = false;
+  drawnVisualizations.arc = false;
+  drawnVisualizations.matrix = false;
 
   divs.map((div) => {
     document.querySelector(div).innerHTML = '';
@@ -368,7 +508,14 @@ document.getElementById('calculate').addEventListener('click', function () {
       });
       edgeList = d3.csvParse(data);
       edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
-      edgeList = edgeList.map(d => {d.weight = Number(d.weight); return d;});
+      edgeList = edgeList.map(d => {
+        const weight = Number(d.weight);
+        d.weight = isNaN(weight) ? 1 : weight;
+        // Trim source and target IDs to match how nodes are created in the graph
+        d.source = String(d.source).trim();
+        d.target = String(d.target).trim();
+        return d;
+      });
     } else {
       edges = d3.csvParseRows(data);
     }
@@ -514,16 +661,41 @@ document.getElementById('calculate').addEventListener('click', function () {
       })])
       .range([3, 20]);
     // Embed nodes as source and target
-    edgeList.map(function (e) {
-      e.source = idToNode[e.source] || idToNode[e.source.id] || e.source;
-      e.target = idToNode[e.target] || idToNode[e.target.id] || e.target;
-      e.scaled_weight = edgeWidth(e.weight);
+    let unmatchedEdges = 0;
+    edgeList = edgeList.map(function (e) {
+      const sourceId = (typeof e.source === 'object') ? e.source.id : e.source;
+      const targetId = (typeof e.target === 'object') ? e.target.id : e.target;
+
+      const sourceNode = idToNode[sourceId];
+      const targetNode = idToNode[targetId];
+
+      if (!sourceNode || !targetNode) {
+        console.warn(`Edge references missing node(s): ${sourceId} -> ${targetId}`);
+        unmatchedEdges++;
+      }
+
+      return {
+        ...e,
+        source: sourceNode || { id: sourceId },
+        target: targetNode || { id: targetId },
+        scaled_weight: edgeWidth(e.weight)
+      };
     });
 
-    // Add metrics to DataTable and page, display all
-    table.clear().rows.add(tableData).draw();
-    const dtSearchInput = document.querySelector('.dt-search input');
-    if (dtSearchInput) dtSearchInput.placeholder = 'Find a Node ID';
+    console.log(`Processed ${edgeList.length} edges (${unmatchedEdges} with missing nodes)`);
+
+    // Add metrics to Tabulator and page, display all
+    // Convert tableData array to object format for Tabulator
+    const tabulatorData = tableData.map(row => ({
+      nodeId: row[0],
+      degree: row[1],
+      betweenness: row[2],
+      eigenvector: row[3],
+      clustering: row[4]
+    }));
+    table.setData(tabulatorData);
+    const tabulatorSearchInput = document.querySelector('.tabulator-header-filter input');
+    if (tabulatorSearchInput) tabulatorSearchInput.placeholder = 'Find a Node ID';
     let metricsEl = document.getElementById("metrics");
     let vizEl = document.getElementById("viz");
     let buttons = document.getElementById("buttons");
@@ -570,9 +742,9 @@ document.getElementById('calculate').addEventListener('click', function () {
 
    document.querySelector('.loader').classList.remove('is-active');
    document.querySelector("#results").scrollIntoView({behavior: "smooth"});
-   table.columns.adjust();
-   const dtWrapper = document.querySelector('#metrics-table_wrapper') || document.querySelector('.dt-container');
-   if (dtWrapper) dtWrapper.classList.add('mt2');
+   table.redraw(true);
+   const tabulatorWrapper = document.querySelector('.tabulator');
+   if (tabulatorWrapper) tabulatorWrapper.classList.add('mt2');
 });
 
 function reverse_sort(dict) {

@@ -8,8 +8,7 @@
 	<title>Network Navigator</title>
 	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
 	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
-	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css"/>
-	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.min.css"/>
+	<link href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="main.css">
 	<link rel="stylesheet" href="css-loader.css">
 	<!-- <link rel="stylesheet" href="nouislider.min.css"> -->
@@ -159,19 +158,11 @@
 						</select>
 						<div id="slider"></div>
 					</form> -->
-					<table id="metrics-table" class="display compact nowrap mt2">
-						<thead>
-							<tr>
-								<th>Node ID</th>
-								<th>Degree</th>
-								<th>Betweenness Centrality</th>
-								<th>Eigenvector Centrality</th>
-								<th>Clustering Coefficient</th>
-							</tr>
-						</thead>
-						<tbody>
-						</tbody>
-					</table>
+					<div id="metrics-table" class="mt2"></div>
+					<div class="f6 mt2 flex gap2">
+						<button id="copy-table" class="link dim pa2 br2 white retro-font gradient pointer bn">Copy to Clipboard</button>
+						<button id="download-csv" class="link dim pa2 br2 white retro-font gradient pointer bn">Download as CSV</button>
+					</div>
 				</div>
 			</div>
 			<div class="fl w-100 w-50-ns pa2" id="viz">
@@ -337,9 +328,8 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
-	<script type="text/javascript" src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.min.js"></script>
-	<script type="text/javascript" src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
+	<!-- Tabulator - Pure JavaScript, no jQuery required -->
+	<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>
 	<script>
 	    function updateColor(picker, type) {

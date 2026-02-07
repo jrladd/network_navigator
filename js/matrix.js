@@ -64,13 +64,19 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   // Function to draw matrix
   function updateFullMatrix(nodeXList,nodeYList,edgeList,nodeXIDs,nodeYIDs) {
     // Redo color scales each time to keep consistent with picker
-    var origColor = document.getElementById('color-picker-matrix').value.replace(/[rgb()]/gm, "").split(",");
+    const pickerElement = document.getElementById('color-picker-matrix');
+    const pickerValue = pickerElement.jscolor ? pickerElement.jscolor.toRGBString() : 'rgb(8,179,229)';
+
+    var origColor = pickerValue.replace(/[rgb()]/gm, "").split(",");
     var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
     var newRGB = `rgb(${newColor.join(",")})`;
 
+    console.log('Matrix color values:', colorValues);
+    console.log('Matrix color range:', newRGB, 'to', pickerValue);
+
     color = d3.scaleLinear()
       .domain([0, d3.max(colorValues)])
-      .range([newRGB, document.getElementById('color-picker-matrix').value])
+      .range([newRGB, pickerValue])
 
     // Create and draw legend
     var legendLinear = d3.legendColor()
@@ -91,14 +97,30 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       });
     });
     // Update matrix values depending on edges
+    let edgesProcessed = 0;
     edgeList.forEach(function (l,i) {
-      try {
-          matrix[nodeYIDs.indexOf(l.source.id)][nodeXIDs.indexOf(l.target.id)].weight = l.weight;
-      } catch (e) {};
-      try {
-          matrix[nodeYIDs.indexOf(l.target.id)][nodeXIDs.indexOf(l.source.id)].weight = l.weight;
-      } catch (e) {};
+      // Handle both object and string formats for source/target
+      const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+      const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+
+      const sourceIdx = nodeYIDs.indexOf(sourceId);
+      const targetIdx = nodeXIDs.indexOf(targetId);
+
+      if (sourceIdx !== -1 && targetIdx !== -1) {
+          matrix[sourceIdx][targetIdx].weight = l.weight;
+          edgesProcessed++;
+      }
+
+      // For undirected graphs, also set the symmetric cell
+      const targetIdx2 = nodeYIDs.indexOf(targetId);
+      const sourceIdx2 = nodeXIDs.indexOf(sourceId);
+
+      if (targetIdx2 !== -1 && sourceIdx2 !== -1 && sourceIdx2 !== targetIdx) {
+          matrix[targetIdx2][sourceIdx2].weight = l.weight;
+      }
     });
+
+    console.log(`Matrix: Processed ${edgesProcessed} edges out of ${edgeList.length}`);
 
     x.domain(d3.range(nodeXList.length),);
     y.domain(d3.range(nodeYList.length),);
@@ -268,7 +290,12 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
               selectedYNodes = selectedY.map(d => selectedYNodes[d]);
             }
             var selectedYIDs = selectedYNodes.map(d => d.id);
-	    var selectedEdges = edgeList.filter(e => (selectedXIDs.indexOf(e.source.id) !== -1 && selectedYIDs.indexOf(e.target.id) !== -1) || (selectedYIDs.indexOf(e.source.id) !== -1 && selectedXIDs.indexOf(e.target.id) !== -1));
+	    var selectedEdges = edgeList.filter(e => {
+              const sourceId = typeof e.source === 'object' ? e.source.id : e.source;
+              const targetId = typeof e.target === 'object' ? e.target.id : e.target;
+              return (selectedXIDs.indexOf(sourceId) !== -1 && selectedYIDs.indexOf(targetId) !== -1) ||
+                     (selectedYIDs.indexOf(sourceId) !== -1 && selectedXIDs.indexOf(targetId) !== -1);
+            });
 	    updateFullMatrix(selectedXNodes,selectedYNodes,selectedEdges,selectedXIDs,selectedYIDs);
             document.getElementById('order-matrix-cells').disabled = true;
             document.getElementById('reverse-matrix-order').disabled = true;
@@ -289,17 +316,19 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     });
 
     // When searching in table, filter visualization
-    var table = new DataTable('#metrics-table');
-    table.on('search.dt', function() {
-	    let nodeIds = table.rows({filter: 'applied'}).data().toArray().map(d => d[0]);
-	    console.log(nodeIds);
-	    if (selectedXNodes.length !== 0) {
-	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');
-	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(selectedXNodes[i].id) == -1 ? '0': '1');
-	    } else {
+    var table = Tabulator.findTable('#metrics-table')[0];
+    if (table) {
+        table.on('dataFiltered', function(filters, rows) {
+            let nodeIds = rows.map(row => row.getData().nodeId);
+            console.log(nodeIds);
+            if (selectedXNodes.length !== 0) {
+                d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');
+                d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(selectedXNodes[i].id) == -1 ? '0': '1');
+            } else {
 	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
 	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
 	    }
-    });
+        });
+    }
 
 };

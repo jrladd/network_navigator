@@ -24,9 +24,24 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         });
     });
 
+    let edgesAdded = 0;
+    let edgesSkipped = 0;
     edgeList.forEach((edge, i) => {
         const source = typeof edge.source === 'object' ? edge.source.id : edge.source;
         const target = typeof edge.target === 'object' ? edge.target.id : edge.target;
+
+        // Check if both nodes exist in the graph
+        if (!graph.hasNode(source)) {
+            console.warn(`Force layout: Source node "${source}" not found in graph`);
+            edgesSkipped++;
+            return;
+        }
+        if (!graph.hasNode(target)) {
+            console.warn(`Force layout: Target node "${target}" not found in graph`);
+            edgesSkipped++;
+            return;
+        }
+
         try {
             graph.addEdge(source, target, {
                 size: graphWeight === 'weighted' ? Math.max(edge.scaled_weight / 4, 1) : 1,
@@ -34,17 +49,28 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                 color: '#8888AA',
                 type: graphType === 'directed' ? 'arrow' : 'line'
             });
+            edgesAdded++;
         } catch (e) {
             // Skip duplicate edges
+            edgesSkipped++;
         }
     });
 
+    console.log(`Force layout: Added ${edgesAdded} edges, skipped ${edgesSkipped} (total ${edgeList.length})`);
+    console.log(`Force layout: Graph has ${graph.order} nodes and ${graph.size} edges`);
+
     // --- Force-directed layout (spring-electric model) ---
+    // Scale parameters based on graph size for better layouts
+    const numNodes = graph.order;
+    const numEdges = graph.size;
+    const avgDegree = numEdges > 0 ? (2 * numEdges) / numNodes : 1;
+
     const ITERATIONS = 300;
-    const REPULSION = 500;
-    const ATTRACTION = 0.005;
-    const GRAVITY = 0.001;
+    const REPULSION = Math.max(100, 500 / Math.sqrt(numNodes));
+    const ATTRACTION = 0.005 * Math.sqrt(avgDegree);
+    const GRAVITY = 0.01; // Increased gravity to keep nodes from drifting too far
     const DAMPING = 0.9;
+    const MAX_DISPLACEMENT = 50; // Limit how far nodes can move in one iteration
     const nodes = graph.nodes();
 
     // Velocity arrays
@@ -90,10 +116,19 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
             vy[node] -= attrs.y * GRAVITY;
         });
 
-        // Apply velocities with damping
+        // Apply velocities with damping and displacement limits
         graph.forEachNode(node => {
             vx[node] *= DAMPING;
             vy[node] *= DAMPING;
+
+            // Limit displacement per iteration to prevent nodes from flying too far
+            const displacement = Math.sqrt(vx[node] * vx[node] + vy[node] * vy[node]);
+            if (displacement > MAX_DISPLACEMENT) {
+                const scale = MAX_DISPLACEMENT / displacement;
+                vx[node] *= scale;
+                vy[node] *= scale;
+            }
+
             const attrs = graph.getNodeAttributes(node);
             graph.setNodeAttribute(node, 'x', attrs.x + vx[node]);
             graph.setNodeAttribute(node, 'y', attrs.y + vy[node]);
@@ -163,6 +198,12 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         }
     });
 
+    // Fit the graph to the viewport on initial load
+    // Use a small delay to ensure the container has proper dimensions
+    setTimeout(() => {
+        renderer.getCamera().animatedReset({ duration: 0 });
+    }, 100);
+
     // --- Click to highlight neighbors ---
     renderer.on('clickNode', ({ node }) => {
         highlightedNode = node;
@@ -202,17 +243,19 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     });
 
     // --- Table search filtering ---
-    const table = new DataTable('#metrics-table');
-    table.on('search.dt', function() {
-        const data = table.rows({ filter: 'applied' }).data().toArray();
-        const ids = data.map(d => d[0]);
-        if (ids.length === table.rows().data().length) {
-            filteredNodeIds = null;
-        } else {
-            filteredNodeIds = new Set(ids);
-        }
-        renderer.refresh();
-    });
+    const table = Tabulator.findTable('#metrics-table')[0];
+    if (table) {
+        table.on('dataFiltered', function(filters, rows) {
+            const ids = rows.map(row => row.getData().nodeId);
+            const allRows = table.getData();
+            if (ids.length === allRows.length) {
+                filteredNodeIds = null;
+            } else {
+                filteredNodeIds = new Set(ids);
+            }
+            renderer.refresh();
+        });
+    }
 
     // --- Customize: Size by centrality ---
     document.getElementById('centrality').addEventListener('change', function() {
