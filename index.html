@@ -94,6 +94,7 @@
 				values. For unweighted networks, your rows can have two or three values: <code>source,target</code> or
 				<code>source,target,weight</code>. For weighted networks, each row must have three values:
 				<code>source,target,weight</code>. Please edit your data and try again.</p>
+			<p id="row-error-detail"></p>
 		</div>
 		<div class="alert fl w-100 pa2 br4 ba b--gold bg-light-yellow gold" role="alert" id="eigen-error">
 			<strong>Skipping Eigenvector Centrality</strong>: Your network has no closed loops, so eigenvector
@@ -110,6 +111,7 @@
 					<strong class="retro-font">VISUALIZATIONS</strong> <em class="f6">collapse</em>
 					<i class="em em-arrow_right" id="viz-on" aria-role="presentation" aria-label="BLACK RIGHTWARDS ARROW"></i>
 					<i class="em em-arrow_left" id="viz-off" aria-role="presentation" aria-label="LEFTWARDS BLACK ARROW"></i>
+				</span>
 			</div>
 			<div class="fl w-100 w-50-ns pa2 br b--gray" id="metrics">
 				<div class="pa2 flex flex-column relative">
@@ -142,7 +144,7 @@
 							<input type="radio" value="betweenness" name="histType" id="betweenness">
 							<label class="dib w-20-l w-100 pa1 tooltip" for="betweenness">Betweenness Centrality<a><span>In its simplest form, the number of shortest paths that must pass through a particular node. Betweenness centrality helps to measure how often any path in the network must go through a node and therefore can show if a node is connected to many disparate groups in the network.</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
 							<input type="radio" value="eigenvector" name="histType" id="eigenvector">
-							<label class="dib w-20-l w-100 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span> <button type="button" class="f7 ba bw1 br4">i</button></i></a></label>
+							<label class="dib w-20-l w-100 pa1 tooltip" for="eigenvector">Eigenvector Centrality<a><span>A measure of a node's centrality based on its degree and the degree of its immediate numbers. Like asking, "Does this person have famous friends?"</span> <button type="button" class="f7 ba bw1 br4">i</button></a></label>
 							<input type="radio" value="clustering" name="histType" id="clustering">
 							<label class="dib w-20-l w-100 pa1 tooltip" for="clustering">Clustering Coefficient<a><span>The ratio of how many of a node’s neighbors are connected to each other, relative to the total number of neighbors.</span><button type="button" class="f7 ba bw1 br4">i</button></a></label>
 						</form>
@@ -326,8 +328,10 @@
 
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"></script>
-	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
-	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphology@0.26.0/dist/graphology.umd.min.js"></script>
+	<!-- graphology-library: metrics (betweenness, eigenvector, density), layouts (ForceAtlas2) -->
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/graphology-library@0.8.0/dist/graphology-library.min.js"></script>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sigma@3.0.3/dist/sigma.min.js"></script>
 	<!-- Tabulator - Pure JavaScript, no jQuery required -->
 	<script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.4.2/jscolor.min.js"></script>

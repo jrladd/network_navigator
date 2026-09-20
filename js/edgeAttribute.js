@@ -49,7 +49,7 @@ function createCategoryDropdown() {
 	    select = optionDiv.append("select").attr("name", `category-filter-${graphType}`).attr("id", `category-filter-${graphType}`).on("change", function() {
 		    let nodes = [];
 		    edgeList.forEach(e => {
-			    if (e[attr].toString() === this.value) {
+			    if (String(e[attr]) === this.value) {
 				    nodes.push(e.source.id);
 				    nodes.push(e.target.id);
 			    }
@@ -63,7 +63,7 @@ function createCategoryDropdown() {
 				    renderer.refresh();
 			    }
 		    } else if (graphType === 'arc-diagram') {
-			    d3.selectAll('.arc').style('opacity', l => { return l[attr].toString() === this.value ? 1 : 0.1});
+			    d3.selectAll('.arc').style('opacity', l => { return String(l[attr]) === this.value ? 1 : 0.1});
 			    d3.selectAll('.node-arc').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 			    d3.selectAll('#labels text').style('opacity', n => { return nodes.indexOf(n.id) !== -1 ? 1 : 0.1});
 		    }
@@ -76,8 +76,13 @@ function createCategoryDropdown() {
 function createContinuousGraph() {
 	d3.select(`#category-container-${graphType}`).remove();
 	d3.select(`#continuous-container-${graphType}`).remove();
-	var data = edgeList.map(e => {return {'metric': e[attr]} });
+	// Values from CSV columns are strings; keep only the numeric ones
+	var data = edgeList.map(e => {return {'metric': +e[attr]} }).filter(d => Number.isFinite(d.metric));
 	var containerDiv = d3.select(`#edge-attr-container-${graphType}`).append('div').attr("id", `continuous-container-${graphType}`).classed("fl w-50 f6 mid-gray pv2", true);
+	if (data.length === 0) {
+		containerDiv.text('This attribute has no numeric values.');
+		return;
+	}
 	// Create SVG and containers
 	var svg = containerDiv.append('svg')
          .attr("preserveAspectRatio", "xMinYMin meet")
@@ -198,6 +203,7 @@ function createContinuousGraph() {
 	}
 	function brushed(event) {
             var s = event.selection;
+            if (!s) return;
 	    var xConvert = d3.scaleLinear()
               .domain([0, width])
 	      .range([d3.min(data, d => d.metric), d3.max(data, d => d.metric)]);

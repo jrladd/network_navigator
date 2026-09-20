@@ -9,6 +9,9 @@ import * as metrics from './metrics.js';
 // Define global variables
 let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight, numberOfNodes, numberOfEdges, densityVal, averageDegree, averageClusteringVal, transitivityVal;
 
+// Aborted on every "Navigate" so listeners from the previous network's visualizations go away
+let vizController = new AbortController();
+
 const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
 
 // Allow drag and drop on textarea
@@ -22,13 +25,13 @@ textarea.addEventListener('drop', function (e) {
   e.preventDefault();
   e.stopPropagation();
   var files = e.dataTransfer.files;
+  if (files.length === 0) return;
   var reader = new FileReader();
   reader.onload = function (ev) {
     textarea.value = ev.target.result;
   }
-  for (var i = 0; i < files.length; i++) {
-    reader.readAsText(files[i]);
-  }
+  // Only the first file is used; one FileReader can't read several files at once
+  reader.readAsText(files[0]);
 });
 
 // Toggle instructions
@@ -120,21 +123,41 @@ document.getElementById('customize-form').addEventListener('click', function(e) 
   e.stopPropagation();
 });
 
+const customizePanels = ['force-layout', 'arc-diagram', 'adjacency-matrix'];
+
+function customizeIsOpen() {
+  return document.getElementById('customize').classList.contains('customize-expand');
+}
+
+// Show only the panel for the selected visualization (when the form is open)
+function showCustomizePanel() {
+  const open = customizeIsOpen();
+  const selectedDiv = selectedGraph ? selectedGraph.toLowerCase().replaceAll(' ', '-') : null;
+  customizePanels.forEach(id => {
+    document.getElementById(id).style.display = open && id === selectedDiv ? 'flex' : 'none';
+  });
+  document.getElementById('customize-form').style.display = open ? 'block' : 'none';
+}
+
+// Collapse the customize form back to its initial state
+function resetCustomize() {
+  document.getElementById('customize').classList.remove('customize-expand');
+  document.getElementById('open-customize-form').classList.remove('dn');
+  const customizeClose = document.getElementById('close-customize-form');
+  customizeClose.classList.add('dn');
+  customizeClose.classList.remove('flex');
+  showCustomizePanel();
+}
+
 document.getElementById('customize').addEventListener('click', function () {
-  let customize = document.getElementById('customize');
+  if (!selectedGraph) return;
   let customizeOpen = document.getElementById('open-customize-form');
   let customizeClose = document.getElementById('close-customize-form');
-  let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-  customize.classList.toggle('customize-expand');
+  this.classList.toggle('customize-expand');
   customizeOpen.classList.toggle('dn');
   customizeClose.classList.toggle('dn');
   customizeClose.classList.toggle('flex');
-
-  let selectedPanel = document.getElementById(selectedDiv);
-  selectedPanel.style.display = selectedPanel.style.display === 'none' ? 'flex' : 'none';
-
-  let formPanel = document.getElementById('customize-form');
-  formPanel.style.display = formPanel.style.display === 'none' ? 'block' : 'none';
+  showCustomizePanel();
 });
 
 // Track which visualizations have been drawn
@@ -146,6 +169,7 @@ const drawnVisualizations = {
 
 // Draw each graph type when it is selected by user
 function drawGraphs(selectedGraph) {
+  const signal = vizController.signal;
   divs.map(div => {
     let el = document.querySelector(div);
     let splitDiv = div.split('-').map(d => d.replace('#', ''));
@@ -157,19 +181,21 @@ function drawGraphs(selectedGraph) {
       el.style.visibility = 'visible';
 
       // Check if we need to draw the visualization
-      let needsDrawing = false;
       if (filteredDiv.includes('matrix') && !drawnVisualizations.matrix) {
-        drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight, signal);
         drawnVisualizations.matrix = true;
       }
       if (filteredDiv.includes('force') && !drawnVisualizations.force) {
-        drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight, signal);
         drawnVisualizations.force = true;
       }
       if (filteredDiv.includes('arc') && !drawnVisualizations.arc) {
-        drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
+        drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight, signal);
         drawnVisualizations.arc = true;
       }
+
+      // Redraw Sigma in case its state changed while it was hidden
+      if (filteredDiv.includes('force') && window._sigmaInstance) window._sigmaInstance.refresh();
 
       // Reload edge attribute filters when switching visualizations
       if (filteredDiv.includes('force')) addEdgeAttributeDropdown(edgeList, 'force-layout');
@@ -182,12 +208,15 @@ function drawGraphs(selectedGraph) {
       el.style.width = '0';
     }
   });
+  showCustomizePanel();
 }
 
 // Check if graph selected
 document.getElementById('selected-graph').addEventListener('click', function (e) {
-  if (selectedGraph !== e.target.text) {
-    selectedGraph = e.target.text;
+  const choice = e.target.text;
+  // Ignore clicks on the gaps between the buttons
+  if (choice && selectedGraph !== choice) {
+    selectedGraph = choice;
     drawGraphs(selectedGraph);
   }
 });
@@ -251,6 +280,7 @@ function updateDownloadURL(svg, filename) {
 const form = document.querySelector('#download-form')
 form.addEventListener('submit', event => {
   event.preventDefault()
+  if (!G) return;
   let downloadType = document.querySelector("#download-type");
   switch (downloadType.value) {
 	  case 'viz-png':
@@ -283,25 +313,14 @@ form.addEventListener('submit', event => {
 						  break;
 					  }
 
-					  console.log('Found', canvases.length, 'canvases');
-					  canvases.forEach((canvas, i) => {
-						  console.log(`Canvas ${i}: ${canvas.width}x${canvas.height}, class: ${canvas.className}`);
-					  });
-
-					  // Filter to only visual layers (exclude interactive hover/mouse layers)
+					  // Merge only the visual layers (not the hover/mouse layers) at Sigma's pixel-ratio resolution
 					  const visualLayers = ['sigma-edges', 'sigma-edgeLabels', 'sigma-nodes', 'sigma-labels'];
 					  const visualCanvases = Array.from(canvases).filter(canvas =>
 						  visualLayers.includes(canvas.className)
 					  );
 
-					  console.log('Rendering', visualCanvases.length, 'visual layers');
-
-					  // Use actual canvas dimensions (Sigma uses high DPI rendering)
-					  const firstCanvas = canvases[0];
-					  const w = firstCanvas.width;
-					  const h = firstCanvas.height;
-
-					  // Create a merged canvas at the same resolution
+					  const w = canvases[0].width;
+					  const h = canvases[0].height;
 					  const mergedCanvas = document.createElement('canvas');
 					  mergedCanvas.width = w;
 					  mergedCanvas.height = h;
@@ -311,38 +330,7 @@ form.addEventListener('submit', event => {
 					  ctx.fillStyle = '#FFFFFF';
 					  ctx.fillRect(0, 0, w, h);
 
-					  // Draw only the visual canvas layers (in correct order)
-					  visualCanvases.forEach(canvas => {
-						  console.log('Drawing layer:', canvas.className);
-
-						  // Check if canvas has content by sampling center pixel
-						  const testCtx = canvas.getContext('2d', { willReadFrequently: true });
-						  if (testCtx) {
-							  const centerX = Math.floor(canvas.width / 2);
-							  const centerY = Math.floor(canvas.height / 2);
-							  const imageData = testCtx.getImageData(centerX, centerY, 1, 1);
-							  const alpha = imageData.data[3];
-							  console.log(`  ${canvas.className} center pixel alpha:`, alpha);
-
-							  // Sample a few pixels to check for content
-							  let hasVisiblePixel = false;
-							  for (let y = 0; y < canvas.height; y += 100) {
-								  for (let x = 0; x < canvas.width; x += 100) {
-									  const sample = testCtx.getImageData(x, y, 1, 1);
-									  if (sample.data[3] > 0) {
-										  hasVisiblePixel = true;
-										  break;
-									  }
-								  }
-								  if (hasVisiblePixel) break;
-							  }
-							  console.log(`  ${canvas.className} has visible pixels:`, hasVisiblePixel);
-						  } else {
-							  console.log(`  ${canvas.className} context is null - might be WebGL`);
-						  }
-
-						  ctx.drawImage(canvas, 0, 0);
-					  });
+					  visualCanvases.forEach(canvas => ctx.drawImage(canvas, 0, 0));
 
 					  // Download
 					  const a = document.createElement('a');
@@ -378,7 +366,7 @@ form.addEventListener('submit', event => {
 				  if (filteredDiv.length > 0) {
 					  var serializer = new XMLSerializer();
 					  var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
-					  var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
+					  var imgData = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xmlString);
 					  let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
 					  let a = document.createElement('a');
 					  a.download = `${filename}_visualization.svg`;
@@ -399,7 +387,7 @@ form.addEventListener('submit', event => {
 
 Total Nodes: ${numberOfNodes}
 Total Edges: ${numberOfEdges}
-Average Degree: ${averageDegree}
+Average Degree: ${averageDegree.toFixed(4)}
 Density: ${densityVal.toFixed(4)}
 Avg. Clustering Coefficient: ${averageClusteringVal}
 Transitivity: ${transitivityVal.toFixed(4)}
@@ -471,280 +459,304 @@ document.getElementById('download-csv').addEventListener('click', function() {
 });
 
 
-// Calculate metrics and display graphs when user clicks "Navigate" button
-document.getElementById('calculate').addEventListener('click', function () {
-  document.querySelector('.loader').classList.add('is-active');
+// Thrown for problems with the user's data (as opposed to bugs)
+class DataError extends Error {}
 
-  // Reset visualization tracking
-  drawnVisualizations.force = false;
-  drawnVisualizations.arc = false;
-  drawnVisualizations.matrix = false;
+// Parse pasted data into a de-duplicated list of edges: {source, target, weight, ...extra columns}.
+// Duplicate edges (and, for undirected networks, reversed duplicates) are merged; the last one wins.
+function parseEdges(text, hasHeader, directed, weighted) {
+  const rows = [];
 
-  divs.map((div) => {
-    document.querySelector(div).innerHTML = '';
-  });
-  document.getElementById('row-error').style.display = 'none';
-  document.getElementById('eigen-error').style.display = 'none';
-  document.getElementById('customize-form').style.display = 'none';
-
-  // Clean up previous sigma instance if it exists
-  if (window._sigmaInstance) {
-    window._sigmaInstance.kill();
-    window._sigmaInstance = null;
-    window._graphologyInstance = null;
+  if (hasHeader) {
+    const parsed = d3.csvParse(text);
+    const columns = (parsed.columns || []).map(c => c.trim().toLowerCase());
+    if (!columns.includes('source') || !columns.includes('target')) {
+      throw new DataError('With "Header Row?" checked, your data needs columns named "source" and "target" (and "weight" for weighted networks).');
+    }
+    parsed.forEach((d, i) => {
+      const row = {};
+      parsed.columns.forEach((c, j) => { row[columns[j]] = d[c]; });
+      const blank = Object.values(row).every(v => v === undefined || String(v).trim() === '');
+      if (blank) return;
+      rows.push({ row, line: i + 2 });
+    });
+  } else {
+    d3.csvParseRows(text).forEach((cells, i) => {
+      if (cells.every(c => c.trim() === '')) return;
+      if (cells.length < 2 || (weighted && cells.length < 3) || cells.length > 3) {
+        throw new DataError(`Row ${i + 1} has ${cells.length} value${cells.length === 1 ? '' : 's'}.`);
+      }
+      rows.push({ row: { source: cells[0], target: cells[1], weight: cells[2] }, line: i + 1 });
+    });
   }
 
-  selectedGraph = "Force Layout";
-    // Get CSV and parse rows
-    var data = document.querySelector('textarea').value;
-    graphType = document.querySelector("input[name='graphType']:checked").value;
-    graphWeight = document.querySelector("input[name='graphWeight']:checked").value;
-    var headerRow = document.querySelector("#headerRow");
-    var edges;
-    if (headerRow.checked) {
-      edges = d3.csvParse(data, function(d) {
-	      d = Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {});
-	      return [d.source,d.target,d.weight];
-      });
-      edgeList = d3.csvParse(data);
-      edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
-      edgeList = edgeList.map(d => {
-        const weight = Number(d.weight);
-        d.weight = isNaN(weight) ? 1 : weight;
-        // Trim source and target IDs to match how nodes are created in the graph
-        d.source = String(d.source).trim();
-        d.target = String(d.target).trim();
-        return d;
-      });
-    } else {
-      edges = d3.csvParseRows(data);
+  const edges = new Map();
+  rows.forEach(({ row, line }) => {
+    const source = String(row.source ?? '').trim();
+    const target = String(row.target ?? '').trim();
+    if (source === '' || target === '') {
+      throw new DataError(`Row ${line} is missing a source or target.`);
     }
-
-    document.getElementById('info-panel').innerHTML = '';
-
-    // Create Graphology graph and calculate metrics
-    const GraphClass = graphType === 'undirected' ? graphology.UndirectedGraph : graphology.DirectedGraph;
-    G = new GraphClass();
-
-    try {
-      // Add edges to graph
-      edges.forEach(edge => {
-        const source = String(edge[0]).trim();
-        const target = String(edge[1]).trim();
-        const weight = edge[2] !== undefined ? Number(edge[2]) : 1;
-
-        if (!G.hasNode(source)) G.addNode(source);
-        if (!G.hasNode(target)) G.addNode(target);
-
-        if (graphWeight === 'weighted') {
-          G.addEdge(source, target, { weight: weight });
-        } else {
-          G.addEdge(source, target);
-        }
-      });
-
-      betweenness = metrics.betweennessCentrality(G);
-      degree = metrics.degreeDict(G);
-
-      densityVal = metrics.density(G);
-      averageClusteringVal = "N/A";
-      if (graphType === 'undirected') {
-        averageClusteringVal = metrics.averageClusteringCoeff(G).toFixed(4);
-        clustering = metrics.clusteringCoefficient(G);
-        var clusteringSorted = reverse_sort(clustering);
-      }
-      transitivityVal = metrics.transitivity(G);
-      numberOfNodes = G.order;
-      numberOfEdges = G.size;
-      averageDegree = Object.values(degree).reduce((a, b) => {
-        return a + b;
-      }) / numberOfNodes;
-
-    } catch (err) {
-      console.error(err);
-      document.getElementById("row-error").style.display = 'block';
+    let weight = 1;
+    if (weighted) {
+      weight = Number(row.weight);
+      if (row.weight === undefined || String(row.weight).trim() === '' || isNaN(weight)) weight = 1;
     }
+    const key = (directed || source <= target) ? `${source}\u0000${target}` : `${target}\u0000${source}`;
+    edges.set(key, { ...row, source, target, weight });
+  });
+  return [...edges.values()];
+}
 
-    try {
-      eigenvector = metrics.eigenvectorCentrality(G);
-    } catch (err) {
-      console.error(err);
-      if (err.message !== 'Empty graph.') {
-        document.getElementById('eigen-error').style.display = 'block';
-      }
-    }
+// Show a problem with the user's data
+function showRowError(message) {
+  document.getElementById('row-error-detail').textContent = message || '';
+  document.getElementById('row-error').style.display = 'block';
+}
 
-    var degreeSorted = reverse_sort(degree);
-    var betweennessSorted = reverse_sort(betweenness);
-    if (eigenvector) {
-      var eigenvectorSorted = reverse_sort(eigenvector);
-    }
+// Hide results (used when a new Navigate fails, so stale results don't linger)
+function hideResults() {
+  ['metrics', 'viz', 'buttons'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+}
 
-    if (headerRow.checked === false) {
-        edgeList = [];
-        G.forEachEdge(function(edge, attrs, source, target) {
-          edgeList.push({
-            source: source,
-            target: target,
-            weight: attrs.weight !== undefined ? +attrs.weight : 1
-          });
-        });
-    }
+// Put all customize controls back to their defaults for a new network
+function resetControls() {
+  const defaults = {
+    'centrality': 'degree', 'color-scale': 'none',
+    'centrality-arc': 'degree', 'color-scale-arc': 'none',
+    'order-arc-nodes': 'original', 'order-matrix-cells': 'original'
+  };
+  Object.entries(defaults).forEach(([id, value]) => { document.getElementById(id).value = value; });
+  ['reverse-arc-order', 'reverse-matrix-order'].forEach(id => {
+    const el = document.getElementById(id);
+    el.checked = false;
+    el.disabled = false;
+  });
+  document.getElementById('vertical').checked = true;
+  document.getElementById('edge-weight').checked = false;
+  document.getElementById('directed-arrows').checked = false;
+  document.getElementById('degree').checked = true;
+}
 
-    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
-    colorValues.push(0);
-    colorValues.sort((a, b) => a - b);
-
-    var tableData = [];
-    nodeList = [];
-    G.forEachNode(function (node) {
-      // For D3 Visualizations
-      let item = {};
-      item['id'] = node;
-      item['degree'] = degree[node];
-      item['betweenness'] = betweenness[node].toFixed(4);
-      let betweennessString = `${betweenness[node].toFixed(4)} (${(betweennessSorted.indexOf(node) + 1).toString()})`;
-      let eigenvectorString = "N/A";
-      let clusteringString = "N/A";
-      if (eigenvector) {
-        eigenvectorString = `${eigenvector[node].toFixed(4)} (${(eigenvectorSorted.indexOf(node) + 1).toString()})`;
-        item['eigenvector'] = eigenvector[node].toFixed(4);
-      }
-      if (graphType === 'undirected') {
-        clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
-        item['clustering'] = clustering[node].toFixed(4);
-      } else {item['clustering'] = 5};
-      item ['community'] = 1;
-      var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
-      tableData.push(row);
-      nodeList.push(item);
-    });
-
-    const sizes = ['degree', 'eigenvector', 'betweenness', 'clustering']
-    sizes.map(size => {
-      if (nodeList.some(node => node.hasOwnProperty(size))){
-        var centralitySize = d3.scaleLinear()
-          .domain([d3.min(nodeList, function (d) {
-            return d[size];
-          }), d3.max(nodeList, function (d) {
-            return d[size];
-          })])
-          .range([15, 50]);
-
-        var fontSize = d3.scaleLinear()
-          .domain([d3.min(nodeList, function (d) {
-            return d[size];
-          }), d3.max(nodeList, function (d) {
-            return d[size];
-          })])
-          .range([20, 30]);
-        nodeList = nodeList.map(node => {
-          node[`radius_${size}`] = centralitySize(node[size])
-          node[`fontSize_${size}`] = fontSize(node[size])
-          return node
-        })
+// Disable metric choices that aren't available for this network
+// (eigenvector centrality may not converge; clustering isn't defined for directed graphs)
+function syncMetricOptions() {
+  const available = { degree: true, betweenness: true, eigenvector: !!eigenvector, clustering: !!clustering };
+  ['centrality', 'color-scale', 'centrality-arc', 'color-scale-arc', 'order-arc-nodes', 'order-matrix-cells'].forEach(id => {
+    Array.from(document.getElementById(id).options).forEach(option => {
+      if (option.value in available) {
+        option.disabled = !available[option.value];
+        option.hidden = !available[option.value];
       }
     });
+  });
+  document.querySelectorAll('input[name="histType"]').forEach(radio => {
+    radio.disabled = !available[radio.value];
+    document.querySelector(`label[for="${radio.id}"]`).style.opacity = available[radio.value] ? '1' : '0.4';
+  });
+}
 
-    var idToNode = {};
+// Rank nodes by metric value (1 = highest)
+function rankNodes(dict) {
+  const ranks = new Map();
+  reverse_sort(dict).forEach((node, i) => ranks.set(node, i + 1));
+  return ranks;
+}
 
-    // Add indexes to nodes
-    nodeList.forEach(function (n) {
-      idToNode[n.id] = n;
+function formatWithRank(value, rank) {
+  return `${value.toFixed(4)} (${rank})`;
+}
+
+async function navigate() {
+  // Tear down the previous network's visualizations and their listeners
+  vizController.abort();
+  vizController = new AbortController();
+  if (window._sigmaInstance) {
+    window._sigmaInstance.kill();
+  }
+  window._sigmaInstance = null;
+  window._graphologyInstance = null;
+  window._edgeAttrFilteredNodes = null;
+
+  Object.keys(drawnVisualizations).forEach(key => { drawnVisualizations[key] = false; });
+  divs.forEach(div => { document.querySelector(div).innerHTML = ''; });
+  document.querySelectorAll('[id^="attribute-section-"], [id^="edge-attr-container-"]').forEach(el => el.remove());
+  document.getElementById('row-error').style.display = 'none';
+  document.getElementById('eigen-error').style.display = 'none';
+  document.getElementById('viz-warning').style.display = 'none';
+  document.getElementById('info-panel').innerHTML = '';
+  try { table.clearHeaderFilter(); } catch (err) { /* table not ready yet */ }
+  G = null;
+  selectedGraph = 'Force Layout';
+  resetControls();
+  resetCustomize();
+
+  // Read the user's options and data
+  const data = document.querySelector('textarea').value;
+  graphType = document.querySelector("input[name='graphType']:checked").value;
+  graphWeight = document.querySelector("input[name='graphWeight']:checked").value;
+  const hasHeader = document.getElementById('headerRow').checked;
+
+  // Build the graphology graph
+  let edges;
+  try {
+    edges = parseEdges(data, hasHeader, graphType === 'directed', graphWeight === 'weighted');
+    if (edges.length === 0) {
+      throw new DataError('No edges found. Paste or drop an edge list above.');
+    }
+  } catch (err) {
+    if (!(err instanceof DataError)) throw err;
+    console.warn(err.message);
+    showRowError(err.message);
+    hideResults();
+    return;
+  }
+
+  const GraphClass = graphType === 'undirected' ? graphology.UndirectedGraph : graphology.DirectedGraph;
+  G = new GraphClass();
+  edges.forEach(edge => {
+    G.mergeEdge(edge.source, edge.target, graphWeight === 'weighted' ? { weight: edge.weight } : undefined);
+  });
+
+  // Calculate metrics with graphology
+  const result = metrics.computeMetrics(G, { weighted: graphWeight === 'weighted' });
+  degree = result.degree;
+  betweenness = result.betweenness;
+  eigenvector = result.eigenvector;
+  clustering = result.clustering;
+  densityVal = result.density;
+  averageDegree = result.averageDegree;
+  averageClusteringVal = result.averageClustering === null ? 'N/A' : result.averageClustering.toFixed(4);
+  transitivityVal = result.transitivity;
+  numberOfNodes = G.order;
+  numberOfEdges = G.size;
+  if (!eigenvector) {
+    document.getElementById('eigen-error').style.display = 'block';
+  }
+
+  const betweennessRanks = rankNodes(betweenness);
+  const eigenvectorRanks = eigenvector ? rankNodes(eigenvector) : null;
+  const clusteringRanks = clustering ? rankNodes(clustering) : null;
+
+  colorValues = [...new Set(edges.map(edge => edge.weight))];
+  colorValues.push(0);
+  colorValues.sort((a, b) => a - b);
+
+  // Node data for the table and the visualizations
+  const tableData = [];
+  nodeList = [];
+  G.forEachNode(function (node) {
+    const item = { id: node, degree: degree[node], betweenness: betweenness[node] };
+    if (eigenvector) item.eigenvector = eigenvector[node];
+    if (clustering) item.clustering = clustering[node];
+    nodeList.push(item);
+
+    tableData.push({
+      nodeId: node,
+      degree: degree[node],
+      betweenness: formatWithRank(betweenness[node], betweennessRanks.get(node)),
+      eigenvector: eigenvector ? formatWithRank(eigenvector[node], eigenvectorRanks.get(node)) : 'N/A',
+      clustering: clustering ? formatWithRank(clustering[node], clusteringRanks.get(node)) : 'N/A'
     });
+  });
 
-    var edgeWidth = d3.scaleLinear()
-      .domain([d3.min(edgeList, function (d) {
-        return d.weight;
-      }), d3.max(edgeList, function (d) {
-        return d.weight;
-      })])
-      .range([3, 20]);
-    // Embed nodes as source and target
-    let unmatchedEdges = 0;
-    edgeList = edgeList.map(function (e) {
-      const sourceId = (typeof e.source === 'object') ? e.source.id : e.source;
-      const targetId = (typeof e.target === 'object') ? e.target.id : e.target;
-
-      const sourceNode = idToNode[sourceId];
-      const targetNode = idToNode[targetId];
-
-      if (!sourceNode || !targetNode) {
-        console.warn(`Edge references missing node(s): ${sourceId} -> ${targetId}`);
-        unmatchedEdges++;
-      }
-
-      return {
-        ...e,
-        source: sourceNode || { id: sourceId },
-        target: targetNode || { id: targetId },
-        scaled_weight: edgeWidth(e.weight)
-      };
+  // Scales for node radius and font size, for each available metric
+  ['degree', 'eigenvector', 'betweenness', 'clustering'].forEach(size => {
+    if (!nodeList.some(node => node.hasOwnProperty(size))) return;
+    const domain = d3.extent(nodeList, d => d[size]);
+    const centralitySize = d3.scaleLinear().domain(domain).range([15, 50]);
+    const fontSize = d3.scaleLinear().domain(domain).range([20, 30]);
+    nodeList.forEach(node => {
+      node[`radius_${size}`] = centralitySize(node[size]);
+      node[`fontSize_${size}`] = fontSize(node[size]);
     });
+  });
 
-    console.log(`Processed ${edgeList.length} edges (${unmatchedEdges} with missing nodes)`);
+  // Embed node objects as edge source and target, and scale edge widths
+  const idToNode = {};
+  nodeList.forEach(n => { idToNode[n.id] = n; });
+  const edgeWidth = d3.scaleLinear()
+    .domain(d3.extent(edges, d => d.weight))
+    .range([3, 20]);
+  edgeList = edges.map(e => ({
+    ...e,
+    source: idToNode[e.source],
+    target: idToNode[e.target],
+    scaled_weight: edgeWidth(e.weight)
+  }));
 
-    // Add metrics to Tabulator and page, display all
-    // Convert tableData array to object format for Tabulator
-    const tabulatorData = tableData.map(row => ({
-      nodeId: row[0],
-      degree: row[1],
-      betweenness: row[2],
-      eigenvector: row[3],
-      clustering: row[4]
-    }));
-    table.setData(tabulatorData);
-    const tabulatorSearchInput = document.querySelector('.tabulator-header-filter input');
-    if (tabulatorSearchInput) tabulatorSearchInput.placeholder = 'Find a Node ID';
-    let metricsEl = document.getElementById("metrics");
-    let vizEl = document.getElementById("viz");
-    let buttons = document.getElementById("buttons");
-    metricsEl.style.display = "block";
-    vizEl.style.display = "block";
-    buttons.style.display = "block";
-    document.getElementById('metric-off').style.display = 'none';
-    document.getElementById('viz-off').style.display = 'none';
-    var allInfo = `
+  syncMetricOptions();
+
+  // Add metrics to Tabulator and page, display all
+  await table.setData(tableData);
+  const tabulatorSearchInput = document.querySelector('.tabulator-header-filter input');
+  if (tabulatorSearchInput) tabulatorSearchInput.placeholder = 'Find a Node ID';
+  document.getElementById('metrics').style.display = 'block';
+  document.getElementById('viz').style.display = 'block';
+  document.getElementById('buttons').style.display = 'block';
+  document.getElementById('metric-off').style.display = 'none';
+  document.getElementById('viz-off').style.display = 'none';
+
+  let allInfo = `
     <div class="fl w-50-l w-100 mv2">
     Total Nodes: ${numberOfNodes}<br/>
     Total Edges: ${numberOfEdges}<br/>
-    Average Degree: ${averageDegree}<br/>
+    Average Degree: ${averageDegree.toFixed(4)}<br/>
     </div>
     <div class="fl w-50-l w-100 mv2">
     Density: ${densityVal.toFixed(4)}<br/>
     Avg. Clustering Coefficient: ${averageClusteringVal}<br/>
     Transitivity: ${transitivityVal.toFixed(4)}<br/>
     </div>
-    `
-    if (graphType === 'directed') {
-	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficients cannot be calculated for directed graphs.</div>`
+    `;
+  if (graphType === 'directed') {
+    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficients cannot be calculated for directed graphs.</div>`;
+  }
+  document.getElementById('info-panel').innerHTML = allInfo;
+  selectHist();
+
+  // Draw Force Layout by default, unless the network is large
+  if (G.order <= 500) {
+    drawGraphs(selectedGraph);
+  } else {
+    document.getElementById('viz-warning').style.display = 'block';
+  }
+
+  table.redraw(true);
+  const tabulatorWrapper = document.querySelector('.tabulator');
+  if (tabulatorWrapper) tabulatorWrapper.classList.add('mt2');
+}
+
+// Calculate metrics and display graphs when user clicks "Navigate" button
+document.getElementById('calculate').addEventListener('click', function () {
+  const loader = document.querySelector('.loader');
+  loader.classList.add('is-active');
+  // Give the browser a chance to paint the loader before the (synchronous) heavy work
+  requestAnimationFrame(() => setTimeout(async () => {
+    try {
+      await navigate();
+      if (G) document.querySelector("#results").scrollIntoView({behavior: "smooth"});
+    } catch (err) {
+      console.error(err);
+      G = null;
+      hideResults();
+      showRowError(`Something went wrong while processing your data (${err.message}).`);
+    } finally {
+      loader.classList.remove('is-active');
     }
-    document.getElementById('info-panel').innerHTML += allInfo;
-    selectHist();
-    document.getElementById('histType').addEventListener('change', function() {
-      selectHist();
-      nodeSizeHist();
-    });
+  }, 0));
+});
 
-    // Draw Force Layout by default
-    if ((G.order <= 500) && (selectedGraph == 'Force Layout')) {
-      drawGraphs(selectedGraph);
-    } else {
-      document.getElementById('viz-warning').style.display = 'block';
-      document.querySelectorAll('.viz').forEach(el => el.style.display = 'none');
-    }
+// Draw the visualization anyway when the network is large
+document.getElementById('load-viz').addEventListener('click', function () {
+  document.getElementById('viz-warning').style.display = 'none';
+  drawGraphs(selectedGraph);
+});
 
-    document.getElementById('load-viz').addEventListener('click', function () {
-      document.getElementById('viz-warning').style.display = 'none';
-      document.querySelectorAll('.viz').forEach(el => el.style.display = 'block');
-      drawGraphs(selectedGraph);
-    });
-
-   document.querySelector('.loader').classList.remove('is-active');
-   document.querySelector("#results").scrollIntoView({behavior: "smooth"});
-   table.redraw(true);
-   const tabulatorWrapper = document.querySelector('.tabulator');
-   if (tabulatorWrapper) tabulatorWrapper.classList.add('mt2');
+// Radio buttons for histogram also control node size
+document.getElementById('histType').addEventListener('change', function () {
+  selectHist();
+  nodeSizeHist();
 });
 
 function reverse_sort(dict) {
@@ -753,31 +765,15 @@ function reverse_sort(dict) {
   });
 }
 
-// Radio buttons for histogram
+// Draw histogram for the selected radio button
 function selectHist() {
-	  let radios = document.getElementsByName('histType');
-	  radios.forEach(r => {
-		  if (r.checked) {
-			  switch (r.value) {
-				  case 'degree':
-					  drawHist(degree);
-					  break;
-				  case 'betweenness':
-					  drawHist(betweenness);
-					  break;
-				  case 'eigenvector':
-					  drawHist(eigenvector);
-					  break;
-				  case 'clustering':
-					  if (graphType !== 'directed') {
-					      drawHist(clustering);
-					  } else {
-					      d3.select("svg#hist").selectAll('*').remove();
-					      d3.select("svg#hist").append('text').attr('width', '100%').attr("x", 50).attr("y", 50).text("Clustering coefficients cannot be calculated for directed graphs.")
-					  }
-			  };
-		  };
-	  });
+  const checked = document.querySelector('input[name="histType"]:checked');
+  const values = { degree, betweenness, eigenvector, clustering }[checked.value];
+  if (values) {
+    drawHist(values);
+  } else {
+    d3.select("svg#hist").selectAll('*').remove();
+  }
 }
 
 // Smaller node size for arc diagram
@@ -786,13 +782,9 @@ var arcSize = d3.scaleLinear()
     .range([3, 6]);
 
 function nodeSizeHist() {
-	let radios = document.getElementsByName('histType');
-	let centrality;
-	radios.forEach(r => {
-		if (r.checked) {
-			centrality = r.value;
-		};
-	});
+	const checked = document.querySelector('input[name="histType"]:checked');
+	if (!checked || !G) return;
+	const centrality = checked.value;
 	document.querySelector('#centrality').value = centrality;
 	document.querySelector('#centrality-arc').value = centrality;
 	// Update sigma force layout if it exists
@@ -803,7 +795,8 @@ function nodeSizeHist() {
 				window._graphologyInstance.setNodeAttribute(node, 'size', attrs[radiusKey] / 5);
 			}
 		});
-		window._sigmaInstance.refresh();
+		// (Skipped while the force layout is hidden; it refreshes when shown again)
+		if (document.getElementById('force-layout-viz').offsetWidth > 0) window._sigmaInstance.refresh();
 	}
 	// Update D3 arc diagram
 	d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));

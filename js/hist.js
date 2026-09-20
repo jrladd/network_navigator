@@ -19,7 +19,7 @@ export function drawHist(data) {
                 "translate(" + margin.left + "," + margin.top + ")");
 
 	var x = d3.scaleLinear()
-	  .domain([0, d3.max(data, function(d) { return d.metric; })])
+	  .domain([0, d3.max(data, function(d) { return d.metric; }) || 1])
           .range([0, width]);
 	var y = d3.scaleLog()
           .range([height, 0])

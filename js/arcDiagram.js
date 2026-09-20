@@ -1,5 +1,6 @@
 // Complete code for Arc Diagram network viz
-export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight) {
+// `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight, signal) {
 
     // Add properties to control showing and hiding elements
     nodeList = nodeList.map(node => ({...node, nodeClicked: false}));
@@ -192,8 +193,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
             .style("stroke-opacity", 0.6);
     	let table = Tabulator.findTable('#metrics-table')[0];
 	if (table) {
-		let filteredRows = table.searchData.length > 0 ? table.getRows('active') : table.getRows();
-		let nodeIds = filteredRows.map(row => row.getData().nodeId);
+		let nodeIds = table.getRows('active').map(row => row.getData().nodeId);
 		node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 		label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
 		path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
@@ -219,15 +219,15 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // Handle movement of arcs when graph updates
     function updateArc(orderValue, orderDirection) {
-        let sortOrder, updatedNodeList;
+        let updatedNodeList;
         if (orderValue === 'original') {
-            updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
+            updatedNodeList = [...originalList];
         } else {
-            orderValue = orderValue === 'name' ? 'id' : orderValue;
-            sortOrder = (orderValue === 'id') ? nodeList.map(node => node[orderValue]).sort() : nodeList.map(node => node[orderValue]).sort((a, b) => a - b);
-            sortOrder = orderDirection ? [...sortOrder].reverse() : sortOrder;
-            updatedNodeList = nodeList.sort((a, b) => sortOrder.indexOf(a[orderValue]) - sortOrder.indexOf(b[orderValue]));
+            // Ascending by name, or by the metric's value
+            const key = orderValue === 'name' ? 'id' : orderValue;
+            updatedNodeList = [...nodeList].sort((a, b) => key === 'id' ? d3.ascending(a.id, b.id) : a[key] - b[key]);
         }
+        if (orderDirection) updatedNodeList.reverse();
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 
@@ -317,17 +317,19 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
                 .duration(750)
                 .call(zoom.transform, d3.zoomIdentity);
         }
-    });
+    }, { signal });
 
     // When searching in table, filter visualization
     var table = Tabulator.findTable('#metrics-table')[0];
     if (table) {
-        table.on('dataFiltered', function(filters, rows) {
+        const onDataFiltered = function(filters, rows) {
             let nodeIds = rows.map(row => row.getData().nodeId);
             node.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
             label.style('opacity', d => nodeIds.indexOf(d.id) == -1 ? '0': '1');
             path.style('stroke-opacity', l => nodeIds.indexOf(l.target.id) !== -1 && nodeIds.indexOf(l.source.id) !== -1 ? '1': '0');
-        });
+        };
+        table.on('dataFiltered', onDataFiltered);
+        signal.addEventListener('abort', () => table.off('dataFiltered', onDataFiltered));
     }
 
 };

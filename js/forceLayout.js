@@ -1,15 +1,20 @@
 // Force Layout network visualization using Sigma.js + Graphology
-export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight) {
+// `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight, signal) {
 
     // --- Build graphology graph instance ---
     const graph = new graphology.Graph({ type: graphType === 'directed' ? 'directed' : 'undirected' });
 
+    // The color picker holds an rgb() string once jscolor has initialized
+    let nodeColor = document.getElementById('color-picker').value || '#08B3E5';
+    if (/^[0-9a-f]{6}$/i.test(nodeColor)) nodeColor = '#' + nodeColor;
+
     nodeList.forEach(node => {
         graph.addNode(node.id, {
-            x: Math.random() * 1000 - 500,
-            y: Math.random() * 1000 - 500,
+            x: 0,
+            y: 0,
             size: (node.radius_degree || 15) / 5,
-            color: document.getElementById('color-picker').value || '#08B3E5',
+            color: nodeColor,
             label: node.id,
             // Store centrality radii for later customization
             radius_degree: node.radius_degree,
@@ -24,124 +29,32 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         });
     });
 
-    let edgesAdded = 0;
-    let edgesSkipped = 0;
-    edgeList.forEach((edge, i) => {
-        const source = typeof edge.source === 'object' ? edge.source.id : edge.source;
-        const target = typeof edge.target === 'object' ? edge.target.id : edge.target;
-
-        // Check if both nodes exist in the graph
-        if (!graph.hasNode(source)) {
-            console.warn(`Force layout: Source node "${source}" not found in graph`);
-            edgesSkipped++;
-            return;
-        }
-        if (!graph.hasNode(target)) {
-            console.warn(`Force layout: Target node "${target}" not found in graph`);
-            edgesSkipped++;
-            return;
-        }
-
-        try {
-            graph.addEdge(source, target, {
-                size: graphWeight === 'weighted' ? Math.max(edge.scaled_weight / 4, 1) : 1,
-                originalWeight: edge.scaled_weight || 1,
-                color: '#8888AA',
-                type: graphType === 'directed' ? 'arrow' : 'line'
-            });
-            edgesAdded++;
-        } catch (e) {
-            // Skip duplicate edges
-            edgesSkipped++;
-        }
+    // edgeList is already de-duplicated and every edge refers to a node in nodeList
+    edgeList.forEach(edge => {
+        graph.addEdge(edge.source.id, edge.target.id, {
+            size: graphWeight === 'weighted' ? Math.max(edge.scaled_weight / 4, 1) : 1,
+            originalWeight: edge.scaled_weight || 1,
+            color: '#8888AA',
+            type: graphType === 'directed' ? 'arrow' : 'line'
+        });
     });
 
-    console.log(`Force layout: Added ${edgesAdded} edges, skipped ${edgesSkipped} (total ${edgeList.length})`);
-    console.log(`Force layout: Graph has ${graph.order} nodes and ${graph.size} edges`);
+    const listen = (id, type, handler) => document.getElementById(id).addEventListener(type, handler, { signal });
 
-    // --- Force-directed layout (spring-electric model) ---
-    // Scale parameters based on graph size for better layouts
-    const numNodes = graph.order;
-    const numEdges = graph.size;
-    const avgDegree = numEdges > 0 ? (2 * numEdges) / numNodes : 1;
-
-    const ITERATIONS = 300;
-    const REPULSION = Math.max(100, 500 / Math.sqrt(numNodes));
-    const ATTRACTION = 0.005 * Math.sqrt(avgDegree);
-    const GRAVITY = 0.01; // Increased gravity to keep nodes from drifting too far
-    const DAMPING = 0.9;
-    const MAX_DISPLACEMENT = 50; // Limit how far nodes can move in one iteration
-    const nodes = graph.nodes();
-
-    // Velocity arrays
-    const vx = {}, vy = {};
-    nodes.forEach(node => { vx[node] = 0; vy[node] = 0; });
-
-    function forceIteration() {
-        // Repulsion between all node pairs
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
-                const n1 = nodes[i], n2 = nodes[j];
-                const p1 = graph.getNodeAttributes(n1);
-                const p2 = graph.getNodeAttributes(n2);
-                let dx = p2.x - p1.x;
-                let dy = p2.y - p1.y;
-                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                let force = REPULSION / (dist * dist);
-                let fx = (dx / dist) * force;
-                let fy = (dy / dist) * force;
-                vx[n1] -= fx; vy[n1] -= fy;
-                vx[n2] += fx; vy[n2] += fy;
-            }
-        }
-
-        // Attraction along edges
-        graph.forEachEdge((edge, attrs, source, target) => {
-            const p1 = graph.getNodeAttributes(source);
-            const p2 = graph.getNodeAttributes(target);
-            let dx = p2.x - p1.x;
-            let dy = p2.y - p1.y;
-            let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            let force = dist * ATTRACTION;
-            let fx = (dx / dist) * force;
-            let fy = (dy / dist) * force;
-            vx[source] += fx; vy[source] += fy;
-            vx[target] -= fx; vy[target] -= fy;
-        });
-
-        // Center gravity
-        graph.forEachNode(node => {
-            const attrs = graph.getNodeAttributes(node);
-            vx[node] -= attrs.x * GRAVITY;
-            vy[node] -= attrs.y * GRAVITY;
-        });
-
-        // Apply velocities with damping and displacement limits
-        graph.forEachNode(node => {
-            vx[node] *= DAMPING;
-            vy[node] *= DAMPING;
-
-            // Limit displacement per iteration to prevent nodes from flying too far
-            const displacement = Math.sqrt(vx[node] * vx[node] + vy[node] * vy[node]);
-            if (displacement > MAX_DISPLACEMENT) {
-                const scale = MAX_DISPLACEMENT / displacement;
-                vx[node] *= scale;
-                vy[node] *= scale;
-            }
-
-            const attrs = graph.getNodeAttributes(node);
-            graph.setNodeAttribute(node, 'x', attrs.x + vx[node]);
-            graph.setNodeAttribute(node, 'y', attrs.y + vy[node]);
-        });
-    }
-
-    // Run layout iterations
-    for (let i = 0; i < ITERATIONS; i++) {
-        forceIteration();
-    }
+    // --- Force-directed layout (ForceAtlas2 from graphology-library) ---
+    const { layout, layoutForceAtlas2 } = graphologyLibrary;
+    layout.circular.assign(graph);
+    layoutForceAtlas2.assign(graph, {
+        iterations: 400,
+        settings: layoutForceAtlas2.inferSettings(graph)
+    });
 
     // --- Create Sigma renderer ---
     const container = document.getElementById('force-layout-viz');
+
+    // Sigma can't render into a collapsed (hidden) container; state changes made meanwhile
+    // are drawn when the layout is shown again (see drawGraphs in main.js)
+    const safeRefresh = () => { if (container.offsetWidth > 0) renderer.refresh(); };
 
     // State for highlighting
     let highlightedNode = null;
@@ -201,20 +114,21 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     // Fit the graph to the viewport on initial load
     // Use a small delay to ensure the container has proper dimensions
     setTimeout(() => {
-        renderer.getCamera().animatedReset({ duration: 0 });
+        // The network may have been replaced (renderer killed) within the delay
+        if (!signal.aborted && container.offsetWidth > 0) renderer.getCamera().animatedReset({ duration: 0 });
     }, 100);
 
     // --- Click to highlight neighbors ---
     renderer.on('clickNode', ({ node }) => {
         highlightedNode = node;
         highlightedNeighbors = new Set(graph.neighbors(node));
-        renderer.refresh();
+        safeRefresh();
     });
 
     renderer.on('clickStage', () => {
         highlightedNode = null;
         highlightedNeighbors.clear();
-        renderer.refresh();
+        safeRefresh();
     });
 
     // --- Drag nodes ---
@@ -245,7 +159,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     // --- Table search filtering ---
     const table = Tabulator.findTable('#metrics-table')[0];
     if (table) {
-        table.on('dataFiltered', function(filters, rows) {
+        const onDataFiltered = function(filters, rows) {
             const ids = rows.map(row => row.getData().nodeId);
             const allRows = table.getData();
             if (ids.length === allRows.length) {
@@ -253,12 +167,14 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
             } else {
                 filteredNodeIds = new Set(ids);
             }
-            renderer.refresh();
-        });
+            safeRefresh();
+        };
+        table.on('dataFiltered', onDataFiltered);
+        signal.addEventListener('abort', () => table.off('dataFiltered', onDataFiltered));
     }
 
     // --- Customize: Size by centrality ---
-    document.getElementById('centrality').addEventListener('change', function() {
+    listen('centrality', 'change', function() {
         const centrality = this.value;
         graph.forEachNode((node, attrs) => {
             const radiusKey = `radius_${centrality}`;
@@ -266,11 +182,11 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                 graph.setNodeAttribute(node, 'size', attrs[radiusKey] / 5);
             }
         });
-        renderer.refresh();
+        safeRefresh();
     });
 
     // --- Customize: Color scale ---
-    document.getElementById('color-scale').addEventListener('change', function() {
+    listen('color-scale', 'change', function() {
         const centrality = this.value;
         const pickerVal = document.getElementById('color-picker').value;
         if (centrality === 'none') {
@@ -291,20 +207,20 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
                 graph.setNodeAttribute(node, 'color', colorScale(Number(attrs[centrality])));
             });
         }
-        renderer.refresh();
+        safeRefresh();
     });
 
     // --- Customize: Edge weights ---
-    document.getElementById('edge-weight').addEventListener('change', function() {
+    listen('edge-weight', 'change', function() {
         const showWeights = this.checked;
         graph.forEachEdge((edge, attrs) => {
             graph.setEdgeAttribute(edge, 'size', showWeights ? (attrs.originalWeight / 4 || 1) : 1);
         });
-        renderer.refresh();
+        safeRefresh();
     });
 
     // --- Customize: Node labels ---
-    document.getElementById('node-label').addEventListener('change', function() {
+    listen('node-label', 'change', function() {
         renderer.setSetting('renderLabels', this.checked);
     });
 
@@ -312,19 +228,19 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     if (graphWeight === 'weighted') { document.getElementById('edge-weight').checked = true; }
 
     // --- Customize: Directed arrows ---
-    document.getElementById('directed-arrows').addEventListener('change', function() {
+    listen('directed-arrows', 'change', function() {
         const showArrows = this.checked;
         graph.forEachEdge(edge => {
             graph.setEdgeAttribute(edge, 'type', showArrows ? 'arrow' : 'line');
         });
-        renderer.refresh();
+        safeRefresh();
     });
 
     // Make sure arrow checkbox is checked if graph is directed
     if (graphType === 'directed') { document.getElementById('directed-arrows').checked = true; }
 
     // --- Restore Zoom ---
-    document.getElementById('restore-zoom').addEventListener('click', function() {
+    listen('restore-zoom', 'click', function() {
         if (document.getElementById('force-layout-viz').style.visibility !== 'hidden') {
             renderer.getCamera().animatedReset();
         }

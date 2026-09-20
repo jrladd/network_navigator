@@ -1,5 +1,6 @@
 // Code for Adjacency Matrix network visualzation
-export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
+// `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight, signal) {
 
   // Keep track of original list while allowing nodelist to change
   let originalList = [...nodeList];
@@ -71,9 +72,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
     var newRGB = `rgb(${newColor.join(",")})`;
 
-    console.log('Matrix color values:', colorValues);
-    console.log('Matrix color range:', newRGB, 'to', pickerValue);
-
     color = d3.scaleLinear()
       .domain([0, d3.max(colorValues)])
       .range([newRGB, pickerValue])
@@ -92,35 +90,32 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     let matrix = nodeYList.map(function (outer, i) {
       outer.index = i;
       return nodeXList.map(function (inner, j) {
-        // if we want to use community add a check and change final zero to inner.community
-        return {y: i, x: j, weight: i === j ? 0 : 0};
+        return {y: i, x: j, weight: 0};
       });
     });
-    // Update matrix values depending on edges
-    let edgesProcessed = 0;
-    edgeList.forEach(function (l,i) {
+    // Update matrix values depending on edges (rows are sources, columns are targets)
+    const yIndex = new Map(nodeYIDs.map((id, i) => [id, i]));
+    const xIndex = new Map(nodeXIDs.map((id, i) => [id, i]));
+    edgeList.forEach(function (l) {
       // Handle both object and string formats for source/target
       const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
       const targetId = typeof l.target === 'object' ? l.target.id : l.target;
 
-      const sourceIdx = nodeYIDs.indexOf(sourceId);
-      const targetIdx = nodeXIDs.indexOf(targetId);
-
-      if (sourceIdx !== -1 && targetIdx !== -1) {
-          matrix[sourceIdx][targetIdx].weight = l.weight;
-          edgesProcessed++;
+      const row = yIndex.get(sourceId);
+      const col = xIndex.get(targetId);
+      if (row !== undefined && col !== undefined) {
+        matrix[row][col].weight = l.weight;
       }
 
-      // For undirected graphs, also set the symmetric cell
-      const targetIdx2 = nodeYIDs.indexOf(targetId);
-      const sourceIdx2 = nodeXIDs.indexOf(sourceId);
-
-      if (targetIdx2 !== -1 && sourceIdx2 !== -1 && sourceIdx2 !== targetIdx) {
-          matrix[targetIdx2][sourceIdx2].weight = l.weight;
+      // Undirected edges fill the symmetric cell too
+      if (graphType !== 'directed') {
+        const mirrorRow = yIndex.get(targetId);
+        const mirrorCol = xIndex.get(sourceId);
+        if (mirrorRow !== undefined && mirrorCol !== undefined) {
+          matrix[mirrorRow][mirrorCol].weight = l.weight;
+        }
       }
     });
-
-    console.log(`Matrix: Processed ${edgesProcessed} edges out of ${edgeList.length}`);
 
     x.domain(d3.range(nodeXList.length),);
     y.domain(d3.range(nodeYList.length),);
@@ -229,7 +224,6 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
           d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue])
         )
     }
-    console.log(updatedNodeList, nodeList);
     x.domain(updatedNodeList);
 
     var t = svg.transition().duration(1500);
@@ -318,9 +312,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     // When searching in table, filter visualization
     var table = Tabulator.findTable('#metrics-table')[0];
     if (table) {
-        table.on('dataFiltered', function(filters, rows) {
+        const onDataFiltered = function(filters, rows) {
             let nodeIds = rows.map(row => row.getData().nodeId);
-            console.log(nodeIds);
             if (selectedXNodes.length !== 0) {
                 d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');
                 d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(selectedXNodes[i].id) == -1 ? '0': '1');
@@ -328,7 +321,9 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
 	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
 	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
 	    }
-        });
+        };
+        table.on('dataFiltered', onDataFiltered);
+        signal.addEventListener('abort', () => table.off('dataFiltered', onDataFiltered));
     }
 
 };
