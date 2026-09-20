@@ -385,6 +385,8 @@
 	}
 	textarea { width: 100%; min-height: 12rem; resize: vertical; font-family: var(--font-mono); font-size: 0.9rem; }
 	textarea:hover, select:hover { border-color: var(--ink); }
+	textarea[aria-invalid='true'] { border-color: var(--danger); box-shadow: 0 0 0 3px rgb(179 38 30 / 0.25); }
+	#row-error:focus { outline-offset: 3px; }
 	input[type='color'] { width: 3rem; height: 2.5rem; padding: 0.15rem; border: 2px solid var(--ink-soft); border-radius: var(--radius-sm); background: #fff; cursor: pointer; }
 	input[type='number'] { width: 5.5rem; }
 	select:disabled, button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -403,6 +405,15 @@
 	}
 	.alert p { margin: 0 0 var(--space-1); }
 	.alert p:last-child { margin-bottom: 0; }
+	.alert p code { display: inline; white-space: normal; }
+	#row-error-line {
+		margin-block: var(--space-1) var(--space-2);
+		padding: var(--space-1) var(--space-2);
+		background: rgb(255 255 255 / 0.75);
+		border: 1px solid var(--danger);
+		border-radius: 4px;
+		font-weight: 700;
+	}
 	.alert-error { border-color: var(--danger); background: var(--danger-bg); color: #5b100b; }
 	.alert-warn { border-color: var(--warn); background: var(--warn-bg); color: #4d3900; }
 	.alert-info { border-color: var(--link); background: var(--info-bg); color: #063a59; }

@@ -1,26 +1,78 @@
 // Turning pasted or uploaded text into a list of edges
 
 // Thrown for problems with the user's data (as opposed to bugs)
-export class DataError extends Error {}
-
-function firstLine(text) {
-  return text.split(/\r?\n/).find((line) => line.trim() !== '') || '';
+// Errors about one row also carry its line number and the line the user typed, so the page can point at it.
+export class DataError extends Error {
+  constructor(message, { line, text } = {}) {
+    super(message);
+    this.line = line;
+    this.text = text;
+  }
 }
 
-// Spreadsheets paste tab-separated text; European CSV exports often use semicolons
-export function sniffDelimiter(text) {
-  const line = firstLine(text);
-  if (line.includes('\t')) return '\t';
-  const semicolons = (line.match(/;/g) || []).length;
-  const commas = (line.match(/,/g) || []).length;
-  return semicolons > 0 && commas === 0 ? ';' : ',';
+// Lines that start with "%" (KONECT, MatrixMarket) or with "#" followed by a space or nothing (SNAP)
+// are comments. A "#" attached to a name ("#metoo") is data, so hashtag networks still work.
+const COMMENT_LINE = /^\s*(%|#(\s|$))/;
+
+const stripBom = (text) => text.replace(/^\uFEFF/, '');
+
+// Comment lines become blank lines, so "Row N" in error messages is still the line the user sees
+function blankComments(text) {
+  return stripBom(text).split(/\r?\n/).map((line) => (COMMENT_LINE.test(line) ? '' : line)).join('\n');
+}
+
+/**
+ * Work out what separates the columns. Commas, tabs, and semicolons are used when they appear
+ * anywhere in the data (names may contain spaces then); only when none of them appear are
+ * columns separated by whitespace. Comment lines and text inside "double quotes" are ignored.
+ *
+ * @returns {'\t' | ',' | ';' | 'whitespace'}
+ */
+export function detectSeparator(text) {
+  const lines = blankComments(text).split('\n').map((line) => line.replace(/"[^"]*"/g, ''));
+  const appears = (character) => lines.some((line) => line.includes(character));
+  if (appears('\t')) return '\t';
+  if (appears(',')) return ',';
+  if (appears(';')) return ';';
+  return 'whitespace';
+}
+
+// A short description of how the columns will be read, for the note under the data box ('' if no data)
+export function describeSeparator(text) {
+  if (blankComments(text).trim() === '') return '';
+  const separator = detectSeparator(text);
+  if (separator === '\t') return 'Columns separated by tabs.';
+  if (separator === ',') return 'Columns separated by commas.';
+  if (separator === ';') return 'Columns separated by semicolons.';
+  return 'Columns separated by spaces. A name can only contain spaces if it is in "quotes".';
+}
+
+// Split a line on whitespace, keeping "quoted text" together as one value
+function splitWhitespace(line) {
+  return (line.match(/"[^"]*"|\S+/g) || []).map((token) =>
+    token.length >= 2 && token.startsWith('"') && token.endsWith('"') ? token.slice(1, -1) : token);
+}
+
+// The data as rows of values with their line numbers; blank and comment lines are left out
+function readRows(text) {
+  const clean = blankComments(text);
+  const separator = detectSeparator(text);
+  const rows = separator === 'whitespace'
+    ? clean.split('\n').map(splitWhitespace)
+    : d3.dsvFormat(separator).parseRows(clean);
+  return {
+    separator,
+    rows: rows
+      .map((cells, i) => ({ cells, line: i + 1 }))
+      .filter(({ cells }) => !cells.every((cell) => cell.trim() === ''))
+  };
 }
 
 // True if the first line looks like a header naming "source" and "target" columns
 export function looksLikeHeader(text) {
-  const cells = firstLine(text.replace(/^\uFEFF/, ''))
-    .split(sniffDelimiter(text))
-    .map((cell) => cell.trim().replace(/^"|"$/g, '').toLowerCase());
+  const { rows } = readRows(text);
+  if (rows.length === 0) return false;
+  const cells = rows[0].cells.map((cell) => cell.trim().toLowerCase());
   return cells.includes('source') && cells.includes('target');
 }
 
@@ -31,30 +83,31 @@ export function looksLikeHeader(text) {
  * Throws DataError with a readable message for bad input.
  */
 export function parseEdges(text, { hasHeader = false, directed = false, weighted = false } = {}) {
-  text = text.replace(/^\uFEFF/, '');
-  const dsv = d3.dsvFormat(sniffDelimiter(text));
+  const { separator, rows: parsedRows } = readRows(text);
+  const rawLines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
   const rows = [];
 
   if (hasHeader) {
-    const parsed = dsv.parse(text);
-    const columns = (parsed.columns || []).map((c) => c.trim().toLowerCase());
+    const [header, ...body] = parsedRows;
+    const columns = header ? header.cells.map((cell) => cell.trim().toLowerCase()) : [];
     if (!columns.includes('source') || !columns.includes('target')) {
       throw new DataError('With "Header Row?" checked, your data needs columns named "source" and "target" (and "weight" for weighted networks).');
     }
-    parsed.forEach((d, i) => {
+    body.forEach(({ cells, line }) => {
       const row = {};
-      parsed.columns.forEach((c, j) => { row[columns[j]] = d[c]; });
-      const blank = Object.values(row).every((v) => v === undefined || String(v).trim() === '');
-      if (blank) return;
-      rows.push({ row, line: i + 2 });
+      columns.forEach((column, j) => { row[column] = cells[j]; });
+      rows.push({ row, line });
     });
   } else {
-    dsv.parseRows(text).forEach((cells, i) => {
-      if (cells.every((c) => c.trim() === '')) return;
+    // Spaces are a common separator online, but then a name can't contain one: say so
+    const hint = separator === 'whitespace'
+      ? ' Spaces separate the columns in your data (no commas, tabs, or semicolons were found), so a name with spaces needs "quotes", or separate the columns with commas or tabs instead.'
+      : '';
+    parsedRows.forEach(({ cells, line }) => {
       if (cells.length < 2 || (weighted && cells.length < 3) || cells.length > 3) {
-        throw new DataError(`Row ${i + 1} has ${cells.length} value${cells.length === 1 ? '' : 's'}.`);
+        throw new DataError(`Row ${line} has ${cells.length} value${cells.length === 1 ? '' : 's'}.${hint}`, { line, text: rawLines[line - 1] });
       }
-      rows.push({ row: { source: cells[0], target: cells[1], weight: cells[2] }, line: i + 1 });
+      rows.push({ row: { source: cells[0], target: cells[1], weight: cells[2] }, line });
     });
   }
 
@@ -63,7 +116,7 @@ export function parseEdges(text, { hasHeader = false, directed = false, weighted
     const source = String(row.source ?? '').trim();
     const target = String(row.target ?? '').trim();
     if (source === '' || target === '') {
-      throw new DataError(`Row ${line} is missing a source or target.`);
+      throw new DataError(`Row ${line} is missing a source or target.`, { line, text: rawLines[line - 1] });
     }
     let weight = 1;
     if (weighted) {

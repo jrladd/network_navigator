@@ -1,7 +1,7 @@
 import { app } from './state.js';
 import { selection } from './selection.js';
 import { appearance } from './appearance.js';
-import { DataError, parseEdges, splitSets, looksLikeHeader } from './data.js';
+import { DataError, parseEdges, splitSets, looksLikeHeader, describeSeparator } from './data.js';
 import {
   computeMetrics, detectCommunities, availableMetrics, formatNodeValue, setActiveSetNames, METRIC_BY_KEY
 } from './metrics.js';
@@ -46,7 +46,19 @@ const textarea = $('#data');
 
 function autoDetectHeader() {
   if (looksLikeHeader(textarea.value)) $('#headerRow').checked = true;
+  updateFormatNote();
 }
+
+// Tell the user how their columns will be read (commas, tabs, semicolons, or spaces)
+function updateFormatNote() {
+  $('#format-note').textContent = describeSeparator(textarea.value);
+}
+let formatNoteTimer = null;
+textarea.addEventListener('input', () => {
+  if (!$('#row-error').hidden) clearError(); // the user is fixing it
+  clearTimeout(formatNoteTimer);
+  formatNoteTimer = setTimeout(updateFormatNote, 250);
+});
 
 function readFile(file) {
   const reader = new FileReader();
@@ -93,6 +105,7 @@ $('#example-select').addEventListener('change', async (e) => {
     const response = await fetch(`examples/${name}.csv`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     textarea.value = await response.text();
+    updateFormatNote();
   } catch (err) {
     console.error(err);
     showError(`Could not load the example (${err.message}). Examples need the page to be served over http(s).`);
@@ -111,9 +124,55 @@ $('#example-select').addEventListener('change', async (e) => {
 
 // ---------------------------------------------------------------- errors
 
-function showError(message) {
+// Show a data problem next to the data box and take the user to it. `line`/`text` (from a DataError)
+// name the row that is wrong: it is quoted in the message and, on devices with a pointer, selected
+// in the text box so it can be fixed right away.
+function showError(message, { line, text } = {}) {
+  const alert = $('#row-error');
   $('#row-error-detail').textContent = message || '';
-  $('#row-error').hidden = false;
+  const excerpt = $('#row-error-line');
+  excerpt.hidden = !(line !== undefined && text !== undefined);
+  if (!excerpt.hidden) excerpt.textContent = `Line ${line}: ${text.length > 120 ? `${text.slice(0, 120)}…` : text}`;
+  alert.hidden = false;
+
+  // Connect the message to the field for screen readers
+  textarea.setAttribute('aria-invalid', 'true');
+  textarea.setAttribute('aria-describedby', 'row-error');
+
+  // Only scrolls if the message isn't already fully visible (smooth unless reduced motion is preferred)
+  alert.scrollIntoView({ block: 'nearest' });
+  const touchDevice = window.matchMedia('(hover: none)').matches;
+  if (line !== undefined && text !== undefined && !touchDevice) {
+    selectLine(line);
+  } else {
+    alert.focus({ preventScroll: true }); // no keyboard pop-up on phones
+  }
+}
+
+// Select one line of the text box and scroll it into view
+function selectLine(line) {
+  const value = textarea.value;
+  let start = 0;
+  for (let i = 1; i < line; i++) {
+    const newline = value.indexOf('\n', start);
+    if (newline === -1) return;
+    start = newline + 1;
+  }
+  let end = value.indexOf('\n', start);
+  if (end === -1) end = value.length;
+  if (value[end - 1] === '\r') end--;
+
+  textarea.focus({ preventScroll: true });
+  textarea.setSelectionRange(start, end);
+  const style = getComputedStyle(textarea);
+  const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+  textarea.scrollTop = Math.max(0, (line - 1) * lineHeight - textarea.clientHeight / 2 + lineHeight);
+}
+
+function clearError() {
+  $('#row-error').hidden = true;
+  textarea.removeAttribute('aria-invalid');
+  textarea.removeAttribute('aria-describedby');
 }
 
 function hideResults() {
@@ -547,6 +606,7 @@ async function switchNetwork(key) {
     console.warn(err.message);
     $('#network-error').textContent = err.message;
     $('#network-error').hidden = false;
+    $('#network-error').scrollIntoView({ block: 'nearest' });
     $(`#net-${previous}`).checked = true; // the previous network is still on screen
   }
 }
@@ -569,7 +629,8 @@ $('#projection-min').addEventListener('change', projectionSettingsChanged);
 
 async function navigate() {
   resetViews();
-  ['#row-error', '#eigen-error', '#network-error'].forEach((id) => { $(id).hidden = true; });
+  clearError();
+  ['#eigen-error', '#network-error'].forEach((id) => { $(id).hidden = true; });
   app.G = null;
   app.source = null;
   app.views.clear();
@@ -594,7 +655,7 @@ async function navigate() {
   } catch (err) {
     if (!(err instanceof DataError)) throw err;
     console.warn(err.message);
-    showError(err.message);
+    showError(err.message, err);
     hideResults();
     return;
   }

@@ -36,7 +36,7 @@
 				<div class="button-row">
 					<label class="btn btn-ghost btn-small file-btn">
 						<span class="icon" aria-hidden="true">📂</span> Upload file
-						<input type="file" id="file-input" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain">
+						<input type="file" id="file-input" accept=".csv,.tsv,.txt,.edges,.edgelist,.el,.dat,text/csv,text/tab-separated-values,text/plain">
 					</label>
 					<label class="visually-hidden" for="example-select">Try an example</label>
 					<select id="example-select">
@@ -45,6 +45,13 @@
 						<option value="lesmis">Les Misérables characters (77 nodes, weighted)</option>
 						<option value="davis">Southern women and social events (bipartite, 18 + 14 nodes)</option>
 					</select>
+				</div>
+				<p class="note" id="format-note" aria-live="polite"></p>
+				<div class="alert alert-error" role="alert" id="row-error" tabindex="-1" hidden>
+					<p><strong>There's a problem with your data.</strong></p>
+					<p id="row-error-detail"></p>
+					<code id="row-error-line" hidden></code>
+					<p>For unweighted networks, your rows can have two or three values: <code>source,target</code> or <code>source,target,weight</code>. For weighted networks, each row must have three values: <code>source,target,weight</code>. Please edit your data and try again.</p>
 				</div>
 			</div>
 
@@ -101,7 +108,7 @@
 			<summary>Instructions</summary>
 			<p><strong>Network Navigator</strong> is designed to give you a first glimpse of your network data, with both metrics and visualizations. For more on who we are and how the site works, visit our <a href="about.html" target="_blank">About</a> and <a href="how-to.html" target="_blank">How-To</a> pages.</p>
 
-			<p>Type, paste, upload, or drag-and-drop your edge list into the box. Use a CSV file (tabs and semicolons work too) or type your edges separated by commas, as below. (If you include a header row, the site will look for source, target, and weight columns.) Or pick an example to try it out.</p>
+			<p>Type, paste, upload, or drag-and-drop your edge list into the box. Use a CSV file or type your edges separated by commas, as below. Tabs and semicolons work too, and so do spaces (many edge lists online use them), but only when your data has no commas, tabs, or semicolons; names can only contain spaces if the columns are separated by something else, or if the names are in "quotes". Lines starting with % or with # and a space are ignored as comments. (If you include a header row, the site will look for source, target, and weight columns.) Or pick an example to try it out.</p>
 
 			<p><code>Person One,Person Two
 Person Two,Person Three
@@ -120,11 +127,6 @@ Person Three,Person One</code></p>
 			<p>If you have comments or suggestions, or if anything's not working the way it should, feel free to reach out to <a href="http://twitter.com/johnrladd" target="_blank">John</a> on Twitter.</p>
 		</details>
 
-		<div class="alert alert-error" role="alert" id="row-error" hidden>
-			<p><strong>There's a problem with your data.</strong></p>
-			<p id="row-error-detail"></p>
-			<p>For unweighted networks, your rows can have two or three values: <code>source,target</code> or <code>source,target,weight</code>. For weighted networks, each row must have three values: <code>source,target,weight</code>. Please edit your data and try again.</p>
-		</div>
 		<div class="alert alert-warn" role="status" id="eigen-error" hidden>
 			<strong>Skipping Eigenvector Centrality:</strong> your network has no closed loops, so eigenvector centrality cannot be calculated. PageRank is a good substitute.
 		</div>
