@@ -1,31 +1,29 @@
 // Force Layout network visualization using Sigma.js + Graphology
 // `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+import { app } from './state.js';
+import { selection } from './selection.js';
+import { appearance } from './appearance.js';
+import { formatNodeValue } from './metrics.js';
+
+const DIMMED_COLOR = '#e3e9ee';
+const LIVE_LAYOUT_SECONDS = 6;
+const LIVE_LAYOUT_MAX_NODES = 1000;
+
 export function drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight, signal) {
+    const container = document.getElementById('force-layout-viz');
+    const listen = (target, type, handler) => target.addEventListener(type, handler, { signal });
 
     // --- Build graphology graph instance ---
     const graph = new graphology.Graph({ type: graphType === 'directed' ? 'directed' : 'undirected' });
-
-    // The color picker holds an rgb() string once jscolor has initialized
-    let nodeColor = document.getElementById('color-picker').value || '#08B3E5';
-    if (/^[0-9a-f]{6}$/i.test(nodeColor)) nodeColor = '#' + nodeColor;
+    const nodesById = new Map(nodeList.map(node => [node.id, node]));
 
     nodeList.forEach(node => {
         graph.addNode(node.id, {
             x: 0,
             y: 0,
-            size: (node.radius_degree || 15) / 5,
-            color: nodeColor,
-            label: node.id,
-            // Store centrality radii for later customization
-            radius_degree: node.radius_degree,
-            radius_betweenness: node.radius_betweenness,
-            radius_eigenvector: node.radius_eigenvector,
-            radius_clustering: node.radius_clustering,
-            // Store metric values for color scaling
-            degree: node.degree,
-            betweenness: node.betweenness,
-            eigenvector: node.eigenvector,
-            clustering: node.clustering
+            size: appearance.radius(node) / 5,
+            color: appearance.color(node),
+            label: node.id
         });
     });
 
@@ -39,10 +37,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         });
     });
 
-    const listen = (id, type, handler) => document.getElementById(id).addEventListener(type, handler, { signal });
-
     // --- Force-directed layout (ForceAtlas2 from graphology-library) ---
-    const { layout, layoutForceAtlas2 } = graphologyLibrary;
+    const { layout, layoutForceAtlas2, FA2Layout } = graphologyLibrary;
     layout.circular.assign(graph);
     layoutForceAtlas2.assign(graph, {
         iterations: 400,
@@ -50,16 +46,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     });
 
     // --- Create Sigma renderer ---
-    const container = document.getElementById('force-layout-viz');
-
-    // Sigma can't render into a collapsed (hidden) container; state changes made meanwhile
-    // are drawn when the layout is shown again (see drawGraphs in main.js)
-    const safeRefresh = () => { if (container.offsetWidth > 0) renderer.refresh(); };
-
-    // State for highlighting
-    let highlightedNode = null;
-    let highlightedNeighbors = new Set();
-    let filteredNodeIds = null;
+    let focusNeighbors = new Set();
 
     const renderer = new Sigma(graph, container, {
         renderLabels: document.getElementById('node-label').checked,
@@ -67,18 +54,23 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         labelSize: 14,
         labelColor: { color: '#333' },
         defaultEdgeType: graphType === 'directed' ? 'arrow' : 'line',
+        allowInvalidContainer: true,
         nodeReducer: (node, data) => {
             const res = { ...data };
-            if (highlightedNode) {
-                if (node !== highlightedNode && !highlightedNeighbors.has(node)) {
-                    res.color = '#f0f0f0';
+            const focus = selection.selected;
+            if (focus) {
+                if (node === focus) {
+                    res.highlighted = true;
+                    res.forceLabel = true;
+                } else if (!focusNeighbors.has(node)) {
+                    res.color = DIMMED_COLOR;
                     res.label = '';
                 }
             }
-            if (filteredNodeIds && !filteredNodeIds.has(node)) {
+            if (!selection.isVisible(node)) {
                 res.hidden = true;
             }
-            if (window._edgeAttrFilteredNodes && !window._edgeAttrFilteredNodes.has(node)) {
+            if (!selection.passesAttrFilter(node)) {
                 res.color = '#f0f0f0';
                 res.label = '';
             }
@@ -86,57 +78,91 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         },
         edgeReducer: (edge, data) => {
             const res = { ...data };
-            if (highlightedNode) {
-                const source = graph.source(edge);
-                const target = graph.target(edge);
-                if (source !== highlightedNode && target !== highlightedNode) {
-                    res.hidden = true;
-                }
+            const source = graph.source(edge);
+            const target = graph.target(edge);
+            const focus = selection.selected;
+            if (focus && source !== focus && target !== focus) {
+                res.hidden = true;
             }
-            if (filteredNodeIds) {
-                const source = graph.source(edge);
-                const target = graph.target(edge);
-                if (!filteredNodeIds.has(source) || !filteredNodeIds.has(target)) {
-                    res.hidden = true;
-                }
+            if (!selection.isVisible(source) || !selection.isVisible(target)) {
+                res.hidden = true;
             }
-            if (window._edgeAttrFilteredNodes) {
-                const source = graph.source(edge);
-                const target = graph.target(edge);
-                if (!window._edgeAttrFilteredNodes.has(source) || !window._edgeAttrFilteredNodes.has(target)) {
-                    res.hidden = true;
-                }
+            if (!selection.passesAttrFilter(source) || !selection.passesAttrFilter(target)) {
+                res.hidden = true;
             }
             return res;
         }
     });
 
+    // Sigma can't render into a collapsed (hidden) container; state changes made meanwhile
+    // are drawn when the layout is shown again (see ensureDrawn in main.js)
+    const safeRefresh = () => { if (container.offsetWidth > 0) renderer.refresh(); };
+
     // Fit the graph to the viewport on initial load
-    // Use a small delay to ensure the container has proper dimensions
     setTimeout(() => {
         // The network may have been replaced (renderer killed) within the delay
         if (!signal.aborted && container.offsetWidth > 0) renderer.getCamera().animatedReset({ duration: 0 });
     }, 100);
 
-    // --- Click to highlight neighbors ---
+    // --- Selection: click a node to highlight it and its neighbors ---
+    // A drag ends with a click on the same node; don't treat that as a selection
+    let movedWhileDragging = false;
     renderer.on('clickNode', ({ node }) => {
-        highlightedNode = node;
-        highlightedNeighbors = new Set(graph.neighbors(node));
+        if (movedWhileDragging) {
+            movedWhileDragging = false;
+            return;
+        }
+        selection.select(node === selection.selected ? null : node);
+    });
+    renderer.on('clickStage', () => selection.clear());
+
+    listen(selection, 'select', () => {
+        focusNeighbors = selection.selected && graph.hasNode(selection.selected)
+            ? new Set(graph.neighbors(selection.selected))
+            : new Set();
+        safeRefresh();
+    });
+    listen(selection, 'filter', safeRefresh);
+    listen(selection, 'attrfilter', safeRefresh);
+
+    // --- Shared node appearance (size and color) ---
+    listen(appearance, 'change', () => {
+        graph.forEachNode((id) => {
+            const node = nodesById.get(id);
+            graph.setNodeAttribute(id, 'size', appearance.radius(node) / 5);
+            graph.setNodeAttribute(id, 'color', appearance.color(node));
+        });
         safeRefresh();
     });
 
-    renderer.on('clickStage', () => {
-        highlightedNode = null;
-        highlightedNeighbors.clear();
-        safeRefresh();
-    });
+    // --- Hover tooltip (pointer devices only; touch users tap for the node card) ---
+    if (window.matchMedia('(hover: hover)').matches) {
+        const tip = document.createElement('div');
+        tip.className = 'float-tip';
+        tip.hidden = true;
+        document.body.append(tip);
+        signal.addEventListener('abort', () => tip.remove());
+
+        renderer.on('enterNode', ({ node }) => {
+            const data = nodesById.get(node);
+            tip.textContent = `${node} · ${formatNodeValue('degree', data.degree)} connections`;
+            tip.hidden = false;
+        });
+        renderer.on('leaveNode', () => { tip.hidden = true; });
+        listen(container, 'mousemove', (e) => {
+            tip.style.left = `${e.clientX + 14}px`;
+            tip.style.top = `${e.clientY + 14}px`;
+        });
+    }
 
     // --- Drag nodes ---
     let draggedNode = null;
     let isDragging = false;
 
     renderer.on('downNode', (e) => {
+        stopLiveLayout();
         isDragging = true;
+        movedWhileDragging = false;
         draggedNode = e.node;
         renderer.getCamera().disable();
     });
@@ -146,6 +172,7 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         const pos = renderer.viewportToGraph(e);
         graph.setNodeAttribute(draggedNode, 'x', pos.x);
         graph.setNodeAttribute(draggedNode, 'y', pos.y);
+        movedWhileDragging = true;
     });
 
     renderer.getMouseCaptor().on('mouseup', () => {
@@ -156,97 +183,85 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         }
     });
 
-    // --- Table search filtering ---
-    const table = Tabulator.findTable('#metrics-table')[0];
-    if (table) {
-        const onDataFiltered = function(filters, rows) {
-            const ids = rows.map(row => row.getData().nodeId);
-            const allRows = table.getData();
-            if (ids.length === allRows.length) {
-                filteredNodeIds = null;
-            } else {
-                filteredNodeIds = new Set(ids);
-            }
-            safeRefresh();
-        };
-        table.on('dataFiltered', onDataFiltered);
-        signal.addEventListener('abort', () => table.off('dataFiltered', onDataFiltered));
-    }
+    // --- Layout controls ---
+    const relayoutButton = document.getElementById('relayout');
+    const liveButton = document.getElementById('live-layout');
+    let liveLayout = null;
+    let liveTimer = null;
 
-    // --- Customize: Size by centrality ---
-    listen('centrality', 'change', function() {
-        const centrality = this.value;
-        graph.forEachNode((node, attrs) => {
-            const radiusKey = `radius_${centrality}`;
-            if (attrs[radiusKey] !== undefined) {
-                graph.setNodeAttribute(node, 'size', attrs[radiusKey] / 5);
-            }
+    function stopLiveLayout() {
+        if (liveTimer) clearTimeout(liveTimer);
+        liveTimer = null;
+        if (liveLayout) {
+            liveLayout.kill();
+            liveLayout = null;
+        }
+        liveButton.setAttribute('aria-pressed', 'false');
+        liveButton.textContent = 'Live layout';
+    }
+    signal.addEventListener('abort', stopLiveLayout);
+
+    listen(relayoutButton, 'click', () => {
+        stopLiveLayout();
+        layout.random.assign(graph, { scale: 100 });
+        layoutForceAtlas2.assign(graph, {
+            iterations: 400,
+            settings: layoutForceAtlas2.inferSettings(graph)
         });
         safeRefresh();
+        renderer.getCamera().animatedReset({ duration: 300 });
     });
 
-    // --- Customize: Color scale ---
-    listen('color-scale', 'change', function() {
-        const centrality = this.value;
-        const pickerVal = document.getElementById('color-picker').value;
-        if (centrality === 'none') {
-            graph.forEachNode(node => {
-                graph.setNodeAttribute(node, 'color', pickerVal);
-            });
-        } else {
-            const origColor = pickerVal.replace(/[rgb()]/gm, '').split(',');
-            const newColor = origColor.map(c => Math.round((255 - c) * 0.9 + parseInt(c)));
-            const newRGB = `rgb(${newColor.join(',')})`;
-            let maxVal = 0;
-            graph.forEachNode((node, attrs) => {
-                const val = Number(attrs[centrality]);
-                if (val > maxVal) maxVal = val;
-            });
-            const colorScale = d3.scaleLinear().domain([0, maxVal]).range([newRGB, pickerVal]);
-            graph.forEachNode((node, attrs) => {
-                graph.setNodeAttribute(node, 'color', colorScale(Number(attrs[centrality])));
-            });
+    // Animate the layout in a worker for a few seconds, so you can watch the network settle
+    liveButton.disabled = graph.order > LIVE_LAYOUT_MAX_NODES;
+    liveButton.title = liveButton.disabled ? 'Live layout is only available for networks up to 1,000 nodes.' : '';
+    listen(liveButton, 'click', () => {
+        if (liveLayout) {
+            stopLiveLayout();
+            return;
         }
-        safeRefresh();
+        liveLayout = new FA2Layout(graph, { settings: layoutForceAtlas2.inferSettings(graph) });
+        liveLayout.start();
+        liveButton.setAttribute('aria-pressed', 'true');
+        liveButton.textContent = 'Stop live layout';
+        liveTimer = setTimeout(stopLiveLayout, LIVE_LAYOUT_SECONDS * 1000);
     });
 
     // --- Customize: Edge weights ---
-    listen('edge-weight', 'change', function() {
+    listen(document.getElementById('edge-weight'), 'change', function() {
         const showWeights = this.checked;
         graph.forEachEdge((edge, attrs) => {
             graph.setEdgeAttribute(edge, 'size', showWeights ? (attrs.originalWeight / 4 || 1) : 1);
         });
         safeRefresh();
     });
-
-    // --- Customize: Node labels ---
-    listen('node-label', 'change', function() {
-        renderer.setSetting('renderLabels', this.checked);
-    });
-
     // Make sure edge weight checkbox is checked if graph is weighted
     if (graphWeight === 'weighted') { document.getElementById('edge-weight').checked = true; }
 
+    // --- Customize: Node labels ---
+    listen(document.getElementById('node-label'), 'change', function() {
+        renderer.setSetting('renderLabels', this.checked);
+    });
+
     // --- Customize: Directed arrows ---
-    listen('directed-arrows', 'change', function() {
+    listen(document.getElementById('directed-arrows'), 'change', function() {
         const showArrows = this.checked;
         graph.forEachEdge(edge => {
             graph.setEdgeAttribute(edge, 'type', showArrows ? 'arrow' : 'line');
         });
         safeRefresh();
     });
-
     // Make sure arrow checkbox is checked if graph is directed
     if (graphType === 'directed') { document.getElementById('directed-arrows').checked = true; }
 
     // --- Restore Zoom ---
-    listen('restore-zoom', 'click', function() {
-        if (document.getElementById('force-layout-viz').style.visibility !== 'hidden') {
+    listen(document.getElementById('restore-zoom'), 'click', function() {
+        if (!container.hidden && container.offsetWidth > 0) {
             renderer.getCamera().animatedReset();
         }
     });
 
-    // --- Expose for cross-module access (updateColor, nodeSizeHist) ---
-    window._sigmaInstance = renderer;
-    window._graphologyInstance = graph;
+    // --- Expose for cross-module access (downloads, resize after layout changes) ---
+    app.sigma = renderer;
+    app.graph = graph;
 }

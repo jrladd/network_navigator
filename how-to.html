@@ -6,22 +6,24 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Network Navigator How-To</title>
-	<link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
-	<link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="main.css">
 	<link rel="icon"
 		href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
 </head>
 
-<body class="helvetica bg-near-white">
-	<header class="w-100 pa3 gradient">
-		<nav class="w-100 f4 fw6 tracked i white bb">
-			<h2 class="retro-font">
-				<a class="link white dim" href="/">NETWORK NAVIGATOR</a> <span class="f7 fs-normal">v2.0</span>
-			</h2>
-		</nav>
+<body>
+	<header class="site-header">
+		<div class="inner">
+			<a class="brand" href="./">NETWORK NAVIGATOR <span class="version">v3.0</span></a>
+			<nav class="site-nav" aria-label="Site">
+				<a href="./">Navigator</a>
+				<a href="about.html">About</a>
+				<a href="how-to.html" aria-current="page">How-To</a>
+				<a href="resources.html">Resources</a>
+			</nav>
+		</div>
 	</header>
-	<main class="center pv3 measure-wide lh-copy">
+	<main class="prose">
 		<h1>How-To</h1>
 		<p>This page will walk you through the basics of <em>Network Navigator</em>, the browser tool designed for network metrics and visualization.</p>
 
@@ -30,14 +32,14 @@
 		<img src="img/upload_data.gif" />
 		<p>To load data into <em>Network Navigator</em>, type or drag-and-drop your edge list into the box. Use a CSV file or type your edges separated by commas, as below. (If you include a header row, the site will look for source, target, and weight columns, and it will keep track of any other columns you enter.)</p>
 
-		<p class="measure center">
+		<p>
 			<code>Person One,Person Two
 Person Two,Person Three
 Person Three,Person One</code></p>
 
 		<p>Your network can be either weighted or unweighted, and either directed or undirected. If your network is weighted, you'll need to add a third column to every line with the weight value:</p>
 
-		<p class="measure center"><code>Person One,Person Two,5</code></p>
+		<p><code>Person One,Person Two,5</code></p>
 
 		<p>This site will work best with networks of up to 500 nodes and up to 10,000 edges, but networks of 250-500 edges will give the best visualization results. Networks larger than 500 nodes and ~10,000 edges may result in some slowdown of site functions.</p>
 
@@ -82,7 +84,7 @@ Person Three,Person One</code></p>
 		<img src="img/csv_export.gif" />
 		<p>You can also download the full node table as a CSV. To do this, scroll down to the node table and click "Download as CSV." You can also copy the data to the clipboard.</p>
 
-		<p><em>Last Updated: July 2021</em></p>
+		<p class="updated"><em>Last Updated: July 2021</em></p>
 	</main>
 </body>
 
