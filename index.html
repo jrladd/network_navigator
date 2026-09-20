@@ -43,11 +43,32 @@
 						<option value="">Try an example…</option>
 						<option value="karate">Zachary's karate club (34 nodes)</option>
 						<option value="lesmis">Les Misérables characters (77 nodes, weighted)</option>
+						<option value="davis">Southern women and social events (bipartite, 18 + 14 nodes)</option>
 					</select>
 				</div>
 			</div>
 
 			<div class="card stack">
+				<fieldset class="stack">
+					<legend>Network type</legend>
+					<div class="segmented">
+						<input type="radio" value="unipartite" name="networkMode" id="mode-unipartite" checked>
+						<label for="mode-unipartite">One-mode</label>
+						<input type="radio" value="bipartite" name="networkMode" id="mode-bipartite">
+						<label for="mode-bipartite">Bipartite</label>
+					</div>
+				</fieldset>
+				<div class="stack" id="bipartite-options" hidden>
+					<p class="note">Two kinds of nodes, with connections only between the kinds (like people and the events they attended). The first column is set A and the second column is set B, so no name can appear in both. Bipartite networks are treated as undirected.</p>
+					<div class="field">
+						<label for="set-a-name">First column is…</label>
+						<input type="text" id="set-a-name" placeholder="Set A (e.g. Authors)" maxlength="40" autocomplete="off">
+					</div>
+					<div class="field">
+						<label for="set-b-name">Second column is…</label>
+						<input type="text" id="set-b-name" placeholder="Set B (e.g. Books)" maxlength="40" autocomplete="off">
+					</div>
+				</div>
 				<fieldset class="stack">
 					<legend>Direction</legend>
 					<div class="segmented">
@@ -92,7 +113,7 @@ Person Three,Person One</code></p>
 
 			<p>This site will work best with networks of up to 500 nodes and up to 10,000 edges, but networks of 250-500 edges will give the best visualization results. Networks larger than 500 nodes and ~10,000 edges may result in some slowdown of site functions.</p>
 
-			<p><em>n.b.: Network Navigator is currently only set up for unimodal (or unipartite) networks. While it will give results for any edge list, be advised that the metrics for bipartite networks aren't reliable.</em></p>
+			<p><em>n.b.: Choose <strong>Bipartite</strong> under "Network type" if your network has two kinds of nodes (for example, authors and the books they wrote), with your first column holding one kind and your second column the other. Network Navigator then uses metrics suited to two-mode networks, and lets you project the network onto either set. For an ordinary network of one kind of node, leave it on "One-mode": its metrics aren't reliable for bipartite data.</em></p>
 
 			<p><strong>This website does not collect or store <em>any</em> data. Your data remains on your computer alone and is not sent to an external server. No one can view your data or results but you.</strong></p>
 
@@ -129,8 +150,39 @@ Person Three,Person One</code></p>
 						<button type="button" data-download="metrics">Global metrics (TXT)</button>
 						<button type="button" data-download="csv">Node table (CSV)</button>
 						<button type="button" data-download="gexf">Network with metrics (GEXF, for Gephi)</button>
+						<button type="button" data-download="projection" id="download-projection" hidden>Projected network (CSV)</button>
 					</div>
 				</details>
+			</div>
+
+			<div class="card stack" id="network-bar" hidden>
+				<div class="cluster">
+					<fieldset class="segmented" id="network-toggle">
+						<legend class="visually-hidden">Network to analyze</legend>
+						<input type="radio" name="networkView" id="net-main" value="main" checked>
+						<label for="net-main">Bipartite network</label>
+						<input type="radio" name="networkView" id="net-A" value="A">
+						<label for="net-A" id="net-A-label">Projection A</label>
+						<input type="radio" name="networkView" id="net-B" value="B">
+						<label for="net-B" id="net-B-label">Projection B</label>
+					</fieldset>
+				</div>
+				<div class="cluster" id="projection-options" hidden>
+					<div class="field-row">
+						<label for="projection-weighting">Link weight</label>
+						<select id="projection-weighting">
+							<option value="count">Shared neighbors</option>
+							<option value="jaccard">Jaccard (share of all neighbors)</option>
+							<option value="newman">Newman (rarer shared neighbors count more)</option>
+						</select>
+					</div>
+					<div class="field-row">
+						<label for="projection-min">Minimum shared neighbors</label>
+						<input type="number" id="projection-min" min="1" max="1000" step="1" value="1">
+					</div>
+				</div>
+				<p class="note" id="network-note" aria-live="polite"></p>
+				<div class="alert alert-error" role="alert" id="network-error" hidden></div>
 			</div>
 
 			<div class="panes">
@@ -138,7 +190,7 @@ Person Three,Person One</code></p>
 					<h2 class="window-title" id="metrics-title">Metrics</h2>
 					<div class="window-body">
 						<dl class="stats" id="stats"></dl>
-						<div class="alert alert-info" id="directed-note" hidden>Clustering coefficients cannot be calculated for directed graphs.</div>
+						<div class="alert alert-info" id="metrics-note" hidden></div>
 						<div class="field-row">
 							<label for="resolution">Community resolution</label>
 							<input type="number" id="resolution" min="0.1" max="5" step="0.1" value="1">
@@ -233,6 +285,9 @@ Person Three,Person One</code></p>
 									<h3>Force layout</h3>
 									<label class="check" for="node-label"><input id="node-label" type="checkbox" checked> Show node labels</label>
 									<label class="check" for="edge-weight"><input id="edge-weight" type="checkbox"> Scale edge thickness by weight</label>
+									<div id="twocolumn-field" hidden>
+										<label class="check" for="two-column"><input id="two-column" type="checkbox"> Two-column layout (one set per side)</label>
+									</div>
 									<div id="arrows-field">
 										<label class="check" for="directed-arrows"><input id="directed-arrows" type="checkbox"> Show arrows</label>
 									</div>

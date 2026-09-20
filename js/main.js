@@ -1,10 +1,11 @@
 import { app } from './state.js';
 import { selection } from './selection.js';
 import { appearance } from './appearance.js';
-import { DataError, parseEdges, looksLikeHeader } from './data.js';
+import { DataError, parseEdges, splitSets, looksLikeHeader } from './data.js';
 import {
-  computeMetrics, detectCommunities, availableMetrics, formatNodeValue, METRIC_BY_KEY
+  computeMetrics, detectCommunities, availableMetrics, formatNodeValue, setActiveSetNames, METRIC_BY_KEY
 } from './metrics.js';
+import { computeBipartiteMetrics, projectNetwork, PROJECTION_WEIGHTINGS } from './bipartite.js';
 import { populateControls, renderStats, renderGlossary, initControls } from './controls.js';
 import { initNodeCard, renderNodeCard } from './nodeCard.js';
 import { initDownloads } from './download.js';
@@ -18,7 +19,7 @@ const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const LARGE_NETWORK = 500; // above this many nodes, wait for "Click to load"
-const RANKED_METRICS = new Set(['betweenness', 'eigenvector', 'pagerank', 'clustering']);
+const RANKED_METRICS = new Set(['betweenness', 'closeness', 'eigenvector', 'pagerank', 'clustering', 'bipClustering']);
 
 const VIZ = {
   force: {
@@ -69,10 +70,20 @@ $('#file-input').addEventListener('change', (e) => {
   e.target.value = ''; // allow choosing the same file again
 });
 
+// Network type: bipartite networks are undirected and have two named sets
+function applyModeControls() {
+  const bipartite = $('#mode-bipartite').checked;
+  $('#bipartite-options').hidden = !bipartite;
+  $('#directed').disabled = bipartite;
+  if (bipartite) $('#undirected').checked = true;
+}
+$$('input[name="networkMode"]').forEach((radio) => radio.addEventListener('change', applyModeControls));
+
 // Example networks: fill in the data and the matching options, then navigate
 const EXAMPLES = {
   karate: { weighted: false },
-  lesmis: { weighted: true }
+  lesmis: { weighted: true },
+  davis: { weighted: false, bipartite: true, names: ['Women', 'Events'] }
 };
 $('#example-select').addEventListener('change', async (e) => {
   const name = e.target.value;
@@ -87,8 +98,13 @@ $('#example-select').addEventListener('change', async (e) => {
     showError(`Could not load the example (${err.message}). Examples need the page to be served over http(s).`);
     return;
   }
+  const example = EXAMPLES[name];
+  (example.bipartite ? $('#mode-bipartite') : $('#mode-unipartite')).checked = true;
+  $('#set-a-name').value = example.names ? example.names[0] : '';
+  $('#set-b-name').value = example.names ? example.names[1] : '';
+  applyModeControls();
   $('#undirected').checked = true;
-  (EXAMPLES[name].weighted ? $('#weighted') : $('#unweighted')).checked = true;
+  (example.weighted ? $('#weighted') : $('#unweighted')).checked = true;
   $('#headerRow').checked = true;
   $('#calculate').click();
 });
@@ -353,7 +369,7 @@ $('#resolution').addEventListener('change', () => {
   if (!app.G) return;
   const resolution = Math.min(5, Math.max(0.1, parseFloat($('#resolution').value) || 1));
   $('#resolution').value = resolution;
-  const communities = detectCommunities(app.G, { weighted: app.graphWeight === 'weighted', resolution });
+  const communities = detectCommunities(app.G, { weighted: app.weighted, resolution });
   if (!communities) return;
 
   const { result } = app;
@@ -362,6 +378,9 @@ $('#resolution').addEventListener('change', () => {
   result.global.modularity = communities.modularity;
   result.communitySizes = communities.sizes;
   app.nodeList.forEach((node) => { node.community = communities.assignment[node.id]; });
+
+  // Other cached network views were computed with the old resolution
+  [...app.views.keys()].filter((key) => key !== app.networkView).forEach((key) => app.views.delete(key));
 
   table.updateData(app.nodeList.map((node) => ({ nodeId: node.id, community: node.community })));
   renderStats(result);
@@ -372,8 +391,10 @@ $('#resolution').addEventListener('change', () => {
 
 // -------------------------------------------------------------- navigate
 
-async function navigate() {
-  // Tear down the previous network's visualizations and their listeners
+const resolutionValue = () => Math.min(5, Math.max(0.1, parseFloat($('#resolution').value) || 1));
+
+// Tear down the visualizations and listeners of whatever network is on screen
+function resetViews() {
   app.controller.abort();
   app.controller = new AbortController();
   if (app.sigma) app.sigma.kill();
@@ -388,70 +409,104 @@ async function navigate() {
   Object.values(VIZ).forEach((viz) => { $(viz.container).replaceChildren(); });
   $('#edge-filter').replaceChildren();
   edgeFilterBuilt = false;
-  ['#row-error', '#eigen-error', '#viz-warning'].forEach((id) => { $(id).hidden = true; });
+  $('#viz-warning').hidden = true;
   try { table.clearHeaderFilter(); } catch (err) { /* table not ready yet */ }
-  app.G = null;
-  app.vizBlocked = false;
+}
 
-  // Read the user's options and data
-  app.graphType = $("input[name='graphType']:checked").value;
-  app.graphWeight = $("input[name='graphWeight']:checked").value;
-  const weighted = app.graphWeight === 'weighted';
+// Projection settings from the network bar
+function projectionOptions() {
+  const minShared = Math.max(1, Math.round(Number($('#projection-min').value)) || 1);
+  return { weighting: $('#projection-weighting').value, minShared };
+}
 
-  let edges;
-  try {
-    edges = parseEdges(textarea.value, {
-      hasHeader: $('#headerRow').checked,
-      directed: app.graphType === 'directed',
-      weighted
-    });
-  } catch (err) {
-    if (!(err instanceof DataError)) throw err;
-    console.warn(err.message);
-    showError(err.message);
-    hideResults();
-    return;
+// Everything needed to show one network view: 'main' is the network as loaded (one-mode or bipartite),
+// 'A' / 'B' are one-mode projections of a bipartite network. Throws DataError if it can't be built.
+function buildView(key) {
+  const { source } = app;
+  const resolution = resolutionValue();
+
+  if (key === 'main') {
+    const bipartite = Boolean(source.sets);
+    const result = bipartite
+      ? computeBipartiteMetrics(source.G, source.sets, { weighted: source.weighted, resolution, setNames: source.setNames })
+      : computeMetrics(source.G, { weighted: source.weighted, resolution });
+    return { key, G: source.G, edges: source.edges, result, weighted: source.weighted, directed: source.directed };
   }
 
-  // Build the graphology graph and calculate metrics
-  const GraphClass = app.graphType === 'undirected' ? graphology.UndirectedGraph : graphology.DirectedGraph;
-  const G = new GraphClass();
-  edges.forEach((edge) => {
-    G.mergeEdge(edge.source, edge.target, weighted ? { weight: edge.weight } : undefined);
-  });
-  const resolution = Math.min(5, Math.max(0.1, parseFloat($('#resolution').value) || 1));
-  const result = computeMetrics(G, { weighted, resolution });
-  app.G = G;
+  const options = projectionOptions();
+  const P = projectNetwork(source.G, source.sets, key, options);
+  const edges = [];
+  P.forEachEdge((edge, attrs, s, t) => edges.push({ source: s, target: t, weight: attrs.weight, shared: attrs.shared }));
+  const name = source.setNames[key === 'A' ? 1 : 2];
+  const otherName = source.setNames[key === 'A' ? 2 : 1];
+  if (edges.length === 0) {
+    throw new DataError(`No two ${name} have at least ${options.minShared} of the ${otherName} in common, so this projection has no links. Try lowering the minimum.`);
+  }
+  const result = computeMetrics(P, { weighted: true, resolution });
+  return { key, G: P, edges, result, weighted: true, directed: false, options };
+}
+
+function describeView(view) {
+  const { source } = app;
+  const [nameA, nameB] = [source.setNames[1], source.setNames[2]];
+  if (view.key === 'main') {
+    return `Bipartite network: ${source.sets.A.size} ${nameA} and ${source.sets.B.size} ${nameB}, connected by ${view.edges.length} links.`;
+  }
+  const [name, otherName] = view.key === 'A' ? [nameA, nameB] : [nameB, nameA];
+  const { minShared, weighting } = view.options;
+  return `Projection onto ${name}: two of them are linked when they have at least ${minShared} of the ${otherName} in common. ` +
+    `Link weight is ${PROJECTION_WEIGHTINGS[weighting].toLowerCase()}.`;
+}
+
+// Put a built view on screen: node/edge objects, controls, table, histogram, visualizations
+async function presentView(view) {
+  const { result } = view;
+  app.G = view.G;
   app.result = result;
-  if (!result.node.eigenvector) $('#eigen-error').hidden = false;
+  app.weighted = view.weighted;
+  app.graphType = view.directed ? 'directed' : 'undirected';
+  app.graphWeight = view.weighted ? 'weighted' : 'unweighted';
+  app.sets = result.bipartite ? result.sets : null;
+  app.networkView = view.key;
+  app.vizBlocked = false;
+  $('#eigen-error').hidden = Boolean(result.node.eigenvector);
 
   // Node and edge objects for the D3 views
   const metrics = availableMetrics(result);
   app.nodeList = [];
-  G.forEachNode((id) => {
+  view.G.forEachNode((id) => {
     const node = { id };
     metrics.forEach((metric) => { node[metric.key] = result.node[metric.key][id]; });
     app.nodeList.push(node);
   });
 
   const idToNode = Object.fromEntries(app.nodeList.map((node) => [node.id, node]));
-  const edgeWidth = d3.scaleLinear().domain(d3.extent(edges, (d) => d.weight)).range([3, 20]);
-  app.edgeList = edges.map((edge) => ({
+  const edgeWidth = d3.scaleLinear().domain(d3.extent(view.edges, (d) => d.weight)).range([3, 20]);
+  app.edgeList = view.edges.map((edge) => ({
     ...edge,
     source: idToNode[edge.source],
     target: idToNode[edge.target],
     scaled_weight: edgeWidth(edge.weight)
   }));
-  app.colorValues = [...new Set(edges.map((edge) => edge.weight)), 0].sort((a, b) => a - b);
+  app.colorValues = [...new Set(view.edges.map((edge) => edge.weight)), 0].sort((a, b) => a - b);
 
   // Controls, readouts, table, histogram
-  appearance.init(app.nodeList, metrics.map((m) => m.key), result.communitySizes);
+  appearance.init(app.nodeList, metrics.map((m) => m.key), result.communitySizes, { colorBy: result.bipartite ? 'set' : 'none' });
   populateControls(result);
   renderStats(result);
-  renderGlossary();
+  renderGlossary(result);
   renderHistControls(result);
   appearance.renderLegend($('#legend'));
   $('#arrows-field').hidden = app.graphType !== 'directed';
+
+  // Network bar: which network, and what a projection means
+  const isBipartiteSource = Boolean(app.source.sets);
+  $('#network-bar').hidden = !isBipartiteSource;
+  $('#projection-options').hidden = view.key === 'main';
+  $('#download-projection').hidden = view.key === 'main';
+  $(`#net-${view.key}`).checked = true;
+  if (isBipartiteSource) $('#network-note').textContent = describeView(view);
+  $('#network-error').hidden = true;
 
   await tableReady;
   table.setColumns(buildColumns(result));
@@ -461,15 +516,113 @@ async function navigate() {
   // Show the results; large networks wait for "Click to load"
   $('#results').hidden = false;
   $('#instructions').open = false;
-  app.vizType = 'force';
-  $('#viz-force').checked = true;
+  $(`#viz-${app.vizType}`).checked = true;
   applyMobileView();
   selectHist();
-  if (G.order > LARGE_NETWORK) {
+  if (view.G.order > LARGE_NETWORK) {
     app.vizBlocked = true;
     $('#viz-warning').hidden = false;
   }
   afterLayoutChange();
+}
+
+// Show one of the network views (building it the first time)
+async function showNetwork(key) {
+  let view = app.views.get(key);
+  if (!view) {
+    view = buildView(key);
+    app.views.set(key, view);
+  }
+  resetViews();
+  await presentView(view);
+}
+
+// Switching between the bipartite network and its projections
+async function switchNetwork(key) {
+  const previous = app.networkView;
+  try {
+    await showNetwork(key);
+  } catch (err) {
+    if (!(err instanceof DataError)) throw err;
+    console.warn(err.message);
+    $('#network-error').textContent = err.message;
+    $('#network-error').hidden = false;
+    $(`#net-${previous}`).checked = true; // the previous network is still on screen
+  }
+}
+
+$$('input[name="networkView"]').forEach((radio) => radio.addEventListener('change', () => {
+  switchNetwork(radio.value).catch((err) => {
+    console.error(err);
+    showError(`Something went wrong while processing your data (${err.message}).`);
+  });
+}));
+
+// Changing the projection settings rebuilds the projections
+function projectionSettingsChanged() {
+  app.views.delete('A');
+  app.views.delete('B');
+  if (app.networkView !== 'main') switchNetwork(app.networkView);
+}
+$('#projection-weighting').addEventListener('change', projectionSettingsChanged);
+$('#projection-min').addEventListener('change', projectionSettingsChanged);
+
+async function navigate() {
+  resetViews();
+  ['#row-error', '#eigen-error', '#network-error'].forEach((id) => { $(id).hidden = true; });
+  app.G = null;
+  app.source = null;
+  app.views.clear();
+  app.networkView = 'main';
+  app.vizType = 'force';
+
+  // Read the user's options and data
+  const bipartite = $('#mode-bipartite').checked;
+  const graphType = bipartite ? 'undirected' : $("input[name='graphType']:checked").value;
+  const weighted = $("input[name='graphWeight']:checked").value === 'weighted';
+
+  let edges;
+  let sets = null;
+  try {
+    // Bipartite edges keep their column order (first column = set A), so treat them as directed for merging
+    edges = parseEdges(textarea.value, {
+      hasHeader: $('#headerRow').checked,
+      directed: graphType === 'directed' || bipartite,
+      weighted
+    });
+    if (bipartite) sets = splitSets(edges);
+  } catch (err) {
+    if (!(err instanceof DataError)) throw err;
+    console.warn(err.message);
+    showError(err.message);
+    hideResults();
+    return;
+  }
+
+  // Build the graphology graph
+  const GraphClass = graphType === 'undirected' ? graphology.UndirectedGraph : graphology.DirectedGraph;
+  const G = new GraphClass();
+  edges.forEach((edge) => {
+    G.mergeEdge(edge.source, edge.target, weighted ? { weight: edge.weight } : undefined);
+  });
+
+  // Names of the two sets (bipartite only); identical names would be confusing, so tell them apart
+  const nameA = $('#set-a-name').value.trim() || 'Set A';
+  let nameB = $('#set-b-name').value.trim() || 'Set B';
+  if (nameB === nameA) nameB = `${nameB} (2)`;
+  const setNames = { 1: nameA, 2: nameB };
+  setActiveSetNames(setNames);
+
+  app.mode = bipartite ? 'bipartite' : 'unipartite';
+  app.source = { G, edges, sets, weighted, directed: graphType === 'directed', setNames };
+  if (bipartite) {
+    $('#net-main').checked = true;
+    $('#net-A-label').textContent = `Projection: ${nameA}`;
+    $('#net-B-label').textContent = `Projection: ${nameB}`;
+    $('#projection-weighting').value = 'count';
+    $('#projection-min').value = 1;
+  }
+  await showNetwork('main');
 }
 
 $('#calculate').addEventListener('click', () => {

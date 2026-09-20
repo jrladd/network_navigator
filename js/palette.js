@@ -14,6 +14,9 @@ export const CATEGORY_COLORS = [
   '#00a6a6'  // teal
 ];
 
+// The two node sets of a bipartite network (1 = first column, 2 = second column)
+export const SET_COLORS = { 1: '#08b3e5', 2: '#ff3ea5' };
+
 // Communities with a single node are drawn in neutral gray
 export const SINGLETON_COLOR = '#9aa5b1';
 

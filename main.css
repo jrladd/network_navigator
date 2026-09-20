@@ -344,6 +344,7 @@
 	.segmented label + input + label { border-left: 2px solid var(--ink); }
 	.segmented input:checked + label { background: var(--gradient); }
 	.segmented input:focus-visible + label { outline: 3px solid var(--ink); outline-offset: -5px; }
+	.segmented input:disabled + label { opacity: 0.4; cursor: not-allowed; }
 
 	/* Separate chips: metric selector for the histogram */
 	.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -643,6 +644,8 @@
 	.tc { text-align: center; }
 	.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 	.cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+	.cluster > * { min-width: 0; max-width: 100%; }
+	.field-row select { min-width: 0; max-width: 100%; }
 }
 
 /* -------------------------------------------- content pages (about, etc.) */

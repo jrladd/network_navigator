@@ -2,7 +2,7 @@
 // the global metrics text, the node table, and the network with metrics as GEXF (for Gephi).
 
 import { app } from './state.js';
-import { GLOBAL_METRICS, availableMetrics } from './metrics.js';
+import { availableMetrics, visibleGlobalMetrics } from './metrics.js';
 
 const VIZ_NAMES = { force: 'force_layout', arc: 'arc_diagram', matrix: 'adjacency_matrix' };
 const VIZ_CONTAINERS = { force: '#force-layout-viz', arc: '#arc-diagram-viz', matrix: '#matrix-viz' };
@@ -100,12 +100,19 @@ function downloadForceLayoutPng() {
 }
 
 function metricsText() {
-  const lines = GLOBAL_METRICS.map((metric) => {
-    const value = app.result.global[metric.key];
-    if (metric.key === 'reciprocity' && !app.result.directed) return null;
-    return `${metric.label}: ${value === null || value === undefined ? 'N/A' : metric.format(value)}`;
-  }).filter(Boolean);
+  const lines = visibleGlobalMetrics(app.result).map((metric) =>
+    `${metric.label}: ${metric.value === null || metric.value === undefined ? 'N/A' : metric.format(metric.value)}`);
   return `Global Network Metrics:\n\n${lines.join('\n')}\n\nLooking for node-level metrics? Use "Node table (CSV)" in the Download menu, or the "Download as CSV" button under the data table.`;
+}
+
+// The projected network as an edge list (source, target, link weight, number of shared neighbors)
+function projectionCsv() {
+  const quote = (text) => `"${String(text).replace(/"/g, '""')}"`;
+  const rows = ['source,target,weight,shared'];
+  app.G.forEachEdge((edge, attrs, source, target) => {
+    rows.push([quote(source), quote(target), attrs.weight, attrs.shared].join(','));
+  });
+  return rows.join('\n') + '\n';
 }
 
 // A copy of the graph with every metric as node attributes, so it opens in Gephi with them
@@ -152,6 +159,11 @@ export function download(kind) {
       break;
     case 'csv':
       app.table.download('csv', 'network_metrics.csv');
+      break;
+    case 'projection':
+      if (app.networkView !== 'main') {
+        saveBlob(new Blob([projectionCsv()], { type: 'text/csv;charset=utf-8' }), `projection_${app.networkView}.csv`);
+      }
       break;
     case 'gexf':
       saveBlob(new Blob([gexfText()], { type: 'application/gexf+xml;charset=utf-8' }), 'network_with_metrics.gexf');

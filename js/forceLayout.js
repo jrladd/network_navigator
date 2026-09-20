@@ -145,7 +145,8 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
 
         renderer.on('enterNode', ({ node }) => {
             const data = nodesById.get(node);
-            tip.textContent = `${node} · ${formatNodeValue('degree', data.degree)} connections`;
+            const setName = data.set ? ` (${formatNodeValue('set', data.set)})` : '';
+            tip.textContent = `${node}${setName} · ${formatNodeValue('degree', data.degree)} connections`;
             tip.hidden = false;
         });
         renderer.on('leaveNode', () => { tip.hidden = true; });
@@ -213,8 +214,9 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
     });
 
     // Animate the layout in a worker for a few seconds, so you can watch the network settle
-    liveButton.disabled = graph.order > LIVE_LAYOUT_MAX_NODES;
-    liveButton.title = liveButton.disabled ? 'Live layout is only available for networks up to 1,000 nodes.' : '';
+    const liveAvailable = graph.order <= LIVE_LAYOUT_MAX_NODES;
+    liveButton.disabled = !liveAvailable;
+    liveButton.title = liveAvailable ? '' : 'Live layout is only available for networks up to 1,000 nodes.';
     listen(liveButton, 'click', () => {
         if (liveLayout) {
             stopLiveLayout();
@@ -225,6 +227,42 @@ export function drawForceLayout(edgeList, nodeList, colorValues, graphType, grap
         liveButton.setAttribute('aria-pressed', 'true');
         liveButton.textContent = 'Stop live layout';
         liveTimer = setTimeout(stopLiveLayout, LIVE_LAYOUT_SECONDS * 1000);
+    });
+
+    // --- Bipartite networks: put one set on each side ---
+    const twoColumn = document.getElementById('two-column');
+    let savedPositions = null;
+
+    function placeInTwoColumns() {
+        const columns = { 1: [], 2: [] };
+        nodeList.forEach(node => columns[node.set] && columns[node.set].push(node));
+        const rows = Math.max(columns[1].length, columns[2].length, 1);
+        // Within a column, keep communities together and put the best-connected nodes first
+        [1, 2].forEach(which => {
+            const list = columns[which].sort((a, b) => (a.community - b.community) || (b.degree - a.degree));
+            list.forEach((node, i) => {
+                graph.setNodeAttribute(node.id, 'x', (which === 1 ? -1 : 1) * 0.4 * rows);
+                graph.setNodeAttribute(node.id, 'y', (i - (list.length - 1) / 2) * (rows / list.length));
+            });
+        });
+    }
+
+    listen(twoColumn, 'change', function() {
+        stopLiveLayout();
+        if (this.checked) {
+            savedPositions = new Map();
+            graph.forEachNode((id, attrs) => savedPositions.set(id, { x: attrs.x, y: attrs.y }));
+            placeInTwoColumns();
+        } else if (savedPositions) {
+            savedPositions.forEach((pos, id) => {
+                graph.setNodeAttribute(id, 'x', pos.x);
+                graph.setNodeAttribute(id, 'y', pos.y);
+            });
+        }
+        relayoutButton.disabled = this.checked;
+        liveButton.disabled = this.checked || !liveAvailable;
+        safeRefresh();
+        if (container.offsetWidth > 0) renderer.getCamera().animatedReset({ duration: 300 });
     });
 
     // --- Customize: Edge weights ---

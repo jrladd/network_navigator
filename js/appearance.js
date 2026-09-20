@@ -2,7 +2,7 @@
 // The customize controls call set(); views subscribe to 'change' and read radius(d) / color(d).
 
 import { METRIC_BY_KEY, formatNodeValue } from './metrics.js';
-import { communityColor, rampEnds } from './palette.js';
+import { communityColor, rampEnds, SET_COLORS } from './palette.js';
 
 const MIN_RADIUS = 15;
 const MAX_RADIUS = 50;
@@ -18,7 +18,8 @@ class Appearance extends EventTarget {
   }
 
   // Start a new network. nodeList items carry the metric values by key.
-  init(nodeList, metricKeys, communitySizes) {
+  // Bipartite networks start out colored by set.
+  init(nodeList, metricKeys, communitySizes, { colorBy = 'none' } = {}) {
     this.extents = {};
     metricKeys.forEach((key) => {
       if (METRIC_BY_KEY[key].kind !== 'numeric') return;
@@ -27,7 +28,7 @@ class Appearance extends EventTarget {
     });
     this.communitySizes = communitySizes;
     this.sizeBy = 'degree';
-    this.colorBy = 'none';
+    this.colorBy = colorBy;
   }
 
   // Update some settings ({sizeBy, colorBy, baseColor}) and notify views
@@ -49,6 +50,7 @@ class Appearance extends EventTarget {
   color(d) {
     if (this.colorBy === 'none') return this.baseColor;
     if (this.colorBy === 'community') return communityColor(d.community, this.communitySizes);
+    if (this.colorBy === 'set') return SET_COLORS[d.set];
     const extent = this.extents[this.colorBy];
     const value = d[this.colorBy];
     if (!extent || !Number.isFinite(value)) return this.baseColor;
@@ -74,6 +76,17 @@ class Appearance extends EventTarget {
       container.append(el);
       return el;
     };
+
+    if (this.colorBy === 'set') {
+      [1, 2].forEach((value) => {
+        const item = add('span');
+        const swatch = document.createElement('span');
+        swatch.className = 'swatch';
+        swatch.style.background = SET_COLORS[value];
+        item.append(swatch, formatNodeValue('set', value));
+      });
+      return;
+    }
 
     if (this.colorBy === 'community') {
       const shown = this.communitySizes.slice(0, 10);

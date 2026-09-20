@@ -79,3 +79,24 @@ export function parseEdges(text, { hasHeader = false, directed = false, weighted
   }
   return [...edges.values()];
 }
+
+/**
+ * Split the edges of a bipartite network into its two node sets: set A is every name in the first
+ * column, set B every name in the second (first-appearance order). Throws DataError if a name
+ * appears in both columns, since then the columns don't define two separate sets.
+ */
+export function splitSets(edges) {
+  const A = new Set(edges.map((edge) => edge.source));
+  const B = new Set(edges.map((edge) => edge.target));
+  const both = [...A].filter((name) => B.has(name));
+  if (both.length > 0) {
+    const shown = both.slice(0, 5).map((name) => `"${name}"`).join(', ');
+    const more = both.length > 5 ? `, and ${both.length - 5} more` : '';
+    throw new DataError(
+      `${both.length === 1 ? 'The name' : `${both.length} names`} ${shown}${more} appear${both.length === 1 ? 's' : ''} in both columns. ` +
+      'In a bipartite network every node belongs to just one set, so the first and second columns can\'t share names. ' +
+      'Check your data, or choose "One-mode" if this is an ordinary network.'
+    );
+  }
+  return { A, B };
+}

@@ -65,7 +65,11 @@ function render() {
   });
   card.append(stats);
 
-  if (app.G.type === 'directed') {
+  if (app.result.bipartite) {
+    // A node's neighbors are always in the other set
+    const other = app.result.node.set[id] === 1 ? 2 : 1;
+    card.append(neighborSection(`Connected ${app.result.setNames[other]}`, app.G.neighbors(id)));
+  } else if (app.G.type === 'directed') {
     card.append(neighborSection('Points to', app.G.outNeighbors(id)));
     card.append(neighborSection('Pointed to by', app.G.inNeighbors(id)));
   } else {

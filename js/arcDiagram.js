@@ -59,13 +59,34 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
         .domain([15, 50])
         .range([3 * grow, 6 * grow]);
 
+    // Node order: original, by name, or by a metric (categories such as community or set list their
+    // members together, best-connected first)
+    function orderedNodes(orderValue, orderDirection) {
+        let list;
+        if (orderValue === 'original') {
+            list = [...originalList];
+        } else {
+            const key = orderValue === 'name' ? 'id' : orderValue;
+            const categorical = key === 'community' || key === 'set';
+            list = [...nodeList].sort((a, b) => key === 'id'
+                ? d3.ascending(a.id, b.id)
+                : (a[key] - b[key]) || (categorical ? b.degree - a.degree : 0));
+        }
+        if (orderDirection) list.reverse();
+        return list;
+    }
+    const initialOrder = orderedNodes(
+        document.getElementById('order-arc-nodes').value,
+        document.getElementById('reverse-arc-order').checked
+    );
+
     // Scales for horizontal (x) or vertical (y) orientation
     const x = d3.scalePoint()
-        .domain(nodeList.map(d => d.id))
+        .domain(initialOrder.map(d => d.id))
         .range([0, width]);
 
     const y = d3.scalePoint()
-        .domain(nodeList.map(d => d.id))
+        .domain(initialOrder.map(d => d.id))
         .range([0, height]);
 
     // Positions for the current orientation
@@ -230,15 +251,7 @@ export function drawArcDiagram(edgeList, nodeList, colorValues, graphType, graph
 
     // Handle movement of arcs when graph updates
     function updateArc(orderValue, orderDirection) {
-        let updatedNodeList;
-        if (orderValue === 'original') {
-            updatedNodeList = [...originalList];
-        } else {
-            // Ascending by name, or by the metric's value (communities: 1 = largest first)
-            const key = orderValue === 'name' ? 'id' : orderValue;
-            updatedNodeList = [...nodeList].sort((a, b) => key === 'id' ? d3.ascending(a.id, b.id) : a[key] - b[key]);
-        }
-        if (orderDirection) updatedNodeList.reverse();
+        const updatedNodeList = orderedNodes(orderValue, orderDirection);
         y.domain(updatedNodeList.map(d => d.id));
         x.domain(updatedNodeList.map(d => d.id));
 

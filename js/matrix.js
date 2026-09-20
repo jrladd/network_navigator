@@ -1,7 +1,9 @@
 // Adjacency Matrix network visualization (D3)
 // Rows are sources and columns are targets; undirected edges fill both symmetric cells.
 // `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+import { app } from './state.js';
 import { selection } from './selection.js';
+import { formatNodeValue } from './metrics.js';
 
 // Labels get too small to read when a band is narrower than this (in SVG units)
 const MIN_LABEL_BAND = 9;
@@ -13,11 +15,18 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   const width = 1200 - margin.left;
   const height = 1200 - margin.top;
 
+  // Bipartite networks are drawn as a biadjacency matrix: set A as rows, set B as columns.
+  // Otherwise every node is both a row and a column.
+  const bipartite = Boolean(app.result && app.result.bipartite);
+  const baseRows = bipartite ? nodeList.filter(d => d.set === 1) : nodeList;
+  const baseCols = bipartite ? nodeList.filter(d => d.set === 2) : nodeList;
+
   // Which nodes are shown as rows and columns (a brushed zoom shows a subset)
-  let rowNodes = nodeList;
-  let colNodes = nodeList;
+  let rowNodes = baseRows;
+  let colNodes = baseCols;
   let shownEdges = edgeList;
-  let fullOrder = nodeList.map(d => d.id);
+  let fullRowOrder = baseRows.map(d => d.id);
+  let fullColOrder = baseCols.map(d => d.id);
   let zoomed = false;
 
   // Create responsive SVG
@@ -97,7 +106,17 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       }
     });
 
-    svg.selectAll('.row, .column').remove();
+    svg.selectAll('.row, .column, .axis-caption').remove();
+    if (bipartite) {
+      svg.append('text')
+        .attr('class', 'axis-caption')
+        .attr('x', -width * 0.2)
+        .attr('y', -175)
+        .style('font-size', '22px')
+        .style('font-family', 'sans-serif')
+        .style('fill', '#43566b')
+        .text(`Rows: ${formatNodeValue('set', 1)}  ·  Columns: ${formatNodeValue('set', 2)}`);
+    }
     const showLabels = y.bandwidth() >= MIN_LABEL_BAND && x.bandwidth() >= MIN_LABEL_BAND;
 
     // Rows, with their cells and labels
@@ -191,23 +210,29 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
       .attr('x', colPos).attr('width', x.bandwidth());
   }
 
-  // Reorder the full matrix by a node metric, name, or community
-  function updateMatrix(orderValue, orderDirection) {
+  // Order a list of nodes by a metric, name, community or set (each axis is ordered on its own)
+  function orderList(list, orderValue, orderDirection) {
     let ordered;
     if (orderValue === 'original') {
-      ordered = [...nodeList];
+      ordered = [...list];
     } else if (orderValue === 'name') {
-      ordered = [...nodeList].sort((a, b) => d3.ascending(a.id, b.id));
-    } else if (orderValue === 'community') {
+      ordered = [...list].sort((a, b) => d3.ascending(a.id, b.id));
+    } else if (orderValue === 'community' || orderValue === 'set') {
       // Blocks of communities (1 = largest first); within a block, highest degree first
-      ordered = [...nodeList].sort((a, b) => a.community - b.community || b.degree - a.degree);
+      ordered = [...list].sort((a, b) => a[orderValue] - b[orderValue] || b.degree - a.degree);
     } else {
-      ordered = [...nodeList].sort((a, b) => b[orderValue] - a[orderValue]);
+      ordered = [...list].sort((a, b) => b[orderValue] - a[orderValue]);
     }
     if (orderDirection) ordered.reverse();
-    fullOrder = ordered.map(d => d.id);
-    x.domain(fullOrder);
-    y.domain(fullOrder);
+    return ordered;
+  }
+
+  // Reorder the full matrix
+  function updateMatrix(orderValue, orderDirection) {
+    fullRowOrder = orderList(baseRows, orderValue, orderDirection).map(d => d.id);
+    fullColOrder = orderList(baseCols, orderValue, orderDirection).map(d => d.id);
+    x.domain(fullColOrder);
+    y.domain(fullRowOrder);
 
     const t = svg.transition().duration(1500);
     t.selectAll(".row")
@@ -264,7 +289,8 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
   listen(document.getElementById('restore-zoom'), 'click', () => {
     if (document.getElementById('matrix-viz').hidden || !zoomed) return;
     const byId = new Map(nodeList.map(d => [d.id, d]));
-    rowNodes = colNodes = fullOrder.map(id => byId.get(id));
+    rowNodes = fullRowOrder.map(id => byId.get(id));
+    colNodes = fullColOrder.map(id => byId.get(id));
     shownEdges = edgeList;
     zoomed = false;
     document.getElementById('order-matrix-cells').disabled = false;
