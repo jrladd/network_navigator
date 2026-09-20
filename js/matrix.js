@@ -1,25 +1,36 @@
-// Code for Adjacency Matrix network visualzation
-export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight) {
+// Adjacency Matrix network visualization (D3)
+// Rows are sources and columns are targets; undirected edges fill both symmetric cells.
+// `signal` is aborted when a new network is loaded, removing this visualization's listeners.
+import { app } from './state.js';
+import { selection } from './selection.js';
+import { formatNodeValue } from './metrics.js';
 
-  // Keep track of original list while allowing nodelist to change
-  let originalList = [...nodeList];
-  let updatedNodeList = Array.from(Array(nodeList.length).keys())
-  var selectedXNodes = [];
-  var selectedYNodes = [];
+// Labels get too small to read when a band is narrower than this (in SVG units)
+const MIN_LABEL_BAND = 9;
 
-  // Initialize variables
-  var color;
-  var brushArea;
+export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight, signal) {
+  const listen = (target, type, handler) => target.addEventListener(type, handler, { signal });
 
-  const margin = {
-  top: 200,
-  right: 200,
-  bottom: 200,
-  left: 200
-  };
+  const margin = { top: 200, right: 200, bottom: 200, left: 200 };
+  const width = 1200 - margin.left;
+  const height = 1200 - margin.top;
 
-  // Create responsive CSV
-  let svg = d3.select('#matrix-viz')
+  // Bipartite networks are drawn as a biadjacency matrix: set A as rows, set B as columns.
+  // Otherwise every node is both a row and a column.
+  const bipartite = Boolean(app.result && app.result.bipartite);
+  const baseRows = bipartite ? nodeList.filter(d => d.set === 1) : nodeList;
+  const baseCols = bipartite ? nodeList.filter(d => d.set === 2) : nodeList;
+
+  // Which nodes are shown as rows and columns (a brushed zoom shows a subset)
+  let rowNodes = baseRows;
+  let colNodes = baseCols;
+  let shownEdges = edgeList;
+  let fullRowOrder = baseRows.map(d => d.id);
+  let fullColOrder = baseCols.map(d => d.id);
+  let zoomed = false;
+
+  // Create responsive SVG
+  const svg = d3.select('#matrix-viz')
     .append("div")
     .classed("svg-container", true)
     .append('svg')
@@ -29,283 +40,266 @@ export function drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeig
     .append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-  const width = +svg.attr('width') + 1200 - margin.left;
-  const height = +svg.attr('height') + 1200 - margin.top;
-
-  // Create brush for zooming
-  const brush = d3.brush().on('end', brushed);
+  // Scales map node ids to positions
+  const x = d3.scaleBand().range([0, width]).align(0);
+  const y = d3.scaleBand().range([0, height]).align(0);
 
   // Container for legend
   svg.append("g")
-  .attr("class", "legendLinear")
-  .attr("transform", `translate(${width+10},0)`);
+    .attr("class", "legendLinear")
+    .attr("transform", `translate(${width + 10},0)`);
 
-  // Scale for square opacity
-  var opacity = d3.scaleLinear()
-    .range([1, 1000])
-    .clamp(true);
+  // Bands that follow the selected node (drawn under the brush, ignoring pointer events)
+  const highlightRow = svg.append('rect').attr('class', 'highlight').attr('width', width).attr('fill', '#08B3E5').attr('fill-opacity', 0.18).attr('pointer-events', 'none').attr('display', 'none');
+  const highlightCol = svg.append('rect').attr('class', 'highlight').attr('height', height).attr('fill', '#08B3E5').attr('fill-opacity', 0.18).attr('pointer-events', 'none').attr('display', 'none');
 
-  // Scale for X-axis
-  var x = d3.scaleBand()
-    .range([0, width])
-    .align(0);
+  // Brush for zooming: only over the cells, so the labels stay clickable
+  const brush = d3.brush().extent([[0, 0], [width, height]]).on('end', brushed);
+  let brushArea = null;
 
-  // Scale for Y-axis
-  var y = d3.scaleBand()
-    .range([0, height])
-    .align(0);
+  // ---- colors: a light tint of the chosen cell color up to the full color
+  const cellColorInput = document.getElementById('cell-color');
+  let color;
 
-  // Keep track of node IDs
-  var nodeIDs = nodeList.map(d => d.id);
-
-  // Draw matrix
-  updateFullMatrix(nodeList,nodeList,edgeList,nodeIDs,nodeIDs);
-
-  // Function to draw matrix
-  function updateFullMatrix(nodeXList,nodeYList,edgeList,nodeXIDs,nodeYIDs) {
-    // Redo color scales each time to keep consistent with picker
-    var origColor = $('#color-picker-matrix').val().replace(/[rgb\(\)]/gm, "").split(",");
-    var newColor = origColor.map(c => { return Math.round((255-c)*0.8+parseInt(c))});
-    var newRGB = `rgb(${newColor.join(",")})`;
-
+  function makeColorScale() {
+    const base = d3.color(cellColorInput.value) || d3.color('#08b3e5');
+    const light = d3.rgb(
+      Math.round(base.r + (255 - base.r) * 0.8),
+      Math.round(base.g + (255 - base.g) * 0.8),
+      Math.round(base.b + (255 - base.b) * 0.8)
+    );
     color = d3.scaleLinear()
       .domain([0, d3.max(colorValues)])
-      .range([newRGB,$('#color-picker-matrix').val()])
+      .range([light.formatRgb(), base.formatRgb()]);
 
-    // Create and draw legend
-    var legendLinear = d3.legendColor()
-      .shapeWidth(50)
-      .cells(colorValues.slice(1))
-      .scale(color)
-      .labelOffset(40);
+    // Create and draw legend (unweighted networks only have one cell color, so no legend)
+    const legend = svg.select(".legendLinear");
+    legend.selectAll('*').remove();
+    const values = colorValues.slice(1);
+    if (graphWeight === 'weighted' && values.length > 1) {
+      legend.call(d3.legendColor()
+        .shapeWidth(50)
+        .cells(values.length > 8 ? 5 : values)
+        .scale(color)
+        .labelOffset(40));
+    }
+  }
 
-    svg.select(".legendLinear")
-      .call(legendLinear);
+  const cellFill = d => d.weight === 0 ? 'white' : color(d.weight);
 
-    // Build initial matrix
-    let matrix = nodeYList.map(function (outer, i) {
-      outer.index = i;
-      return nodeXList.map(function (inner, j) {
-        // if we want to use community add a check and change final zero to inner.community
-        return {y: i, x: j, weight: i === j ? 0 : 0};
-      });
+  // ---- drawing
+  function draw() {
+    x.domain(colNodes.map(d => d.id));
+    y.domain(rowNodes.map(d => d.id));
+    makeColorScale();
+
+    // Build the matrix: one cell per (row node, column node)
+    const cells = new Map(rowNodes.map(r => [r.id, new Map(colNodes.map(c => [c.id, { row: r.id, col: c.id, weight: 0 }]))]));
+    shownEdges.forEach(edge => {
+      const s = edge.source.id, t = edge.target.id;
+      const cell = cells.get(s) && cells.get(s).get(t);
+      if (cell) cell.weight = edge.weight;
+      // Undirected edges fill the symmetric cell too
+      if (graphType !== 'directed') {
+        const mirror = cells.get(t) && cells.get(t).get(s);
+        if (mirror) mirror.weight = edge.weight;
+      }
     });
-    // Update matrix values depending on edges
-    edgeList.forEach(function (l,i) {
-      try {
-          matrix[nodeYIDs.indexOf(l.source.id)][nodeXIDs.indexOf(l.target.id)].weight = l.weight;
-      } catch (e) {};
-      try {
-          matrix[nodeYIDs.indexOf(l.target.id)][nodeXIDs.indexOf(l.source.id)].weight = l.weight;
-      } catch (e) {};
-    });
 
-    x.domain(d3.range(nodeXList.length),);
-    y.domain(d3.range(nodeYList.length),);
+    svg.selectAll('.row, .column, .axis-caption').remove();
+    if (bipartite) {
+      svg.append('text')
+        .attr('class', 'axis-caption')
+        .attr('x', -width * 0.2)
+        .attr('y', -175)
+        .style('font-size', '22px')
+        .style('font-family', 'sans-serif')
+        .style('fill', '#43566b')
+        .text(`Rows: ${formatNodeValue('set', 1)}  ·  Columns: ${formatNodeValue('set', 2)}`);
+    }
+    const showLabels = y.bandwidth() >= MIN_LABEL_BAND && x.bandwidth() >= MIN_LABEL_BAND;
 
-    // Create and update rows
-    var row = svg.selectAll('.row')
-      .data(matrix);
+    // Rows, with their cells and labels
+    const row = svg.selectAll('.row')
+      .data(rowNodes)
+      .enter().append('g')
+      .attr('class', 'row')
+      .attr('transform', d => 'translate(0,' + y(d.id) + ')');
 
-    row.exit().remove();
-
-    var rowEnter = row.enter().append('g');
-
-    rowEnter.merge(row)
-        .attr('class', 'row')
-        .attr('transform', (_, i) => 'translate(0,' + y(i) + ')')
-        .each(makeRow); 
-
-    rowEnter.append("line")
+    row.append("line")
       .attr("x2", width)
       .style("stroke", '#f4f4f4');
 
-    svg.selectAll('.row-label').remove();
+    row.each(function (rowNode) {
+      d3.select(this).selectAll('.matrix-cell')
+        .data(colNodes.map(c => cells.get(rowNode.id).get(c.id)))
+        .enter().append('rect')
+        .attr('class', 'matrix-cell')
+        .attr('x', d => x(d.col))
+        .attr('width', x.bandwidth())
+        .attr('height', y.bandwidth())
+        .style('stroke', '#000000')
+        .style('stroke-width', 0)
+        .style('fill', cellFill);
+    });
 
-    rowEnter.merge(row).append('text')
+    row.append('text')
       .attr('class', 'row-label')
       .attr('x', -14)
       .attr('y', y.bandwidth() / 2)
       .attr('dy', '0.32em')
       .style('font-size', '1rem')
       .style('text-anchor', 'end')
-      .text((_, i) => nodeYList[i].id);
+      .style('cursor', 'pointer')
+      .style('font-family', 'sans-serif')
+      .attr('display', showLabels ? null : 'none')
+      .text(d => d.id)
+      .on('click', (event, d) => selection.select(d.id === selection.selected ? null : d.id));
 
+    // Columns (rotated), with their labels
+    const column = svg.selectAll('.column')
+      .data(colNodes)
+      .enter().append('g')
+      .attr('class', 'column')
+      .attr('transform', d => 'translate(' + x(d.id) + ', 0)rotate(-90)');
 
-    // Create and update columns
-    var column = svg.selectAll('.column')
-      .data(matrix[0]);
-
-    column.exit().remove();
-
-    var columnEnter = column.enter().append('g');
-
-    columnEnter.merge(column)
-        .attr('class', 'column')
-        .attr('transform', (_, i) => 'translate(' + x(i) + ', 0)rotate(-90)')
-
-    columnEnter.append("line")
+    column.append("line")
       .attr("x1", -width)
       .style("stroke", '#f4f4f4');
 
-    svg.selectAll('.column-label').remove();
-
-    columnEnter.merge(column)
-      .append('text')
+    column.append('text')
       .attr('class', 'column-label')
       .attr('x', 14)
       .attr('y', x.bandwidth() / 2)
       .attr('dy', '0.32em')
       .style('text-anchor', 'start')
-      .text( (_, i) => nodeXList[i].id);
+      .style('cursor', 'pointer')
+      .style('font-family', 'sans-serif')
+      .attr('display', showLabels ? null : 'none')
+      .text(d => d.id)
+      .on('click', (event, d) => selection.select(d.id === selection.selected ? null : d.id));
 
-    // Call brush so that brushArea is always on top
-    if (brushArea) {
-      brushArea.remove();
-    }
+    // Selection bands go above the cells, and the brush on top of everything
+    highlightRow.raise();
+    highlightCol.raise();
+    if (brushArea) brushArea.remove();
     brushArea = svg.append('g');
     brushArea.call(brush);
+
+    styleLabels();
   }
 
+  // Label visibility/emphasis for the selection and the table search
+  function styleLabels() {
+    const selected = selection.selected;
+    const opacity = d => selection.isVisible(d.id) ? '1' : '0';
+    const showLabels = y.bandwidth() >= MIN_LABEL_BAND && x.bandwidth() >= MIN_LABEL_BAND;
+    const display = d => showLabels || d.id === selected ? null : 'none';
+    const weight = d => d.id === selected ? 'bold' : 'normal';
 
-  // A function to create shaded cells in each row of matrix
-  function makeRow(rowData) {
-    // Create and update cells
-    var cell = d3.select(this).selectAll('.matrix-cell')
-      .data(rowData);
+    svg.selectAll('.row-label').style('opacity', opacity).style('font-weight', weight).attr('display', display);
+    svg.selectAll('.column-label').style('opacity', opacity).style('font-weight', weight).attr('display', display);
 
-    cell.exit().remove()
-
-    var cellEnter = cell.enter().append('rect')
-
-    cellEnter.merge(cell)
-        .attr('class', 'matrix-cell')
-        .attr('x', (d, i) => x(d.x))
-        .attr('width', x.bandwidth())
-        .attr('height', y.bandwidth())
-        .style('stroke', '#000000')
-        .style('stroke-width', 0)
-        .style('fill', (d) => {if (d.weight===0) {return 'white';} else {return color(d.weight)} });
-
-    // Add title text to each cell (currently you can't see this because of the brush)
-    /*cellEnter.append('title')
-      .text(function (d) {
-        return nodeList[d.y].id + ' - ' + nodeList[d.x].id + ', degree: ' + d.weight;
-      });*/
-
+    const rowPos = selected !== null ? y(selected) : undefined;
+    const colPos = selected !== null ? x(selected) : undefined;
+    highlightRow
+      .attr('display', rowPos === undefined ? 'none' : null)
+      .attr('y', rowPos).attr('height', y.bandwidth());
+    highlightCol
+      .attr('display', colPos === undefined ? 'none' : null)
+      .attr('x', colPos).attr('width', x.bandwidth());
   }
 
-  // Reorder matrix based on centrality measures
-  function updateMatrix(orderValue, orderDirection) {
+  // Order a list of nodes by a metric, name, community or set (each axis is ordered on its own)
+  function orderList(list, orderValue, orderDirection) {
+    let ordered;
     if (orderValue === 'original') {
-      updatedNodeList = orderDirection ? [...originalList].reverse() : originalList;
-      updatedNodeList = d3.range(updatedNodeList.length).sort((a, b) => updatedNodeList[a].index - updatedNodeList[b].index);
+      ordered = [...list];
+    } else if (orderValue === 'name') {
+      ordered = [...list].sort((a, b) => d3.ascending(a.id, b.id));
+    } else if (orderValue === 'community' || orderValue === 'set') {
+      // Blocks of communities (1 = largest first); within a block, highest degree first
+      ordered = [...list].sort((a, b) => a[orderValue] - b[orderValue] || b.degree - a.degree);
     } else {
-      updatedNodeList = (orderValue === 'name') ? 
-        (orderDirection ? 
-          d3.range(nodeList.length).sort((a, b) => d3.descending(nodeList[a].id, nodeList[b].id))
-        :
-          d3.range(nodeList.length).sort((a, b) => d3.ascending(nodeList[a].id, nodeList[b].id))
-        ) :
-        (orderDirection ?
-          d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue]).reverse()
-        :
-          d3.range(nodeList.length).sort((a, b) => nodeList[b][orderValue] - nodeList[a][orderValue])
-        )
+      ordered = [...list].sort((a, b) => b[orderValue] - a[orderValue]);
     }
-    console.log(updatedNodeList, nodeList);
-    x.domain(updatedNodeList);
+    if (orderDirection) ordered.reverse();
+    return ordered;
+  }
 
-    var t = svg.transition().duration(1500);
+  // Reorder the full matrix
+  function updateMatrix(orderValue, orderDirection) {
+    fullRowOrder = orderList(baseRows, orderValue, orderDirection).map(d => d.id);
+    fullColOrder = orderList(baseCols, orderValue, orderDirection).map(d => d.id);
+    x.domain(fullColOrder);
+    y.domain(fullRowOrder);
 
+    const t = svg.transition().duration(1500);
     t.selectAll(".row")
-      .delay(function (d, i) {
-        return x(i) * 4;
-      })
-      .attr("transform", function (d, i) {
-        return "translate(0," + x(i) + ")";
-      })
+      .delay(d => y(d.id) * 4)
+      .attr("transform", d => "translate(0," + y(d.id) + ")");
     t.selectAll(".matrix-cell")
-      .delay(function (d) {
-        return x(d.x) * 4;
-      })
-      .attr("x", function (d) {
-        return x(d.x);
-      });
-
+      .delay(d => x(d.col) * 4)
+      .attr("x", d => x(d.col));
     t.selectAll(".column")
-      .delay(function (d, i) {
-        return x(i) * 4;
-      })
-      .attr("transform", function (d, i) {
-        return "translate(" + x(i) + ")rotate(-90)";
-      });
+      .delay(d => x(d.id) * 4)
+      .attr("transform", d => "translate(" + x(d.id) + ")rotate(-90)");
+    styleLabels();
   }
 
-  // Handle buttons for reordering matrix
-  d3.select('#order-matrix-cells').on('change', function () {
-    let orderValue = this.value;
-    let orderDirection = $('#reverse-matrix-order').is(':checked');
-    updateMatrix(orderValue, orderDirection);
+  // Handle controls for reordering the matrix
+  const currentOrder = () => [
+    document.getElementById('order-matrix-cells').value,
+    document.getElementById('reverse-matrix-order').checked
+  ];
+  listen(document.getElementById('order-matrix-cells'), 'change', () => updateMatrix(...currentOrder()));
+  listen(document.getElementById('reverse-matrix-order'), 'change', () => updateMatrix(...currentOrder()));
+
+  // Recolor cells when the cell color changes (no redraw needed)
+  listen(cellColorInput, 'input', () => {
+    makeColorScale();
+    svg.selectAll('.matrix-cell').style('fill', cellFill);
   });
 
-  d3.select('#reverse-matrix-order').on('change', function () {
-    let orderDirection = this.checked;
-    let orderValue = $('#order-matrix-cells').val();
-    updateMatrix(orderValue, orderDirection);
-  });
+  // When the graph is brushed, zoom to the nodes inside the brush selection
+  function brushed(event) {
+    if (!event.selection) return;
+    const [[x0, y0], [x1, y1]] = event.selection;
+    const inBand = (scale, lo, hi) => id => scale(id) + scale.bandwidth() > lo && scale(id) < hi;
+    const byId = new Map(nodeList.map(d => [d.id, d]));
+    const selectedCols = x.domain().filter(inBand(x, x0, x1)).map(id => byId.get(id));
+    const selectedRows = y.domain().filter(inBand(y, y0, y1)).map(id => byId.get(id));
+    brushArea.call(brush.move, null);
+    if (selectedCols.length === 0 || selectedRows.length === 0) return;
 
-  // When graph is brushed, zoom to the brush selection
-  // (Uses only the x-axis to determine a square brush area
-  function brushed() {
-	  if (d3.event.selection) {
-	    var [[x0,y0],[x1,y1]] = d3.event.selection;
-	    var selectedX = updatedNodeList.filter(d => x0 < x(d) && x1 > x(d));
-	    var selectedY = updatedNodeList.filter(d => y0 < y(d) && y1 > y(d));
-            if (selectedXNodes.length === 0) {
-              selectedXNodes = selectedX.map(d => nodeList[d]);
-            } else { 
-              selectedXNodes = selectedX.map(d => selectedXNodes[d]);
-            }
-            var selectedXIDs = selectedXNodes.map(d => d.id);
-            if (selectedYNodes.length === 0) {
-              selectedYNodes = selectedY.map(d => nodeList[d]);
-            } else { 
-              selectedYNodes = selectedY.map(d => selectedYNodes[d]);
-            }
-            var selectedYIDs = selectedYNodes.map(d => d.id);
-	    var selectedEdges = edgeList.filter(e => (selectedXIDs.indexOf(e.source.id) !== -1 && selectedYIDs.indexOf(e.target.id) !== -1) || (selectedYIDs.indexOf(e.source.id) !== -1 && selectedXIDs.indexOf(e.target.id) !== -1));
-	    updateFullMatrix(selectedXNodes,selectedYNodes,selectedEdges,selectedXIDs,selectedYIDs);
-            $('#order-matrix-cells').prop("disabled", true);
-            $('#reverse-matrix-order').prop("disabled", true);
-	    brushArea.call(brush.move, null);
-	  }
-	  
+    const rowIds = new Set(selectedRows.map(d => d.id));
+    const colIds = new Set(selectedCols.map(d => d.id));
+    rowNodes = selectedRows;
+    colNodes = selectedCols;
+    shownEdges = edgeList.filter(e =>
+      (rowIds.has(e.source.id) && colIds.has(e.target.id)) ||
+      (graphType !== 'directed' && rowIds.has(e.target.id) && colIds.has(e.source.id)));
+    zoomed = true;
+    document.getElementById('order-matrix-cells').disabled = true;
+    document.getElementById('reverse-matrix-order').disabled = true;
+    draw();
   }
 
-  // Restore zoom to original matrix, with full node list
-  d3.select("#restore-zoom")
-    .style("visibility", "visible")
-    .on("click", function() {
-	    updateFullMatrix(nodeList,nodeList,edgeList,nodeIDs,nodeIDs);
-	    selectedXNodes = [];
-	    selectedYNodes = [];
-            $('#order-matrix-cells').prop("disabled", false);
-            $('#reverse-matrix-order').prop("disabled", false);
-    });
+  // Restore zoom to the original matrix, with the full node list in the current order
+  listen(document.getElementById('restore-zoom'), 'click', () => {
+    if (document.getElementById('matrix-viz').hidden || !zoomed) return;
+    const byId = new Map(nodeList.map(d => [d.id, d]));
+    rowNodes = fullRowOrder.map(id => byId.get(id));
+    colNodes = fullColOrder.map(id => byId.get(id));
+    shownEdges = edgeList;
+    zoomed = false;
+    document.getElementById('order-matrix-cells').disabled = false;
+    document.getElementById('reverse-matrix-order').disabled = false;
+    draw();
+  });
 
-    // When searching in table, filter visualization
-    var table = $('#metrics-table').DataTable();
-    table.on('search.dt', function() { 
-	    let nodeIds = table.rows({filter: 'applied'}).data().map(d => d[0]); 
-	    console.log(nodeIds);
-	    if (selectedXNodes.length !== 0) {
-	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(selectedYNodes[i].id) == -1 ? '0': '1');
-	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(selectedXNodes[i].id) == -1 ? '0': '1');
-	    } else {
-	    	d3.selectAll('.row-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
-	    	d3.selectAll('.column-label').style('opacity', (_, i) => nodeIds.indexOf(nodeList[i].id) == -1 ? '0': '1');
-	    }
-    });
+  listen(selection, 'select', styleLabels);
+  listen(selection, 'filter', styleLabels);
 
-};
+  draw();
+}

@@ -1,596 +1,711 @@
+import { app } from './state.js';
+import { selection } from './selection.js';
+import { appearance } from './appearance.js';
+import { DataError, parseEdges, splitSets, looksLikeHeader, describeSeparator } from './data.js';
+import {
+  computeMetrics, detectCommunities, availableMetrics, formatNodeValue, setActiveSetNames, METRIC_BY_KEY
+} from './metrics.js';
+import { computeBipartiteMetrics, projectNetwork, PROJECTION_WEIGHTINGS } from './bipartite.js';
+import { populateControls, renderStats, renderGlossary, initControls } from './controls.js';
+import { initNodeCard, renderNodeCard } from './nodeCard.js';
+import { initDownloads } from './download.js';
+import { drawHist } from './hist.js';
 import { drawMatrix } from './matrix.js';
 import { drawForceLayout } from './forceLayout.js';
 import { drawArcDiagram } from './arcDiagram.js';
-import { drawHist } from './hist.js';
 import { addEdgeAttributeDropdown } from './edgeAttribute.js';
 
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
-// Define global variables
-let nodeList, edgeList, G, selectedGraph, degree, betweenness, eigenvector, clustering, colorValues, graphType, graphWeight, numberOfNodes, numberOfEdges, density, averageDegree, averageClustering, transitivity;
+const LARGE_NETWORK = 500; // above this many nodes, wait for "Click to load"
+const RANKED_METRICS = new Set(['betweenness', 'closeness', 'eigenvector', 'pagerank', 'clustering', 'bipClustering']);
 
-const divs = ['#matrix-viz', '#force-layout-viz','#arc-diagram-viz'];
-
-// Allow drag and drop on textarea
-$('textarea').on('dragover', function (e) {
-  e.preventDefault(e);
-  e.stopPropagation(e);
-});
-
-$('textarea').on('drop', function (e) {
-  e.preventDefault(e);
-  e.stopPropagation(e);
-  let $textarea = this;
-  var files = e.originalEvent.dataTransfer.files;
-  var reader = new FileReader();
-  reader.onload = function (e) {
-    $textarea.value = e.target.result;
+const VIZ = {
+  force: {
+    container: '#force-layout-viz', draw: drawForceLayout,
+    hint: 'Scroll or pinch to zoom, drag to pan, and click a node for details.'
+  },
+  arc: {
+    container: '#arc-diagram-viz', draw: drawArcDiagram,
+    hint: 'Scroll or pinch to zoom, and click a node label for details.'
+  },
+  matrix: {
+    container: '#matrix-viz', draw: drawMatrix,
+    hint: 'Click and drag on the matrix to zoom in.'
   }
-  for (var i = 0; i < files.length; i++) {
-    reader.readAsText(files[i]);
+};
+const drawn = { force: false, arc: false, matrix: false };
+let edgeFilterBuilt = false; // the edge-attribute filter is shared by the force layout and arc diagram
+
+const mobileQuery = window.matchMedia('(max-width: 60em)');
+
+// ---------------------------------------------------------------- input
+
+const textarea = $('#data');
+
+function autoDetectHeader() {
+  if (looksLikeHeader(textarea.value)) $('#headerRow').checked = true;
+  updateFormatNote();
+}
+
+// Tell the user how their columns will be read (commas, tabs, semicolons, or spaces)
+function updateFormatNote() {
+  $('#format-note').textContent = describeSeparator(textarea.value);
+}
+let formatNoteTimer = null;
+textarea.addEventListener('input', () => {
+  if (!$('#row-error').hidden) clearError(); // the user is fixing it
+  clearTimeout(formatNoteTimer);
+  formatNoteTimer = setTimeout(updateFormatNote, 250);
+});
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    textarea.value = e.target.result;
+    autoDetectHeader();
+  };
+  reader.readAsText(file);
+}
+
+// Drag and drop a file onto the textarea (only the first file is used)
+textarea.addEventListener('dragover', (e) => { e.preventDefault(); });
+textarea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  if (e.dataTransfer.files.length > 0) readFile(e.dataTransfer.files[0]);
+});
+textarea.addEventListener('paste', () => setTimeout(autoDetectHeader, 0));
+
+$('#file-input').addEventListener('change', (e) => {
+  if (e.target.files.length > 0) readFile(e.target.files[0]);
+  e.target.value = ''; // allow choosing the same file again
+});
+
+// Network type: bipartite networks are undirected and have two named sets
+function applyModeControls() {
+  const bipartite = $('#mode-bipartite').checked;
+  $('#bipartite-options').hidden = !bipartite;
+  $('#directed').disabled = bipartite;
+  if (bipartite) $('#undirected').checked = true;
+}
+$$('input[name="networkMode"]').forEach((radio) => radio.addEventListener('change', applyModeControls));
+
+// Example networks: fill in the data and the matching options, then navigate
+const EXAMPLES = {
+  karate: { weighted: false },
+  lesmis: { weighted: true },
+  davis: { weighted: false, bipartite: true, names: ['Women', 'Events'] }
+};
+$('#example-select').addEventListener('change', async (e) => {
+  const name = e.target.value;
+  e.target.value = '';
+  if (!EXAMPLES[name]) return;
+  try {
+    const response = await fetch(`examples/${name}.csv`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    textarea.value = await response.text();
+    updateFormatNote();
+  } catch (err) {
+    console.error(err);
+    showError(`Could not load the example (${err.message}). Examples need the page to be served over http(s).`);
+    return;
+  }
+  const example = EXAMPLES[name];
+  (example.bipartite ? $('#mode-bipartite') : $('#mode-unipartite')).checked = true;
+  $('#set-a-name').value = example.names ? example.names[0] : '';
+  $('#set-b-name').value = example.names ? example.names[1] : '';
+  applyModeControls();
+  $('#undirected').checked = true;
+  (example.weighted ? $('#weighted') : $('#unweighted')).checked = true;
+  $('#headerRow').checked = true;
+  $('#calculate').click();
+});
+
+// ---------------------------------------------------------------- errors
+
+// Show a data problem next to the data box and take the user to it. `line`/`text` (from a DataError)
+// name the row that is wrong: it is quoted in the message and, on devices with a pointer, selected
+// in the text box so it can be fixed right away.
+function showError(message, { line, text } = {}) {
+  const alert = $('#row-error');
+  $('#row-error-detail').textContent = message || '';
+  const excerpt = $('#row-error-line');
+  excerpt.hidden = !(line !== undefined && text !== undefined);
+  if (!excerpt.hidden) excerpt.textContent = `Line ${line}: ${text.length > 120 ? `${text.slice(0, 120)}…` : text}`;
+  alert.hidden = false;
+
+  // Connect the message to the field for screen readers
+  textarea.setAttribute('aria-invalid', 'true');
+  textarea.setAttribute('aria-describedby', 'row-error');
+
+  // Only scrolls if the message isn't already fully visible (smooth unless reduced motion is preferred)
+  alert.scrollIntoView({ block: 'nearest' });
+  const touchDevice = window.matchMedia('(hover: none)').matches;
+  if (line !== undefined && text !== undefined && !touchDevice) {
+    selectLine(line);
+  } else {
+    alert.focus({ preventScroll: true }); // no keyboard pop-up on phones
+  }
+}
+
+// Select one line of the text box and scroll it into view
+function selectLine(line) {
+  const value = textarea.value;
+  let start = 0;
+  for (let i = 1; i < line; i++) {
+    const newline = value.indexOf('\n', start);
+    if (newline === -1) return;
+    start = newline + 1;
+  }
+  let end = value.indexOf('\n', start);
+  if (end === -1) end = value.length;
+  if (value[end - 1] === '\r') end--;
+
+  textarea.focus({ preventScroll: true });
+  textarea.setSelectionRange(start, end);
+  const style = getComputedStyle(textarea);
+  const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.4;
+  textarea.scrollTop = Math.max(0, (line - 1) * lineHeight - textarea.clientHeight / 2 + lineHeight);
+}
+
+function clearError() {
+  $('#row-error').hidden = true;
+  textarea.removeAttribute('aria-invalid');
+  textarea.removeAttribute('aria-describedby');
+}
+
+function hideResults() {
+  $('#results').hidden = true;
+}
+
+// ------------------------------------------------------ view + viz toggles
+
+function isVizVisible() {
+  return $('#viz-pane').getClientRects().length > 0;
+}
+
+// Draw the selected visualization once it is on screen (Sigma can't draw into a hidden container)
+function ensureDrawn() {
+  if (!app.G || app.vizBlocked || !isVizVisible()) return;
+  const type = app.vizType;
+
+  Object.entries(VIZ).forEach(([key, viz]) => { $(viz.container).hidden = key !== type; });
+  $('#customize-dialog').dataset.viz = type;
+  $('#viz-hint').textContent = VIZ[type].hint;
+
+  if (!drawn[type]) {
+    VIZ[type].draw(app.edgeList, app.nodeList, app.colorValues, app.graphType, app.graphWeight, app.controller.signal);
+    drawn[type] = true;
+    if (type !== 'matrix' && !edgeFilterBuilt) {
+      addEdgeAttributeDropdown(app.edgeList);
+      edgeFilterBuilt = true;
+    }
+  }
+  if (type === 'force' && app.sigma) {
+    // The container may have been hidden or resized since the last draw
+    app.sigma.resize();
+    app.sigma.refresh();
+  }
+}
+
+function setView(view, { scroll = false } = {}) {
+  $('#results').dataset.view = view;
+  $(`#view-${view}`).checked = true;
+  afterLayoutChange();
+  // The page gets shorter or longer when panes swap; keep the results in view
+  if (scroll) $('#results').scrollIntoView({ block: 'start' });
+}
+
+function afterLayoutChange() {
+  requestAnimationFrame(() => {
+    ensureDrawn();
+    if (app.table) app.table.redraw(true);
+  });
+}
+
+$$('input[name="view"]').forEach((radio) => radio.addEventListener('change', () => setView(radio.value, { scroll: true })));
+
+// Phones can't show both panes at once
+function applyMobileView() {
+  if (mobileQuery.matches && $('#results').dataset.view === 'split') setView('metrics');
+}
+mobileQuery.addEventListener('change', applyMobileView);
+
+$$('input[name="vizType"]').forEach((radio) => radio.addEventListener('change', () => {
+  app.vizType = radio.value;
+  ensureDrawn();
+}));
+
+$('#load-viz').addEventListener('click', () => {
+  app.vizBlocked = false;
+  $('#viz-warning').hidden = true;
+  ensureDrawn();
+});
+
+// Fullscreen-style expansion of the visualization
+function setExpanded(expanded) {
+  const pane = $('#viz-pane');
+  pane.classList.toggle('expanded', expanded);
+  document.body.classList.toggle('no-scroll', expanded);
+  $('#expand-btn').setAttribute('aria-pressed', String(expanded));
+  $('#expand-label').textContent = expanded ? 'Exit fullscreen' : 'Fullscreen';
+  afterLayoutChange();
+}
+$('#expand-btn').addEventListener('click', () => setExpanded(!$('#viz-pane').classList.contains('expanded')));
+
+// Customize dialog: modal bottom sheet on phones, side panel next to the visualization otherwise
+const dialog = $('#customize-dialog');
+$('#customize-btn').addEventListener('click', () => {
+  if (dialog.open) {
+    dialog.close();
+  } else if (mobileQuery.matches) {
+    dialog.showModal();
+  } else {
+    dialog.show();
+  }
+  $('#customize-btn').setAttribute('aria-expanded', String(dialog.open));
+});
+dialog.addEventListener('close', () => $('#customize-btn').setAttribute('aria-expanded', 'false'));
+$('#customize-close').addEventListener('click', () => dialog.close());
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (dialog.open && !dialog.matches(':modal')) dialog.close();
+  else if ($('#viz-pane').classList.contains('expanded') && !dialog.open) setExpanded(false);
+});
+
+// ---------------------------------------------------------------- table
+
+const table = new Tabulator('#metrics-table', {
+  layout: 'fitColumns',
+  height: '100%',
+  index: 'nodeId',
+  data: [],
+  columns: [],
+  responsiveLayout: 'collapse',
+  headerWordWrap: true,
+  responsiveLayoutCollapseStartOpen: false,
+  placeholder: 'No data yet',
+  selectableRows: false,
+  rowFormatter: (row) => {
+    row.getElement().classList.toggle('tabulator-selected', row.getData().nodeId === selection.selected);
+  }
+});
+app.table = table;
+const tableReady = new Promise((resolve) => table.on('tableBuilt', resolve));
+
+// Searching the table filters every visualization
+table.on('dataFiltered', (filters, rows) => {
+  const ids = rows.map((row) => row.getData().nodeId);
+  selection.setFilter(ids.length === table.getData().length ? null : new Set(ids));
+});
+
+// Clicking a row selects that node everywhere
+table.on('rowClick', (e, row) => selection.select(row.getData().nodeId));
+
+let previousSelected = null;
+selection.addEventListener('select', () => {
+  const rowFor = (id) => (id === null ? null : table.getRow(id));
+  [previousSelected, selection.selected].forEach((id) => {
+    const row = rowFor(id);
+    if (row) row.reformat();
+  });
+  previousSelected = selection.selected;
+  const row = rowFor(selection.selected);
+  if (row && $('#metrics-pane').getClientRects().length > 0) {
+    table.scrollToRow(selection.selected, 'center', false).catch(() => { /* row is filtered out */ });
   }
 });
 
-// Toggle instructions 
-$('#close-icon').click(function (e) {
-  e.preventDefault(e);
-  $('#instructions').slideUp();
-  $('#close-icon').hide();
-  $('#info-icon').show();
-})
-
-$('#info-icon').click(function (e) {
-  e.preventDefault(e);
-  $('#instructions').slideDown();
-  $('#info-icon').hide();
-  $('#close-icon').show();
-})
-
-// Toggle histogram
-$('#show-hist').click(function (e) {
-  e.preventDefault(e);
-  $('#hist-container').slideToggle();
-})
-
-// Manage side-by-side collapsing metrics/viz panels
-$('#metrics-collapse').click(function (e) {
-	let metrics = document.querySelector('#metrics');
-	let viz = document.querySelector('#viz');
-	if (!metrics.classList.contains('w-50-ns')) {
-		metrics.classList.add('w-50-ns');
-		metrics.classList.add('br');
-		viz.classList.remove('width-collapse');
-		$('#viz-off').hide();
-		$('#viz-on').show();
-		$('#metrics-collapse em').text('collapse');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	}
-	else if (metrics.classList.contains('width-collapse')) {
-		metrics.classList.remove('width-collapse');
-		viz.classList.add('w-50-ns');
-		metrics.classList.add('br');
-		$('#metric-off').hide();
-		$('#metric-on').show();
-		$('#metrics-collapse em').text('collapse');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	} else { 
-		metrics.classList.add('width-collapse');
-		viz.classList.remove('w-50-ns');
-		$('#metric-on').hide();
-		$('#metric-off').show();
-		$('#metrics-collapse em').text('expand');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	}
-});
-
-$('#viz-collapse').click(function (e) {
-	let viz = document.querySelector('#viz');
-	let metrics = document.querySelector('#metrics');
-	if (!viz.classList.contains('w-50-ns')) {
-		viz.classList.add('w-50-ns');
-		metrics.classList.remove('width-collapse');
-		metrics.classList.add('br');
-		$('#metric-off').hide();
-		$('#metric-on').show();
-		$('#viz-collapse em').text('collapse');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	}
-	else if (viz.classList.contains('width-collapse')) {
-		viz.classList.remove('width-collapse');
-		metrics.classList.add('w-50-ns');
-		metrics.classList.add('br');
-		$('#viz-off').hide();
-		$('#viz-on').show();
-		$('#viz-collapse em').text('collapse');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	} else { 
-		viz.classList.add('width-collapse');
-		metrics.classList.remove('w-50-ns');
-		metrics.classList.remove('br');
-		$('#viz-on').hide();
-		$('#viz-off').show();
-		$('#viz-collapse em').text('expand');
-		window.setTimeout(function() {table.columns.adjust()}, 500);
-	}
-});
-
-// Handle collapse for customize graph form
-$('#customize-form').click( function(e) {
-  e.stopPropagation();
-});
-
-$('#customize').click(function () {
-  let customize = $('#customize');
-  let customizeOpen = $('#open-customize-form');
-  let customizeClose = $('#close-customize-form');
-  let selectedDiv = selectedGraph.toLowerCase().replaceAll(' ', '-');
-  customize.toggleClass('customize-expand');
-  customizeOpen.toggleClass('dn');
-  customizeClose.toggleClass('dn flex');
-  $(`#${selectedDiv}`).toggle();
-  $('#customize-form').toggle();
-});
-
-/*//Code for eventual range slider
-
-var slider = document.getElementById('slider');
-
-noUiSlider.create(slider, {
-    start: [20, 80],
-    connect: true,
-    range: {
-        'min': 0,
-        'max': 100
+function buildColumns(result) {
+  const columns = [
+    { formatter: 'responsiveCollapse', width: 30, minWidth: 30, hozAlign: 'center', resizable: false, headerSort: false, download: false },
+    {
+      title: 'Node ID', field: 'nodeId', headerFilter: 'input', headerFilterPlaceholder: 'Find a Node ID',
+      responsive: 0, minWidth: 110, download: true
     }
-});
+  ];
+  availableMetrics(result).forEach((metric, i) => {
+    const ranked = RANKED_METRICS.has(metric.key);
+    columns.push({
+      title: metric.label,
+      field: metric.key,
+      sorter: 'number',
+      responsive: i === 0 ? 0 : i,
+      minWidth: 90,
+      download: true, // include columns that the responsive layout has collapsed
+      formatter: (cell) => {
+        const value = formatNodeValue(metric.key, cell.getValue());
+        return ranked ? `${value} (${cell.getRow().getData()[`${metric.key}Rank`]})` : value;
+      },
+      accessorDownload: (value) => (metric.decimals === 0 ? value : Number(value.toFixed(6)))
+    });
+  });
+  return columns;
+}
 
-// Handle table filter on range slider
-slider.noUiSlider.on('update', function() {
-	let sliderValue = slider.noUiSlider.get();
-	let low = sliderValue[0];
-	let high = sliderValue[1];
-});*/
-
-// Draw each graph type when it is selected by user
-function drawGraphs(selectedGraph) {
-  divs.map(div => {
-    let splitDiv = div.split('-').map(d => d.replace('#', ''));
-    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
-    if (filteredDiv.length > 0) {
-      $(div).css('padding', '.5rem');
-      $(div).css('height', '100%');
-      $(div).css('width', '100%');
-      $(div).css('visibility', 'visible');
-      // Check if svg has been drawn
-      if ($(div).find('svg').length == 0) {
-        if ((filteredDiv.includes('matrix'))) drawMatrix(edgeList, nodeList, colorValues, graphType, graphWeight);
-        if (filteredDiv.includes('force')) drawForceLayout(edgeList, nodeList, colorValues, graphType, graphWeight);
-        if (filteredDiv.includes('arc')) drawArcDiagram(edgeList, nodeList, colorValues, graphType, graphWeight);
-      }
-      // Reload edge attribute filters when switching visualizations
-      if (filteredDiv.includes('force')) addEdgeAttributeDropdown(edgeList, 'force-layout');
-      if (filteredDiv.includes('arc')) addEdgeAttributeDropdown(edgeList, 'arc-diagram');
-    } else {
-      $(div).css('visibility', 'hidden');
-      $(div).css('padding', '0');
-      $(div).css('height', '0');
-      $(div).css('border', '0');
-      $(div).css('width', '0');
-    }
+function buildRows(result) {
+  const ranks = {};
+  RANKED_METRICS.forEach((key) => {
+    const values = result.node[key];
+    if (!values) return;
+    ranks[key] = new Map(Object.keys(values).sort((a, b) => values[b] - values[a]).map((id, i) => [id, i + 1]));
+  });
+  return app.nodeList.map((node) => {
+    const row = { nodeId: node.id };
+    availableMetrics(result).forEach((metric) => {
+      row[metric.key] = node[metric.key];
+      if (ranks[metric.key]) row[`${metric.key}Rank`] = ranks[metric.key].get(node.id);
+    });
+    return row;
   });
 }
 
-// Check if graph selected
-$('#selected-graph').on('click', function (e) {
-  if (selectedGraph !== e.target.text) {
-    selectedGraph = e.target.text;
-    drawGraphs(selectedGraph);
+$('#copy-table').addEventListener('click', async () => {
+  const button = $('#copy-table');
+  try {
+    const metrics = availableMetrics(app.result);
+    const lines = [['Node ID', ...metrics.map((m) => m.label)].join('\t')];
+    table.getData().forEach((row) => {
+      lines.push([row.nodeId, ...metrics.map((m) => row[m.key])].join('\t'));
+    });
+    await navigator.clipboard.writeText(lines.join('\n') + '\n');
+    const original = button.textContent;
+    button.textContent = 'Copied!';
+    setTimeout(() => { button.textContent = original; }, 2000);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    alert('Failed to copy to clipboard. Please try again or use the CSV download button.');
   }
 });
+$('#download-csv').addEventListener('click', () => table.download('csv', 'network_metrics.csv'));
 
-// Download visualizations
-function getDownloadURL(svg, filename, callback) {
-  let height = parseInt(svg.style("height").split('px')[0]) + 1000;
-  let width = parseInt(svg.style("width").split('px')[0]) + 1000;
-  let canvas;
-  let doctype = '<?xml version="1.0" standalone="no"?>' + '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+// ------------------------------------------------------------ histogram
 
-  // serialize our SVG XML to a string.
-  let source = (new XMLSerializer()).serializeToString(svg.node());
-  source = source.replace('<svg', `<svg height="${height}" width="${width}"`);
-  // create a file blob of our SVG.
-  const blob = new Blob([doctype + source], {
-    type: 'image/svg+xml;charset=utf-8'
-  });
-
-  const url = window.URL.createObjectURL(blob);
-  let image = d3.select('body').append('img')
-    .style('display', 'none')
-    .attr('width', width)
-    .attr('height', height)
-    .node();
-
-  image.src = url;
-  
-  image.onerror = function () {
-    callback(new Error('An error occurred while attempting to load SVG'));
-  };
-  image.onload = function () {
-    canvas = d3.select('body').append('canvas')
-      .style('display', 'none')
-      .attr('width', width)
-      .attr('height', height)
-      .node();
-    let ctx = canvas.getContext('2d');
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, width, height);
-    ctx.drawImage(image, 0, 0);
-
-    let a = document.createElement('a');
-    a.download = `${filename}_visualization.png`;
-    a.href = canvas.toDataURL('image/png');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    d3.selectAll([canvas, image]).remove();
-  };
-}
-
-function updateDownloadURL(svg, filename, link) {
-  getDownloadURL(svg, filename, function (error, url) {
-    if (error) {
-      console.error(error);
-    } else {
-      link.href = url;
-    }
+function renderHistControls(result) {
+  const fieldset = $('#histType');
+  fieldset.querySelectorAll('input, label').forEach((el) => el.remove());
+  availableMetrics(result, 'numeric').forEach((metric, i) => {
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'histType';
+    input.id = `hist-${metric.key}`;
+    input.value = metric.key;
+    input.checked = i === 0;
+    const label = document.createElement('label');
+    label.htmlFor = input.id;
+    label.textContent = metric.label;
+    fieldset.append(input, label);
   });
 }
 
-const form = document.querySelector('#download-form')
-form.addEventListener('submit', event => {
-  // submit event detected
-  event.preventDefault()
-  let downloadType = document.querySelector("#download-type");
-  switch (downloadType.value) {
-	  case 'viz-png':
-  		  divs.map(div => {
-  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
-  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
-  		    if (filteredDiv.length > 0) {
-  		      updateDownloadURL(d3.selectAll(`${div} svg`), selectedGraph.toLowerCase().replaceAll(' ', '_'), $(this));
-  		    } 
-  		  });
-		  break;
-	  case 'viz-svg':
-  		  divs.map(div => {
-  		    let splitDiv = div.split('-').map(d => d.replace('#', ''));
-  		    let filteredDiv = splitDiv.filter(d => selectedGraph.toLowerCase().split(' ').includes(d));
-  		    if (filteredDiv.length > 0) {
-            var serializer = new XMLSerializer();
-            var xmlString = serializer.serializeToString(d3.select(`${div} svg`).node());
-            var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
-		        let filename = selectedGraph.toLowerCase().replaceAll(' ', '_');
-            let a = document.createElement('a');
-            a.download = `${filename}_visualization.svg`;
-            a.href = imgData;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-  		    } 
-  		  });
-		  break;
-	  case 'hist':
-  		  let filename = 'histogram_' + $('input[name="histType"]:checked').val();
-  		  updateDownloadURL(d3.selectAll(`#hist`), filename, $(this));
-		  break;
-	  case 'metrics':
-                  let text = `Global Network Metrics:
-
-Total Nodes: ${numberOfNodes}
-Total Edges: ${numberOfEdges}
-Average Degree: ${averageDegree}
-Density: ${density.toFixed(4)}
-Avg. Clustering Coefficient: ${averageClustering}
-Transitivity: ${transitivity.toFixed(4)}
-
-Looking for node-level metrics? Click "Download as CSV" next to the data table on the main Network Navigator page.`
-                  let a = document.createElement('a');
-                  a.download = `global_network_metrics.txt`;
-                  a.href = `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
-  };
-})
-
-// Initialize DataTable for metrics
-var table = $('#metrics-table').DataTable({
-	paging: false,
-	scrollY: 400,
-	scrollX: true,
-	buttons: [{extend:'copy', text:'Copy to Clipboard'}, {extend:'csv', text: 'Download as CSV'}],
-	dom: 'Bfti',
-	order: [[1, 'desc']],
-	autoWidth: false,
-	columnDefs: [
-		{searchable: false, targets: [1,2,3,4]}
-	]
-});
-
-
-// Calculate metrics and display graphs when user clicks "Navigate" button
-$('#calculate').click(function () {
-  $('.loader').addClass('is-active'); // CSS Loader while calculating
-
-  divs.map((div) => {
-    $(div).html('');
-  });
-  $('#row-error').hide();
-  $('#eigen-error').hide();
-  $('#customize-form').hide();
-
-  selectedGraph = "Force Layout";
-    // Get CSV and parse rows
-    var data = $('textarea').val();
-    graphType = $("input[name='graphType']:checked").val();
-    graphWeight = $("input[name='graphWeight']:checked").val();
-    var headerRow = document.querySelector("#headerRow");
-    //var edges = parse(data, {'typed':true});
-    var edges;
-    if (headerRow.checked) {
-      edges = d3.csvParse(data, function(d) {
-	      d = Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {});
-	      return [d.source,d.target,d.weight];
-      });
-      edgeList = d3.csvParse(data);
-      edgeList = edgeList.map(d => { return Object.keys(d).reduce((c, k) => (c[k.toLowerCase()] = d[k], c), {}); });
-      edgeList = edgeList.map(d => {d.weight = Number(d.weight); return d;});
-    } else {
-      edges = d3.csvParseRows(data);
-    }
-
-// Deal with matches later
-        // Check if multiple edges between same nodes
-//        let match = edgeList.find(r => ((r.source === edge[0]) && (r.target === edge[1])));
-//        if (match) {
-//          item.weight = item.weight + match.weight;
-//          Object.assign(match, item);
-//        } else {
-//          edgeList.push(item);
-//        }
-//      });
-
-
-    $('#info-panel').empty();
-	
-    // Create JSNetworkX object and calculate metrics
-
-    G = (graphType === 'undirected') ? new jsnx.Graph() : new jsnx.DiGraph();
-
-    try {
-      if (graphWeight === 'unweighted') {
-        G.addEdgesFrom(edges);
-      } else if (graphWeight === 'weighted') {
-        G.addWeightedEdgesFrom(edges);
-      }
-      betweenness = jsnx.betweennessCentrality(G)._stringValues;
-      degree = G.degree()._stringValues;
-
-      density = jsnx.density(G);
-      averageClustering = "N/A";
-      if (graphType === 'undirected') {
-        averageClustering = jsnx.averageClustering(G).toFixed(4);
-        clustering = jsnx.clustering(G)._stringValues;
-        var clusteringSorted = reverse_sort(clustering);
-      }
-      transitivity = jsnx.transitivity(G);
-      numberOfNodes = G.nodes().length;
-      numberOfEdges = G.edges().length;
-      averageDegree = Object.values(degree).reduce((a, b) => {
-        return a + b;
-      }) / numberOfNodes;
-
-    } catch (err) {
-      console.error(err);
-      $("#row-error").show();
-    }
-
-    try {
-      eigenvector = jsnx.eigenvectorCentrality(G)._stringValues;
-    } catch (err) {
-      console.error(err);
-      if (err.message !== 'Empty graph.') {
-        $('#eigen-error').show();
-      }
-    }
-
-    var degreeSorted = reverse_sort(degree);
-    var betweennessSorted = reverse_sort(betweenness);
-    if (eigenvector) {
-      var eigenvectorSorted = reverse_sort(eigenvector);
-    }
-
-    if (headerRow.checked === false) {
-        edgeList = G.edges(true).map(e => { e[2].source = e[0]; e[2].target = e[1]; e[2].weight = +e[2].weight; return e[2] });
-    }
-
-    colorValues = [...new Set(edgeList.map(edge => edge.weight))]
-    colorValues.push(0);
-    colorValues.sort((a, b) => a - b);
-
-    var tableData = [];
-    nodeList = [];
-    G.nodes().forEach(function (node) {
-      // For D3 Visualizations
-      let item = {};
-      item['id'] = node;
-      item['degree'] = degree[node];
-      item['betweenness'] = betweenness[node].toFixed(4);
-      let betweennessString = `${betweenness[node].toFixed(4)} (${(betweennessSorted.indexOf(node) + 1).toString()})`;
-      let eigenvectorString = "N/A";
-      let clusteringString = "N/A";
-      if (eigenvector) {
-        eigenvectorString = `${eigenvector[node].toFixed(4)} (${(eigenvectorSorted.indexOf(node) + 1).toString()})`;
-        item['eigenvector'] = eigenvector[node].toFixed(4);
-      }
-      if (graphType === 'undirected') {
-        clusteringString = `${clustering[node].toFixed(4)} (${(clusteringSorted.indexOf(node) + 1).toString()})`;
-        item['clustering'] = clustering[node].toFixed(4);
-      } else {item['clustering'] = 5};
-      item ['community'] = 1;
-      var row = [node, degree[node], betweennessString, eigenvectorString, clusteringString];
-      tableData.push(row);
-      nodeList.push(item);
-    });
-
-    const sizes = ['degree', 'eigenvector', 'betweenness', 'clustering']
-    sizes.map(size => {
-      if (nodeList.some(node => node.hasOwnProperty(size))){
-        var centralitySize = d3.scaleLinear()
-          .domain([d3.min(nodeList, function (d) {
-            return d[size];
-          }), d3.max(nodeList, function (d) {
-            return d[size];
-          })])
-          .range([15, 50]);
-        
-        var fontSize = d3.scaleLinear()
-          .domain([d3.min(nodeList, function (d) {
-            return d[size];
-          }), d3.max(nodeList, function (d) {
-            return d[size];
-          })])
-          .range([20, 30]);
-        nodeList = nodeList.map(node => {
-          node[`radius_${size}`] = centralitySize(node[size])
-          node[`fontSize_${size}`] = fontSize(node[size])
-          return node
-        })
-      }
-    });
-    
-    var idToNode = {};
-
-    // Add indexes to nodes
-    nodeList.forEach(function (n) {
-      idToNode[n.id] = n;
-    });
-
-    var edgeWidth = d3.scaleLinear()
-      .domain([d3.min(edgeList, function (d) {
-        return d.weight;
-      }), d3.max(edgeList, function (d) {
-        return d.weight;
-      })])
-      .range([3, 20]);
-    // Embed nodes as source and target
-    edgeList.map(function (e) {
-      e.source = idToNode[e.source];
-      e.target = idToNode[e.target];
-      e.scaled_weight = edgeWidth(e.weight);
-    });
-
-    // Add metrics to DataTable and page, display all
-    table.clear().rows.add(tableData).draw();
-    $('.dataTables_filter input').attr("placeholder", "Find a Node ID");
-    let metrics = document.getElementById("metrics");
-    let viz = document.getElementById("viz");
-    let buttons = document.getElementById("buttons");
-    metrics.style.display = "block";
-    viz.style.display = "block";
-    buttons.style.display = "block";
-    $('#metric-off').hide();
-    $('#viz-off').hide();
-    //$btn.button('reset');
-    var allInfo = `
-    <div class="fl w-50-l w-100 mv2">
-    Total Nodes: ${numberOfNodes}<br/>
-    Total Edges: ${numberOfEdges}<br/>
-    Average Degree: ${averageDegree}<br/>
-    </div>
-    <div class="fl w-50-l w-100 mv2">
-    Density: ${density.toFixed(4)}<br/>
-    Avg. Clustering Coefficient: ${averageClustering}<br/>
-    Transitivity: ${transitivity.toFixed(4)}<br/>
-    </div>
-    `
-    if (graphType === 'directed') {
-	    allInfo += `<div class='fl w-100 tc pa2 br4 ba b--gold bg-light-yellow gold'>Clustering coefficients cannot be calculated for directed graphs.</div>`
-    }
-    $('#info-panel').append(allInfo);
-    selectHist();
-    $('#histType').change(function() {
-      selectHist();
-      // Change centrality if the user selects histogram button
-      nodeSizeHist();
-    });
-
-    // Draw Force Layout by default
-    if ((G.nodes().length <= 500) && (selectedGraph == 'Force Layout')) {
-      drawGraphs(selectedGraph);
-    } else {
-      $('#viz-warning').show();
-      $('.viz').hide();
-    }
-
-    $('#load-viz').click(function () {
-      $('#viz-warning').hide();
-      $('.viz').show();
-      drawGraphs(selectedGraph);
-    });
-
-   $('.loader').removeClass('is-active');
-   document.querySelector("#results").scrollIntoView({behavior: "smooth"});
-   table.columns.adjust();
-   $("#metrics-table_wrapper").addClass('mt2');
-});
-
-function reverse_sort(dict) {
-  return Object.keys(dict).sort(function (a, b) {
-    return dict[b] - dict[a]
-  });
-}
-
-// Radio buttons for histogram
 function selectHist() {
-	  let radios = document.getElementsByName('histType');
-	  radios.forEach(r => {
-		  if (r.checked) { 
-			  switch (r.value) {
-				  case 'degree':
-					  drawHist(degree);
-					  break;
-				  case 'betweenness':
-					  drawHist(betweenness);
-					  break;
-				  case 'eigenvector':
-					  drawHist(eigenvector);
-					  break;
-				  case 'clustering':
-					  if (graphType !== 'directed') {
-					      drawHist(clustering);
-					  } else {
-					      d3.select("svg#hist").selectAll('*').remove();
-					      d3.select("svg#hist").append('text').attr('width', '100%').attr("x", 50).attr("y", 50).text("Clustering coefficients cannot be calculated for directed graphs.")
-					  }
-			  };
-		  };
-	  });
+  const checked = $('input[name="histType"]:checked');
+  const values = checked && app.result.node[checked.value];
+  if (values) {
+    drawHist(values, { log: $('#hist-log').checked, integer: METRIC_BY_KEY[checked.value].decimals === 0 });
+  } else {
+    d3.select('svg#hist').selectAll('*').remove();
+  }
 }
 
-// Smaller node size for arc diagram
-var arcSize = d3.scaleLinear()
-    .domain([15, 50])
-    .range([3, 6]);
+// Choosing a metric for the histogram also sizes the nodes by it
+$('#histType').addEventListener('change', () => {
+  selectHist();
+  const checked = $('input[name="histType"]:checked');
+  if (checked && app.G) {
+    $('#size-by').value = checked.value;
+    appearance.set({ sizeBy: checked.value });
+  }
+});
+$('#hist-log').addEventListener('change', selectHist);
+$('#hist-details').addEventListener('toggle', () => { if ($('#hist-details').open && app.G) selectHist(); });
 
-function nodeSizeHist() {
-	let radios = document.getElementsByName('histType');
-	radios.forEach(r => {
-		if (r.checked) { 
-			centrality = r.value;
-		};
-	});
-	document.querySelector('#centrality').value = centrality;
-	document.querySelector('#centrality-arc').value = centrality;
-        d3.selectAll('.node').attr('r', d => d[`radius_${centrality}`]);
-        d3.selectAll('.node-arc').attr('r', d => arcSize(d[`radius_${centrality}`]));
+// ------------------------------------------------------------ communities
+
+// Re-run community detection when the resolution changes
+$('#resolution').addEventListener('change', () => {
+  if (!app.G) return;
+  const resolution = Math.min(5, Math.max(0.1, parseFloat($('#resolution').value) || 1));
+  $('#resolution').value = resolution;
+  const communities = detectCommunities(app.G, { weighted: app.weighted, resolution });
+  if (!communities) return;
+
+  const { result } = app;
+  result.node.community = communities.assignment;
+  result.global.communities = communities.count;
+  result.global.modularity = communities.modularity;
+  result.communitySizes = communities.sizes;
+  app.nodeList.forEach((node) => { node.community = communities.assignment[node.id]; });
+
+  // Other cached network views were computed with the old resolution
+  [...app.views.keys()].filter((key) => key !== app.networkView).forEach((key) => app.views.delete(key));
+
+  table.updateData(app.nodeList.map((node) => ({ nodeId: node.id, community: node.community })));
+  renderStats(result);
+  appearance.communitySizes = communities.sizes;
+  appearance.set({}); // recolor the views and refresh the legend
+  renderNodeCard();
+});
+
+// -------------------------------------------------------------- navigate
+
+const resolutionValue = () => Math.min(5, Math.max(0.1, parseFloat($('#resolution').value) || 1));
+
+// Tear down the visualizations and listeners of whatever network is on screen
+function resetViews() {
+  app.controller.abort();
+  app.controller = new AbortController();
+  if (app.sigma) app.sigma.kill();
+  app.sigma = null;
+  app.graph = null;
+  selection.reset();
+  renderNodeCard();
+  dialog.close();
+  setExpanded(false);
+
+  Object.keys(drawn).forEach((key) => { drawn[key] = false; });
+  Object.values(VIZ).forEach((viz) => { $(viz.container).replaceChildren(); });
+  $('#edge-filter').replaceChildren();
+  edgeFilterBuilt = false;
+  $('#viz-warning').hidden = true;
+  try { table.clearHeaderFilter(); } catch (err) { /* table not ready yet */ }
 }
+
+// Projection settings from the network bar
+function projectionOptions() {
+  const minShared = Math.max(1, Math.round(Number($('#projection-min').value)) || 1);
+  return { weighting: $('#projection-weighting').value, minShared };
+}
+
+// Everything needed to show one network view: 'main' is the network as loaded (one-mode or bipartite),
+// 'A' / 'B' are one-mode projections of a bipartite network. Throws DataError if it can't be built.
+function buildView(key) {
+  const { source } = app;
+  const resolution = resolutionValue();
+
+  if (key === 'main') {
+    const bipartite = Boolean(source.sets);
+    const result = bipartite
+      ? computeBipartiteMetrics(source.G, source.sets, { weighted: source.weighted, resolution, setNames: source.setNames })
+      : computeMetrics(source.G, { weighted: source.weighted, resolution });
+    return { key, G: source.G, edges: source.edges, result, weighted: source.weighted, directed: source.directed };
+  }
+
+  const options = projectionOptions();
+  const P = projectNetwork(source.G, source.sets, key, options);
+  const edges = [];
+  P.forEachEdge((edge, attrs, s, t) => edges.push({ source: s, target: t, weight: attrs.weight, shared: attrs.shared }));
+  const name = source.setNames[key === 'A' ? 1 : 2];
+  const otherName = source.setNames[key === 'A' ? 2 : 1];
+  if (edges.length === 0) {
+    throw new DataError(`No two ${name} have at least ${options.minShared} of the ${otherName} in common, so this projection has no links. Try lowering the minimum.`);
+  }
+  const result = computeMetrics(P, { weighted: true, resolution });
+  return { key, G: P, edges, result, weighted: true, directed: false, options };
+}
+
+function describeView(view) {
+  const { source } = app;
+  const [nameA, nameB] = [source.setNames[1], source.setNames[2]];
+  if (view.key === 'main') {
+    return `Bipartite network: ${source.sets.A.size} ${nameA} and ${source.sets.B.size} ${nameB}, connected by ${view.edges.length} links.`;
+  }
+  const [name, otherName] = view.key === 'A' ? [nameA, nameB] : [nameB, nameA];
+  const { minShared, weighting } = view.options;
+  return `Projection onto ${name}: two of them are linked when they have at least ${minShared} of the ${otherName} in common. ` +
+    `Link weight is ${PROJECTION_WEIGHTINGS[weighting].toLowerCase()}.`;
+}
+
+// Put a built view on screen: node/edge objects, controls, table, histogram, visualizations
+async function presentView(view) {
+  const { result } = view;
+  app.G = view.G;
+  app.result = result;
+  app.weighted = view.weighted;
+  app.graphType = view.directed ? 'directed' : 'undirected';
+  app.graphWeight = view.weighted ? 'weighted' : 'unweighted';
+  app.sets = result.bipartite ? result.sets : null;
+  app.networkView = view.key;
+  app.vizBlocked = false;
+  $('#eigen-error').hidden = Boolean(result.node.eigenvector);
+
+  // Node and edge objects for the D3 views
+  const metrics = availableMetrics(result);
+  app.nodeList = [];
+  view.G.forEachNode((id) => {
+    const node = { id };
+    metrics.forEach((metric) => { node[metric.key] = result.node[metric.key][id]; });
+    app.nodeList.push(node);
+  });
+
+  const idToNode = Object.fromEntries(app.nodeList.map((node) => [node.id, node]));
+  const edgeWidth = d3.scaleLinear().domain(d3.extent(view.edges, (d) => d.weight)).range([3, 20]);
+  app.edgeList = view.edges.map((edge) => ({
+    ...edge,
+    source: idToNode[edge.source],
+    target: idToNode[edge.target],
+    scaled_weight: edgeWidth(edge.weight)
+  }));
+  app.colorValues = [...new Set(view.edges.map((edge) => edge.weight)), 0].sort((a, b) => a - b);
+
+  // Controls, readouts, table, histogram
+  appearance.init(app.nodeList, metrics.map((m) => m.key), result.communitySizes, { colorBy: result.bipartite ? 'set' : 'none' });
+  populateControls(result);
+  renderStats(result);
+  renderGlossary(result);
+  renderHistControls(result);
+  appearance.renderLegend($('#legend'));
+  $('#arrows-field').hidden = app.graphType !== 'directed';
+
+  // Network bar: which network, and what a projection means
+  const isBipartiteSource = Boolean(app.source.sets);
+  $('#network-bar').hidden = !isBipartiteSource;
+  $('#projection-options').hidden = view.key === 'main';
+  $('#download-projection').hidden = view.key === 'main';
+  $(`#net-${view.key}`).checked = true;
+  if (isBipartiteSource) $('#network-note').textContent = describeView(view);
+  $('#network-error').hidden = true;
+
+  await tableReady;
+  table.setColumns(buildColumns(result));
+  await table.setData(buildRows(result));
+  table.setSort([{ column: 'degree', dir: 'desc' }]);
+
+  // Show the results; large networks wait for "Click to load"
+  $('#results').hidden = false;
+  $('#instructions').open = false;
+  $(`#viz-${app.vizType}`).checked = true;
+  applyMobileView();
+  selectHist();
+  if (view.G.order > LARGE_NETWORK) {
+    app.vizBlocked = true;
+    $('#viz-warning').hidden = false;
+  }
+  afterLayoutChange();
+}
+
+// Show one of the network views (building it the first time)
+async function showNetwork(key) {
+  let view = app.views.get(key);
+  if (!view) {
+    view = buildView(key);
+    app.views.set(key, view);
+  }
+  resetViews();
+  await presentView(view);
+}
+
+// Switching between the bipartite network and its projections
+async function switchNetwork(key) {
+  const previous = app.networkView;
+  try {
+    await showNetwork(key);
+  } catch (err) {
+    if (!(err instanceof DataError)) throw err;
+    console.warn(err.message);
+    $('#network-error').textContent = err.message;
+    $('#network-error').hidden = false;
+    $('#network-error').scrollIntoView({ block: 'nearest' });
+    $(`#net-${previous}`).checked = true; // the previous network is still on screen
+  }
+}
+
+$$('input[name="networkView"]').forEach((radio) => radio.addEventListener('change', () => {
+  switchNetwork(radio.value).catch((err) => {
+    console.error(err);
+    showError(`Something went wrong while processing your data (${err.message}).`);
+  });
+}));
+
+// Changing the projection settings rebuilds the projections
+function projectionSettingsChanged() {
+  app.views.delete('A');
+  app.views.delete('B');
+  if (app.networkView !== 'main') switchNetwork(app.networkView);
+}
+$('#projection-weighting').addEventListener('change', projectionSettingsChanged);
+$('#projection-min').addEventListener('change', projectionSettingsChanged);
+
+async function navigate() {
+  resetViews();
+  clearError();
+  ['#eigen-error', '#network-error'].forEach((id) => { $(id).hidden = true; });
+  app.G = null;
+  app.source = null;
+  app.views.clear();
+  app.networkView = 'main';
+  app.vizType = 'force';
+
+  // Read the user's options and data
+  const bipartite = $('#mode-bipartite').checked;
+  const graphType = bipartite ? 'undirected' : $("input[name='graphType']:checked").value;
+  const weighted = $("input[name='graphWeight']:checked").value === 'weighted';
+
+  let edges;
+  let sets = null;
+  try {
+    // Bipartite edges keep their column order (first column = set A), so treat them as directed for merging
+    edges = parseEdges(textarea.value, {
+      hasHeader: $('#headerRow').checked,
+      directed: graphType === 'directed' || bipartite,
+      weighted
+    });
+    if (bipartite) sets = splitSets(edges);
+  } catch (err) {
+    if (!(err instanceof DataError)) throw err;
+    console.warn(err.message);
+    showError(err.message, err);
+    hideResults();
+    return;
+  }
+
+  // Build the graphology graph
+  const GraphClass = graphType === 'undirected' ? graphology.UndirectedGraph : graphology.DirectedGraph;
+  const G = new GraphClass();
+  edges.forEach((edge) => {
+    G.mergeEdge(edge.source, edge.target, weighted ? { weight: edge.weight } : undefined);
+  });
+
+  // Names of the two sets (bipartite only); identical names would be confusing, so tell them apart
+  const nameA = $('#set-a-name').value.trim() || 'Set A';
+  let nameB = $('#set-b-name').value.trim() || 'Set B';
+  if (nameB === nameA) nameB = `${nameB} (2)`;
+  const setNames = { 1: nameA, 2: nameB };
+  setActiveSetNames(setNames);
+
+  app.mode = bipartite ? 'bipartite' : 'unipartite';
+  app.source = { G, edges, sets, weighted, directed: graphType === 'directed', setNames };
+  if (bipartite) {
+    $('#net-main').checked = true;
+    $('#net-A-label').textContent = `Projection: ${nameA}`;
+    $('#net-B-label').textContent = `Projection: ${nameB}`;
+    $('#projection-weighting').value = 'count';
+    $('#projection-min').value = 1;
+  }
+  await showNetwork('main');
+}
+
+$('#calculate').addEventListener('click', () => {
+  const loader = $('#loader');
+  loader.hidden = false;
+  // Give the browser a chance to paint the loader before the (synchronous) heavy work
+  requestAnimationFrame(() => setTimeout(async () => {
+    try {
+      await navigate();
+      if (app.G) $('#results').scrollIntoView({ behavior: 'smooth' });
+    } catch (err) {
+      console.error(err);
+      app.G = null;
+      hideResults();
+      showError(`Something went wrong while processing your data (${err.message}).`);
+    } finally {
+      loader.hidden = true;
+    }
+  }, 0));
+});
+
+// -------------------------------------------------------------- startup
+initControls();
+initNodeCard();
+initDownloads();
